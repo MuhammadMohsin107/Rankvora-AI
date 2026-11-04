@@ -16,9 +16,9 @@ import type { RequestMetadata } from '../lib/requestMetadata.js';
  * and an old token is still rejected because its hash no longer matches a live row. jwt.ts is
  * untouched. This service moves WHERE that hash lives; it does not invent a second token system.
  *
- * WHY SHA-256 AND NOT BCRYPT: the token is a signed JWT — high-entropy, nothing for a slow hash to
- * protect — and the lookup has to be a point-read on an indexed column, which a per-row-salted
- * hash cannot support.
+ * WHY A PLAIN SHA-256 AND NOT A SLOW, SALTED HASH: the token is a signed JWT — high-entropy, nothing
+ * for a slow hash to protect — and the lookup has to be a point-read on an indexed column, which a
+ * per-row-salted hash cannot support.
  *
  * NO ROW IS EVER FABRICATED. Sessions exist only where a real login created one, and their IP and
  * User-Agent are null unless the request actually carried them.

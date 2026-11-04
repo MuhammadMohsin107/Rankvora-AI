@@ -59,7 +59,7 @@ function describeFailure(error: unknown): { message: string; actionable: boolean
   if (error.status === 404) {
     return { message: 'This server has no AI referrals endpoint. The API is running an older build — redeploy and restart it.', actionable: false };
   }
-  if (error.status === 401) return { message: 'Your session has expired. Sign in again, then reopen this page.', actionable: false };
+  if (error.status === 401) return { message: 'Your session has expired. Open Rankvora AI again from your Shopify admin.', actionable: false };
   return { message: error.message, actionable: false };
 }
 

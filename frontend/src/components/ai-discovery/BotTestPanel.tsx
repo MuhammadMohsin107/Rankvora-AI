@@ -36,7 +36,7 @@ function describeFailure(error: unknown): string {
   if (error.status === 404 && error.code !== 'STORE_NOT_FOUND') {
     return 'This server has no bot-test endpoint. The API is running an older build — redeploy and restart it.';
   }
-  if (error.status === 401) return 'Your session has expired. Sign in again, then reopen this page.';
+  if (error.status === 401) return 'Your session has expired. Open Rankvora AI again from your Shopify admin.';
   return error.message;
 }
 

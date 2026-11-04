@@ -1,1 +1,0 @@
-ALTER TABLE `notifications` ADD `link` varchar(512);

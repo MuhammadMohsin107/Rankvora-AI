@@ -1,108 +1,73 @@
 {
-  "version": "5",
-  "dialect": "mysql",
-  "id": "6c2d9a6f-865b-4f95-bcc6-ff437180c5d9",
-  "prevId": "65fd5f19-f338-4ec8-a882-99b83016d37a",
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "9ba4a270-a9b9-4fdb-b9eb-e04ecdf25885",
+  "prevId": "44bdb97b-7d1a-4ce1-b415-55e971d87708",
   "tables": {
-    "admin_security_actions": {
-      "name": "admin_security_actions",
+    "ai_discovery_settings": {
+      "name": "ai_discovery_settings",
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
-          "primaryKey": false,
+          "type": "integer",
+          "primaryKey": true,
           "notNull": true,
           "autoincrement": true
         },
-        "actor_user_id": {
-          "name": "actor_user_id",
-          "type": "int",
+        "store_id": {
+          "name": "store_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "target_user_id": {
-          "name": "target_user_id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "action": {
-          "name": "action",
-          "type": "varchar(48)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "reason": {
-          "name": "reason",
-          "type": "varchar(500)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "ip_address": {
-          "name": "ip_address",
-          "type": "varchar(45)",
+        "index_now_key": {
+          "name": "index_now_key",
+          "type": "text(128)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "user_agent": {
-          "name": "user_agent",
-          "type": "varchar(512)",
+        "index_now_key_set_at": {
+          "name": "index_now_key_set_at",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "(unixepoch() * 1000)"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch() * 1000)"
         }
       },
       "indexes": {
-        "admin_security_actions_target_idx": {
-          "name": "admin_security_actions_target_idx",
+        "ai_discovery_settings_store_id_unique": {
+          "name": "ai_discovery_settings_store_id_unique",
           "columns": [
-            "target_user_id",
-            "created_at"
+            "store_id"
           ],
-          "isUnique": false
-        },
-        "admin_security_actions_actor_idx": {
-          "name": "admin_security_actions_actor_idx",
-          "columns": [
-            "actor_user_id",
-            "created_at"
-          ],
-          "isUnique": false
+          "isUnique": true
         }
       },
       "foreignKeys": {
-        "admin_security_actions_actor_user_id_users_id_fk": {
-          "name": "admin_security_actions_actor_user_id_users_id_fk",
-          "tableFrom": "admin_security_actions",
-          "tableTo": "users",
+        "ai_discovery_settings_store_id_stores_id_fk": {
+          "name": "ai_discovery_settings_store_id_stores_id_fk",
+          "tableFrom": "ai_discovery_settings",
+          "tableTo": "stores",
           "columnsFrom": [
-            "actor_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "admin_security_actions_target_user_id_users_id_fk": {
-          "name": "admin_security_actions_target_user_id_users_id_fk",
-          "tableFrom": "admin_security_actions",
-          "tableTo": "users",
-          "columnsFrom": [
-            "target_user_id"
+            "store_id"
           ],
           "columnsTo": [
             "id"
@@ -111,63 +76,51 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "admin_security_actions_id": {
-          "name": "admin_security_actions_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {
-        "admin_security_actions_action_valid": {
-          "name": "admin_security_actions_action_valid",
-          "value": "`admin_security_actions`.`action` IN ('two_factor_disabled', 'two_factor_challenges_revoked')"
-        }
-      }
+      "checkConstraints": {}
     },
     "ai_fix_proposals": {
       "name": "ai_fix_proposals",
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
-          "primaryKey": false,
+          "type": "integer",
+          "primaryKey": true,
           "notNull": true,
           "autoincrement": true
         },
         "finding_id": {
           "name": "finding_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "store_id": {
           "name": "store_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "resource_type": {
           "name": "resource_type",
-          "type": "varchar(32)",
+          "type": "text(32)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "resource_id": {
           "name": "resource_id",
-          "type": "varchar(64)",
+          "type": "text(64)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "field": {
           "name": "field",
-          "type": "varchar(64)",
+          "type": "text(64)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -202,7 +155,7 @@
         },
         "status": {
           "name": "status",
-          "type": "varchar(16)",
+          "type": "text(16)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -217,29 +170,29 @@
         },
         "ai_model": {
           "name": "ai_model",
-          "type": "varchar(64)",
+          "type": "text(64)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "(unixepoch() * 1000)"
         },
         "decided_at": {
           "name": "decided_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "decided_by": {
           "name": "decided_by",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -313,19 +266,12 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "ai_fix_proposals_id": {
-          "name": "ai_fix_proposals_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {
+      "checkConstraints": {
         "ai_fix_proposals_status_valid": {
           "name": "ai_fix_proposals_status_valid",
-          "value": "`ai_fix_proposals`.`status` IN ('proposed', 'approved', 'applied', 'rejected', 'failed')"
+          "value": "\"ai_fix_proposals\".\"status\" IN ('proposed', 'approved', 'applied', 'rejected', 'failed')"
         }
       }
     },
@@ -334,81 +280,70 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
-          "primaryKey": false,
+          "type": "integer",
+          "primaryKey": true,
           "notNull": true,
           "autoincrement": true
         },
         "audit_id": {
           "name": "audit_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "pillar": {
           "name": "pillar",
-          "type": "varchar(32)",
+          "type": "text(32)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "sub_pillar": {
           "name": "sub_pillar",
-          "type": "varchar(120)",
+          "type": "text(120)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "sub_pillar_key": {
-          "name": "sub_pillar_key",
-          "type": "varchar(120)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "generated": {
-            "as": "(COALESCE(`sub_pillar`, ''))",
-            "type": "stored"
-          }
-        },
         "score": {
           "name": "score",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "checks_total": {
           "name": "checks_total",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "checks_passed": {
           "name": "checks_passed",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "analyzed_count": {
           "name": "analyzed_count",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "healthy_count": {
           "name": "healthy_count",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "details": {
           "name": "details",
-          "type": "json",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -420,9 +355,18 @@
           "columns": [
             "audit_id",
             "pillar",
-            "sub_pillar_key"
+            "sub_pillar"
           ],
           "isUnique": true
+        },
+        "audit_scores_pillar_unique_idx": {
+          "name": "audit_scores_pillar_unique_idx",
+          "columns": [
+            "audit_id",
+            "pillar"
+          ],
+          "isUnique": true,
+          "where": "\"audit_scores\".\"sub_pillar\" IS NULL"
         }
       },
       "foreignKeys": {
@@ -440,23 +384,16 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "audit_scores_id": {
-          "name": "audit_scores_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {
+      "checkConstraints": {
         "audit_scores_score_range": {
           "name": "audit_scores_score_range",
-          "value": "`audit_scores`.`score` BETWEEN 0 AND 100"
+          "value": "\"audit_scores\".\"score\" BETWEEN 0 AND 100"
         },
         "audit_scores_pillar_valid": {
           "name": "audit_scores_pillar_valid",
-          "value": "`audit_scores`.`pillar` IN ('seo', 'content', 'speed', 'cro', 'ai-discovery')"
+          "value": "\"audit_scores\".\"pillar\" IN ('seo', 'content', 'speed', 'cro', 'ai-discovery')"
         }
       }
     },
@@ -465,36 +402,36 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
-          "primaryKey": false,
+          "type": "integer",
+          "primaryKey": true,
           "notNull": true,
           "autoincrement": true
         },
         "store_id": {
           "name": "store_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "overall_score": {
           "name": "overall_score",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "run_at": {
           "name": "run_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "(unixepoch() * 1000)"
         },
         "source": {
           "name": "source",
-          "type": "varchar(16)",
+          "type": "text(16)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -502,7 +439,7 @@
         },
         "metadata": {
           "name": "metadata",
-          "type": "json",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -533,157 +470,16 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "audits_id": {
-          "name": "audits_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {
+      "checkConstraints": {
         "audits_score_range": {
           "name": "audits_score_range",
-          "value": "`audits`.`overall_score` BETWEEN 0 AND 100"
+          "value": "\"audits\".\"overall_score\" BETWEEN 0 AND 100"
         },
         "audits_source_valid": {
           "name": "audits_source_valid",
-          "value": "`audits`.`source` IN ('engine', 'seed')"
-        }
-      }
-    },
-    "auth_challenges": {
-      "name": "auth_challenges",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "purpose": {
-          "name": "purpose",
-          "type": "varchar(32)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "code_hash": {
-          "name": "code_hash",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "attempts": {
-          "name": "attempts",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
-        },
-        "max_attempts": {
-          "name": "max_attempts",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 5
-        },
-        "consumed_at": {
-          "name": "consumed_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "sent_at": {
-          "name": "sent_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "delivery_attempts": {
-          "name": "delivery_attempts",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
-        },
-        "last_delivery_error": {
-          "name": "last_delivery_error",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
-        }
-      },
-      "indexes": {
-        "auth_challenges_lookup_idx": {
-          "name": "auth_challenges_lookup_idx",
-          "columns": [
-            "user_id",
-            "purpose",
-            "consumed_at"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "auth_challenges_user_id_users_id_fk": {
-          "name": "auth_challenges_user_id_users_id_fk",
-          "tableFrom": "auth_challenges",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "auth_challenges_id": {
-          "name": "auth_challenges_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraint": {
-        "auth_challenges_purpose_valid": {
-          "name": "auth_challenges_purpose_valid",
-          "value": "`auth_challenges`.`purpose` IN ('email_verification', 'password_reset', 'password_reset_ticket', 'login_2fa', 'login_2fa_ticket')"
+          "value": "\"audits\".\"source\" IN ('engine', 'seed')"
         }
       }
     },
@@ -692,49 +488,49 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
-          "primaryKey": false,
+          "type": "integer",
+          "primaryKey": true,
           "notNull": true,
           "autoincrement": true
         },
         "audit_id": {
           "name": "audit_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "pillar": {
           "name": "pillar",
-          "type": "varchar(32)",
+          "type": "text(32)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "sub_pillar": {
           "name": "sub_pillar",
-          "type": "varchar(120)",
+          "type": "text(120)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "title": {
           "name": "title",
-          "type": "varchar(512)",
+          "type": "text(512)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "severity": {
           "name": "severity",
-          "type": "varchar(16)",
+          "type": "text(16)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "status": {
           "name": "status",
-          "type": "varchar(16)",
+          "type": "text(16)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -742,35 +538,35 @@
         },
         "resolution_type": {
           "name": "resolution_type",
-          "type": "varchar(32)",
+          "type": "text(32)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "affected_count": {
           "name": "affected_count",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "affected_label": {
           "name": "affected_label",
-          "type": "varchar(255)",
+          "type": "text(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "impact": {
           "name": "impact",
-          "type": "varchar(32)",
+          "type": "text(32)",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "score_lift": {
           "name": "score_lift",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -799,50 +595,50 @@
         },
         "evidence": {
           "name": "evidence",
-          "type": "json",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "('[]')"
+          "default": "'[]'"
         },
         "evidence_rows": {
           "name": "evidence_rows",
-          "type": "json",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "ai_recommendation": {
           "name": "ai_recommendation",
-          "type": "json",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "ai_model": {
           "name": "ai_model",
-          "type": "varchar(64)",
+          "type": "text(64)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "ai_generated_at": {
           "name": "ai_generated_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "details": {
           "name": "details",
-          "type": "json",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "status_changed_at": {
           "name": "status_changed_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -879,27 +675,20 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "findings_id": {
-          "name": "findings_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {
+      "checkConstraints": {
         "findings_severity_valid": {
           "name": "findings_severity_valid",
-          "value": "`findings`.`severity` IN ('critical', 'high', 'medium', 'low')"
+          "value": "\"findings\".\"severity\" IN ('critical', 'high', 'medium', 'low')"
         },
         "findings_status_valid": {
           "name": "findings_status_valid",
-          "value": "`findings`.`status` IN ('open', 'reviewed', 'resolved', 'ignored')"
+          "value": "\"findings\".\"status\" IN ('open', 'reviewed', 'resolved', 'ignored')"
         },
         "findings_pillar_valid": {
           "name": "findings_pillar_valid",
-          "value": "`findings`.`pillar` IN ('seo', 'content', 'speed', 'cro', 'ai-discovery')"
+          "value": "\"findings\".\"pillar\" IN ('seo', 'content', 'speed', 'cro', 'ai-discovery')"
         }
       }
     },
@@ -908,28 +697,35 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
-          "primaryKey": false,
+          "type": "integer",
+          "primaryKey": true,
           "notNull": true,
           "autoincrement": true
         },
         "store_id": {
           "name": "store_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "google_email": {
           "name": "google_email",
-          "type": "varchar(320)",
+          "type": "text(320)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "site_url": {
           "name": "site_url",
-          "type": "varchar(512)",
+          "type": "text(512)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ga4_property_id": {
+          "name": "ga4_property_id",
+          "type": "text(32)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -950,7 +746,7 @@
         },
         "access_token_expires_at": {
           "name": "access_token_expires_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -964,29 +760,29 @@
         },
         "last_error": {
           "name": "last_error",
-          "type": "varchar(500)",
+          "type": "text(500)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "last_synced_at": {
           "name": "last_synced_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "(unixepoch() * 1000)"
         },
         "disconnected_at": {
           "name": "disconnected_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -1016,44 +812,37 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "google_connections_id": {
-          "name": "google_connections_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {}
+      "checkConstraints": {}
     },
     "integrations": {
       "name": "integrations",
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
-          "primaryKey": false,
+          "type": "integer",
+          "primaryKey": true,
           "notNull": true,
           "autoincrement": true
         },
         "store_id": {
           "name": "store_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "provider": {
           "name": "provider",
-          "type": "varchar(64)",
+          "type": "text(64)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "status": {
           "name": "status",
-          "type": "varchar(32)",
+          "type": "text(32)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -1061,14 +850,14 @@
         },
         "account_detail": {
           "name": "account_detail",
-          "type": "varchar(255)",
+          "type": "text(255)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "last_synced_at": {
           "name": "last_synced_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -1106,19 +895,12 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "integrations_id": {
-          "name": "integrations_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {
+      "checkConstraints": {
         "integrations_status_valid": {
           "name": "integrations_status_valid",
-          "value": "`integrations`.`status` IN ('connected', 'needs_attention', 'not_connected')"
+          "value": "\"integrations\".\"status\" IN ('connected', 'needs_attention', 'not_connected')"
         }
       }
     },
@@ -1127,21 +909,21 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
-          "primaryKey": false,
+          "type": "integer",
+          "primaryKey": true,
           "notNull": true,
           "autoincrement": true
         },
         "store_id": {
           "name": "store_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "type": {
           "name": "type",
-          "type": "varchar(32)",
+          "type": "text(32)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -1149,30 +931,26 @@
         },
         "status": {
           "name": "status",
-          "type": "varchar(16)",
+          "type": "text(16)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
           "default": "'queued'"
         },
-        "active_flag": {
-          "name": "active_flag",
-          "type": "tinyint",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "generated": {
-            "as": "(CASE WHEN `status` IN ('queued', 'running') THEN 1 ELSE NULL END)",
-            "type": "stored"
-          }
-        },
         "progress": {
           "name": "progress",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
           "default": 0
+        },
+        "stage": {
+          "name": "stage",
+          "type": "text(191)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         },
         "error": {
           "name": "error",
@@ -1183,32 +961,32 @@
         },
         "audit_id": {
           "name": "audit_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "started_at": {
           "name": "started_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "finished_at": {
           "name": "finished_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "(unixepoch() * 1000)"
         }
       },
       "indexes": {
@@ -1223,10 +1001,10 @@
         "jobs_store_active_unique_idx": {
           "name": "jobs_store_active_unique_idx",
           "columns": [
-            "store_id",
-            "active_flag"
+            "store_id"
           ],
-          "isUnique": true
+          "isUnique": true,
+          "where": "\"jobs\".\"status\" IN ('queued', 'running')"
         }
       },
       "foreignKeys": {
@@ -1257,23 +1035,16 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "jobs_id": {
-          "name": "jobs_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {
+      "checkConstraints": {
         "jobs_status_valid": {
           "name": "jobs_status_valid",
-          "value": "`jobs`.`status` IN ('queued', 'running', 'succeeded', 'failed')"
+          "value": "\"jobs\".\"status\" IN ('queued', 'running', 'succeeded', 'failed')"
         },
         "jobs_progress_range": {
           "name": "jobs_progress_range",
-          "value": "`jobs`.`progress` BETWEEN 0 AND 100"
+          "value": "\"jobs\".\"progress\" BETWEEN 0 AND 100"
         }
       }
     },
@@ -1282,28 +1053,28 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
-          "primaryKey": false,
+          "type": "integer",
+          "primaryKey": true,
           "notNull": true,
           "autoincrement": true
         },
         "store_id": {
           "name": "store_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "type": {
           "name": "type",
-          "type": "varchar(64)",
+          "type": "text(64)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "title": {
           "name": "title",
-          "type": "varchar(255)",
+          "type": "text(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -1317,15 +1088,22 @@
         },
         "tone": {
           "name": "tone",
-          "type": "varchar(16)",
+          "type": "text(16)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
           "default": "'info'"
         },
+        "link": {
+          "name": "link",
+          "type": "text(512)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "is_read": {
           "name": "is_read",
-          "type": "boolean",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -1333,11 +1111,11 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "(unixepoch() * 1000)"
         }
       },
       "indexes": {
@@ -1365,19 +1143,231 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "notifications_id": {
-          "name": "notifications_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {
+      "checkConstraints": {
         "notifications_tone_valid": {
           "name": "notifications_tone_valid",
-          "value": "`notifications`.`tone` IN ('neutral', 'success', 'warning', 'critical', 'info')"
+          "value": "\"notifications\".\"tone\" IN ('neutral', 'success', 'warning', 'critical', 'info')"
+        }
+      }
+    },
+    "onboarding_state": {
+      "name": "onboarding_state",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "current_step": {
+          "name": "current_step",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "organization_name": {
+          "name": "organization_name",
+          "type": "text(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "brand_name": {
+          "name": "brand_name",
+          "type": "text(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "primary_domain": {
+          "name": "primary_domain",
+          "type": "text(512)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "industries": {
+          "name": "industries",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sells_description": {
+          "name": "sells_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "business_models": {
+          "name": "business_models",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "catalog_shape": {
+          "name": "catalog_shape",
+          "type": "text(64)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "target_countries": {
+          "name": "target_countries",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "target_languages": {
+          "name": "target_languages",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "primary_market": {
+          "name": "primary_market",
+          "type": "text(128)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "target_keywords": {
+          "name": "target_keywords",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "branded_terms": {
+          "name": "branded_terms",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "competitor_domains": {
+          "name": "competitor_domains",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "primary_goal": {
+          "name": "primary_goal",
+          "type": "text(64)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "priority_pillars": {
+          "name": "priority_pillars",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "automation_consent": {
+          "name": "automation_consent",
+          "type": "text(32)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "alert_frequency": {
+          "name": "alert_frequency",
+          "type": "text(32)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "skipped_steps": {
+          "name": "skipped_steps",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch() * 1000)"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch() * 1000)"
+        },
+        "deferred_at": {
+          "name": "deferred_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "onboarding_state_store_id_unique": {
+          "name": "onboarding_state_store_id_unique",
+          "columns": [
+            "store_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "onboarding_state_store_id_stores_id_fk": {
+          "name": "onboarding_state_store_id_stores_id_fk",
+          "tableFrom": "onboarding_state",
+          "tableTo": "stores",
+          "columnsFrom": [
+            "store_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "onboarding_state_step_range": {
+          "name": "onboarding_state_step_range",
+          "value": "\"onboarding_state\".\"current_step\" BETWEEN 1 AND 5"
+        },
+        "onboarding_state_consent_valid": {
+          "name": "onboarding_state_consent_valid",
+          "value": "\"onboarding_state\".\"automation_consent\" IS NULL OR \"onboarding_state\".\"automation_consent\" IN ('none', 'ask', 'low_risk')"
         }
       }
     },
@@ -1386,40 +1376,40 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
-          "primaryKey": false,
+          "type": "integer",
+          "primaryKey": true,
           "notNull": true,
           "autoincrement": true
         },
         "store_id": {
           "name": "store_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "slug": {
           "name": "slug",
-          "type": "varchar(190)",
+          "type": "text(190)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "values": {
           "name": "values",
-          "type": "json",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "('{}')"
+          "default": "'{}'"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "(unixepoch() * 1000)"
         }
       },
       "indexes": {
@@ -1455,87 +1445,116 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "page_settings_id": {
-          "name": "page_settings_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {}
+      "checkConstraints": {}
     },
-    "password_reset_tokens": {
-      "name": "password_reset_tokens",
+    "pagespeed_reports": {
+      "name": "pagespeed_reports",
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
-          "primaryKey": false,
+          "type": "integer",
+          "primaryKey": true,
           "notNull": true,
           "autoincrement": true
         },
-        "user_id": {
-          "name": "user_id",
-          "type": "int",
+        "store_id": {
+          "name": "store_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "token_hash": {
-          "name": "token_hash",
-          "type": "varchar(64)",
+        "requested_url": {
+          "name": "requested_url",
+          "type": "text(1024)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "used_at": {
-          "name": "used_at",
-          "type": "datetime",
+        "final_url": {
+          "name": "final_url",
+          "type": "text(1024)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "created_at": {
-          "name": "created_at",
-          "type": "datetime",
+        "strategy": {
+          "name": "strategy",
+          "type": "text(16)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
+          "autoincrement": false
+        },
+        "performance_score": {
+          "name": "performance_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "lab": {
+          "name": "lab",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "field": {
+          "name": "field",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "opportunities": {
+          "name": "opportunities",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "lighthouse_version": {
+          "name": "lighthouse_version",
+          "type": "text(32)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "analyzed_at": {
+          "name": "analyzed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "fetched_at": {
+          "name": "fetched_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {
-        "password_reset_tokens_hash_idx": {
-          "name": "password_reset_tokens_hash_idx",
+        "pagespeed_reports_latest_idx": {
+          "name": "pagespeed_reports_latest_idx",
           "columns": [
-            "token_hash"
-          ],
-          "isUnique": true
-        },
-        "password_reset_tokens_user_idx": {
-          "name": "password_reset_tokens_user_idx",
-          "columns": [
-            "user_id"
+            "store_id",
+            "strategy",
+            "fetched_at"
           ],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "password_reset_tokens_user_id_users_id_fk": {
-          "name": "password_reset_tokens_user_id_users_id_fk",
-          "tableFrom": "password_reset_tokens",
-          "tableTo": "users",
+        "pagespeed_reports_store_id_stores_id_fk": {
+          "name": "pagespeed_reports_store_id_stores_id_fk",
+          "tableFrom": "pagespeed_reports",
+          "tableTo": "stores",
           "columnsFrom": [
-            "user_id"
+            "store_id"
           ],
           "columnsTo": [
             "id"
@@ -1544,69 +1563,378 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "password_reset_tokens_id": {
-          "name": "password_reset_tokens_id",
-          "columns": [
-            "id"
-          ]
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "pagespeed_reports_strategy_valid": {
+          "name": "pagespeed_reports_strategy_valid",
+          "value": "\"pagespeed_reports\".\"strategy\" IN ('mobile', 'desktop')"
+        }
+      }
+    },
+    "prompt_checks": {
+      "name": "prompt_checks",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "query_id": {
+          "name": "query_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "model": {
+          "name": "model",
+          "type": "text(64)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mentioned": {
+          "name": "mentioned",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mention_context": {
+          "name": "mention_context",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "mention_position": {
+          "name": "mention_position",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "brand_rank": {
+          "name": "brand_rank",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "brands_named": {
+          "name": "brands_named",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "competitors_named": {
+          "name": "competitors_named",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "checked_at": {
+          "name": "checked_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch() * 1000)"
         }
       },
+      "indexes": {
+        "prompt_checks_query_idx": {
+          "name": "prompt_checks_query_idx",
+          "columns": [
+            "query_id",
+            "checked_at"
+          ],
+          "isUnique": false
+        },
+        "prompt_checks_store_idx": {
+          "name": "prompt_checks_store_idx",
+          "columns": [
+            "store_id",
+            "checked_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "prompt_checks_query_id_prompt_queries_id_fk": {
+          "name": "prompt_checks_query_id_prompt_queries_id_fk",
+          "tableFrom": "prompt_checks",
+          "tableTo": "prompt_queries",
+          "columnsFrom": [
+            "query_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "prompt_checks_store_id_stores_id_fk": {
+          "name": "prompt_checks_store_id_stores_id_fk",
+          "tableFrom": "prompt_checks",
+          "tableTo": "stores",
+          "columnsFrom": [
+            "store_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {}
+      "checkConstraints": {}
+    },
+    "prompt_queries": {
+      "name": "prompt_queries",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "query": {
+          "name": "query",
+          "type": "text(500)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "brand_term": {
+          "name": "brand_term",
+          "type": "text(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "active": {
+          "name": "active",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch() * 1000)"
+        }
+      },
+      "indexes": {
+        "prompt_queries_store_idx": {
+          "name": "prompt_queries_store_idx",
+          "columns": [
+            "store_id",
+            "active"
+          ],
+          "isUnique": false
+        },
+        "prompt_queries_store_query_idx": {
+          "name": "prompt_queries_store_query_idx",
+          "columns": [
+            "store_id",
+            "query"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "prompt_queries_store_id_stores_id_fk": {
+          "name": "prompt_queries_store_id_stores_id_fk",
+          "tableFrom": "prompt_queries",
+          "tableTo": "stores",
+          "columnsFrom": [
+            "store_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "schema_templates": {
+      "name": "schema_templates",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "schema_type": {
+          "name": "schema_type",
+          "type": "text(64)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "context": {
+          "name": "context",
+          "type": "text(16)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "enabled": {
+          "name": "enabled",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "properties": {
+          "name": "properties",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'{}'"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch() * 1000)"
+        }
+      },
+      "indexes": {
+        "schema_templates_store_type_context_idx": {
+          "name": "schema_templates_store_type_context_idx",
+          "columns": [
+            "store_id",
+            "schema_type",
+            "context"
+          ],
+          "isUnique": true
+        },
+        "schema_templates_store_enabled_idx": {
+          "name": "schema_templates_store_enabled_idx",
+          "columns": [
+            "store_id",
+            "enabled"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "schema_templates_store_id_stores_id_fk": {
+          "name": "schema_templates_store_id_stores_id_fk",
+          "tableFrom": "schema_templates",
+          "tableTo": "stores",
+          "columnsFrom": [
+            "store_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "security_events": {
       "name": "security_events",
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
-          "primaryKey": false,
+          "type": "integer",
+          "primaryKey": true,
           "notNull": true,
           "autoincrement": true
         },
         "user_id": {
           "name": "user_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "type": {
           "name": "type",
-          "type": "varchar(32)",
+          "type": "text(32)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "ip_address": {
           "name": "ip_address",
-          "type": "varchar(45)",
+          "type": "text(45)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "user_agent": {
           "name": "user_agent",
-          "type": "varchar(512)",
+          "type": "text(512)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "metadata": {
           "name": "metadata",
-          "type": "json",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "(unixepoch() * 1000)"
         }
       },
       "indexes": {
@@ -1634,19 +1962,12 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "security_events_id": {
-          "name": "security_events_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {
+      "checkConstraints": {
         "security_events_type_valid": {
           "name": "security_events_type_valid",
-          "value": "`security_events`.`type` IN ('login_success', 'login_failed', 'logout', 'password_changed', 'password_reset', 'email_verified', 'session_revoked', 'sessions_revoked', 'two_factor_enabled', 'two_factor_disabled', 'two_factor_admin_disabled', 'two_factor_challenges_revoked', 'two_factor_recovery_used', 'recovery_codes_generated')"
+          "value": "\"security_events\".\"type\" IN ('login_success', 'login_failed', 'logout', 'password_changed', 'password_reset', 'email_verified', 'session_revoked', 'sessions_revoked')"
         }
       }
     },
@@ -1655,21 +1976,21 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
-          "primaryKey": false,
+          "type": "integer",
+          "primaryKey": true,
           "notNull": true,
           "autoincrement": true
         },
         "store_id": {
           "name": "store_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "shop_domain": {
           "name": "shop_domain",
-          "type": "varchar(255)",
+          "type": "text(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -1697,28 +2018,28 @@
         },
         "access_token_expires_at": {
           "name": "access_token_expires_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "refresh_token_expires_at": {
           "name": "refresh_token_expires_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "shop_gid": {
           "name": "shop_gid",
-          "type": "varchar(64)",
+          "type": "text(64)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "last_sync_summary": {
           "name": "last_sync_summary",
-          "type": "json",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -1732,28 +2053,35 @@
         },
         "installed_at": {
           "name": "installed_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "(unixepoch() * 1000)"
         },
         "uninstalled_at": {
           "name": "uninstalled_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "last_webhook_at": {
           "name": "last_webhook_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         }
       },
       "indexes": {
+        "shopify_connections_shop_domain_unique": {
+          "name": "shopify_connections_shop_domain_unique",
+          "columns": [
+            "shop_domain"
+          ],
+          "isUnique": true
+        },
         "shopify_connections_store_idx": {
           "name": "shopify_connections_store_idx",
           "columns": [
@@ -1777,100 +2105,86 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "shopify_connections_id": {
-          "name": "shopify_connections_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {
-        "shopify_connections_shop_domain_unique": {
-          "name": "shopify_connections_shop_domain_unique",
-          "columns": [
-            "shop_domain"
-          ]
-        }
-      },
-      "checkConstraint": {}
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "stores": {
       "name": "stores",
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
-          "primaryKey": false,
+          "type": "integer",
+          "primaryKey": true,
           "notNull": true,
           "autoincrement": true
         },
         "owner_id": {
           "name": "owner_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "workspace_name": {
           "name": "workspace_name",
-          "type": "varchar(255)",
+          "type": "text(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "name": {
           "name": "name",
-          "type": "varchar(255)",
+          "type": "text(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "url": {
           "name": "url",
-          "type": "varchar(512)",
+          "type": "text(512)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "platform": {
           "name": "platform",
-          "type": "varchar(64)",
+          "type": "text(64)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "industry": {
           "name": "industry",
-          "type": "varchar(128)",
+          "type": "text(128)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "country": {
           "name": "country",
-          "type": "varchar(128)",
+          "type": "text(128)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "timezone": {
           "name": "timezone",
-          "type": "varchar(64)",
+          "type": "text(64)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "currency": {
           "name": "currency",
-          "type": "varchar(64)",
+          "type": "text(64)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "auto_analysis": {
           "name": "auto_analysis",
-          "type": "boolean",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -1878,7 +2192,7 @@
         },
         "analysis_frequency": {
           "name": "analysis_frequency",
-          "type": "varchar(32)",
+          "type": "text(32)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -1886,7 +2200,7 @@
         },
         "crawl_scope": {
           "name": "crawl_scope",
-          "type": "varchar(64)",
+          "type": "text(64)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -1894,7 +2208,7 @@
         },
         "page_limit": {
           "name": "page_limit",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -1902,7 +2216,7 @@
         },
         "include_blog": {
           "name": "include_blog",
-          "type": "boolean",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -1910,7 +2224,7 @@
         },
         "include_collections": {
           "name": "include_collections",
-          "type": "boolean",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -1918,11 +2232,25 @@
         },
         "respect_robots": {
           "name": "respect_robots",
-          "type": "boolean",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
           "default": true
+        },
+        "shopify_profile": {
+          "name": "shopify_profile",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "weekly_summary_at": {
+          "name": "weekly_summary_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -1949,165 +2277,74 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "stores_id": {
-          "name": "stores_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {}
-    },
-    "user_recovery_codes": {
-      "name": "user_recovery_codes",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "code_hash": {
-          "name": "code_hash",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "used_at": {
-          "name": "used_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
-        }
-      },
-      "indexes": {
-        "user_recovery_codes_lookup_idx": {
-          "name": "user_recovery_codes_lookup_idx",
-          "columns": [
-            "user_id",
-            "code_hash"
-          ],
-          "isUnique": false
-        },
-        "user_recovery_codes_user_idx": {
-          "name": "user_recovery_codes_user_idx",
-          "columns": [
-            "user_id",
-            "used_at"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "user_recovery_codes_user_id_users_id_fk": {
-          "name": "user_recovery_codes_user_id_users_id_fk",
-          "tableFrom": "user_recovery_codes",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "user_recovery_codes_id": {
-          "name": "user_recovery_codes_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraint": {}
+      "checkConstraints": {}
     },
     "user_sessions": {
       "name": "user_sessions",
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
-          "primaryKey": false,
+          "type": "integer",
+          "primaryKey": true,
           "notNull": true,
           "autoincrement": true
         },
         "user_id": {
           "name": "user_id",
-          "type": "int",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "token_hash": {
           "name": "token_hash",
-          "type": "varchar(64)",
+          "type": "text(64)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "(unixepoch() * 1000)"
         },
         "last_used_at": {
           "name": "last_used_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "(unixepoch() * 1000)"
         },
         "expires_at": {
           "name": "expires_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "revoked_at": {
           "name": "revoked_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "ip_address": {
           "name": "ip_address",
-          "type": "varchar(45)",
+          "type": "text(45)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "user_agent": {
           "name": "user_agent",
-          "type": "varchar(512)",
+          "type": "text(512)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -2145,103 +2382,60 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "user_sessions_id": {
-          "name": "user_sessions_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraint": {}
+      "checkConstraints": {}
     },
     "users": {
       "name": "users",
       "columns": {
         "id": {
           "name": "id",
-          "type": "int",
-          "primaryKey": false,
+          "type": "integer",
+          "primaryKey": true,
           "notNull": true,
           "autoincrement": true
         },
         "full_name": {
           "name": "full_name",
-          "type": "varchar(255)",
+          "type": "text(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "email": {
           "name": "email",
-          "type": "varchar(320)",
+          "type": "text(320)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
-        },
-        "password_hash": {
-          "name": "password_hash",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "email_verified_at": {
-          "name": "email_verified_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "refresh_token_hash": {
-          "name": "refresh_token_hash",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "refresh_token_expires_at": {
-          "name": "refresh_token_expires_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": false,
           "autoincrement": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "datetime",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "(unixepoch() * 1000)"
         },
         "job_title": {
           "name": "job_title",
-          "type": "varchar(255)",
+          "type": "text(255)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "role": {
           "name": "role",
-          "type": "varchar(64)",
+          "type": "text(64)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
           "default": "'Administrator'"
         },
-        "is_platform_admin": {
-          "name": "is_platform_admin",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
         "notify_analysis_complete": {
           "name": "notify_analysis_complete",
-          "type": "boolean",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -2249,7 +2443,7 @@
         },
         "notify_critical_issues": {
           "name": "notify_critical_issues",
-          "type": "boolean",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -2257,7 +2451,7 @@
         },
         "notify_score_changes": {
           "name": "notify_score_changes",
-          "type": "boolean",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -2265,7 +2459,7 @@
         },
         "notify_weekly_summary": {
           "name": "notify_weekly_summary",
-          "type": "boolean",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -2273,7 +2467,7 @@
         },
         "notify_integration_alerts": {
           "name": "notify_integration_alerts",
-          "type": "boolean",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -2281,7 +2475,7 @@
         },
         "notify_product_updates": {
           "name": "notify_product_updates",
-          "type": "boolean",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -2289,7 +2483,7 @@
         },
         "density": {
           "name": "density",
-          "type": "varchar(32)",
+          "type": "text(32)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -2297,56 +2491,36 @@
         },
         "reduce_motion": {
           "name": "reduce_motion",
-          "type": "boolean",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
           "default": false
-        },
-        "password_changed_at": {
-          "name": "password_changed_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "two_factor_enabled_at": {
-          "name": "two_factor_enabled_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
         }
       },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "users_id": {
-          "name": "users_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {
+      "indexes": {
         "users_email_unique": {
           "name": "users_email_unique",
           "columns": [
             "email"
-          ]
+          ],
+          "isUnique": true
         }
       },
-      "checkConstraint": {}
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     }
   },
   "views": {},
+  "enums": {},
   "_meta": {
     "schemas": {},
     "tables": {},
     "columns": {}
   },
   "internal": {
-    "tables": {},
     "indexes": {}
   }
 }

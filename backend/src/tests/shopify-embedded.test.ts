@@ -157,7 +157,7 @@ let counter = 0;
 async function installedShop(overrides: Partial<typeof shopifyConnections.$inferInsert> = {}) {
   counter += 1;
   const shop = `embedded-${process.pid}-${counter}.myshopify.com`;
-  const owner = await insertReturning(users, { fullName: 'Owner', email: `owner-${process.pid}-${counter}@embedded.example`, passwordHash: 'x', jobTitle: 'QA' });
+  const owner = await insertReturning(users, { fullName: 'Owner', email: `owner-${process.pid}-${counter}@embedded.example`, jobTitle: 'QA' });
   const store = await insertReturning(stores, {
     ownerId: owner.id,
     workspaceName: 'w',
@@ -259,10 +259,10 @@ describe('POST /api/auth/shopify/embedded', () => {
     noCallsToShopify();
     const response = await post('/api/auth/shopify/embedded', idTokenFor(shop));
     assert.equal(response.status, 200);
-    const body = (await response.json()) as { data: { user: { id: number; passwordHash?: unknown }; shop: string } };
+    const body = (await response.json()) as { data: { user: Record<string, unknown> & { id: number }; shop: string } };
     assert.equal(body.data.user.id, owner.id);
     assert.equal(body.data.shop, shop);
-    assert.equal(body.data.user.passwordHash, undefined, 'never sent to the browser');
+    assert.deepEqual(Object.keys(body.data.user).filter((key) => /password|secret|token|hash|credential/i.test(key)), [], 'the account carries no credential, under any name');
   });
 
   it('issues no session: no token, no refresh token, no cookie — only the account and the shop', async () => {
@@ -487,7 +487,7 @@ describe('GET /api/google/callback — where the merchant lands', () => {
   });
 
   it('sends a store with no Shopify connection back to the site, as before', async () => {
-    const owner = await insertReturning(users, { fullName: 'No Shop', email: `noshop-${process.pid}@embedded.example`, passwordHash: 'x', jobTitle: 'QA' });
+    const owner = await insertReturning(users, { fullName: 'No Shop', email: `noshop-${process.pid}@embedded.example`, jobTitle: 'QA' });
     const store = await insertReturning(stores, { ownerId: owner.id, workspaceName: 'w', name: 'n', url: 'https://x.example', platform: 'Shopify', industry: 'i', country: 'c', timezone: 't', currency: 'u' });
     const location = await callback(signGoogleState(owner.id, store.id));
     assert.equal(location.origin, new URL(env.frontendUrl).origin);

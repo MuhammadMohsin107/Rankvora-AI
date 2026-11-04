@@ -81,7 +81,7 @@ const throwingCheck: AuditCheck = {
 };
 
 async function createStoreFixture(email: string) {
-  const user = await insertReturning(users, { fullName: 'ITest', email, passwordHash: 'x' });
+  const user = await insertReturning(users, { fullName: 'ITest', email });
   const store = await insertReturning(stores, {
     ownerId: user.id,
     workspaceName: 'ITest',

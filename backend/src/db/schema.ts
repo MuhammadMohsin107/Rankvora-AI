@@ -1,10 +1,9 @@
 // ─── Rankvora AI · D1 (SQLite) schema ───────────────────────────────────
-// The tables, columns, defaults, foreign keys, CHECK rules and indexes of the MySQL schema this app
-// ran on before Cloudflare (the last MySQL migration is drizzle/0022_*.sql), expressed for Cloudflare
-// D1, which is SQLite. Converted from that schema column by column, so every comment below is its
-// own documentation of what the column is for. 20 tables: four that only email sign-in and two-factor
-// used (auth_challenges, user_recovery_codes, admin_security_actions, password_reset_tokens) were not
-// carried over when sign-in became Shopify only. Migrations: ./drizzle-d1.
+// The tables, columns, defaults, foreign keys, CHECK rules and indexes of the schema this app ran
+// on before Cloudflare, expressed for Cloudflare D1, which is SQLite. Converted column by column, so
+// every comment below is its own documentation of what the column is for. Sign-in is Shopify only:
+// there is no table or column for a password, a second factor, a reset or an email verification.
+// Migrations: ./drizzle-d1.
 //
 //   users         → Settings · Profile / Notifications / Appearance
 //   stores        → Settings · Workspace & store / Analysis; dashboard header
@@ -46,35 +45,21 @@ import { check, index, integer, numeric, sqliteTable, text, uniqueIndex } from '
 const now = sql`(unixepoch() * 1000)`;
 
 // ─── users ───────────────────────────────────────────────────────────
-// Single account today (no auth). Persisted by Settings → Profile,
-// Notifications and Appearance, which already have a save workflow.
+// One account per Shopify store, opened from the shop's own records the first time the store opens
+// the app. It holds no credential of any kind — Shopify proves who is calling. Persisted by
+// Settings → Profile, Notifications and Appearance, which already have a save workflow.
 export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   fullName: text('full_name', { length: 255 }).notNull(),
   email: text('email', { length: 320 }).notNull().unique(),
-  passwordHash: text('password_hash', { length: 255 }).notNull(),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now),
   jobTitle: text('job_title', { length: 255 }),
   /**
    * A PROFILE LABEL, NOT A PERMISSION. Settings → Profile displays this next to the job title, it
-   * defaults to 'Administrator' on every row, and no code has ever read it to make a decision.
-   *
-   * It is therefore unusable as an authorization input: treating it as one would grant platform
-   * admin to every account that has ever been created. `is_platform_admin` below is the real
-   * grant, and the two must never be conflated.
+   * defaults to 'Administrator' on every row, and no code reads it to make a decision. Never use it
+   * as an authorization input: it says 'Administrator' on every account that has ever been created.
    */
   role: text('role', { length: 64 }).notNull().default('Administrator'),
-  /**
-   * Platform-operator access. FALSE for every existing and future account — there is no signup path,
-   * no API and no seed that sets it, so a grant is a deliberate UPDATE run by an operator against the
-   * database. No route uses it today (the only admin API was the two-factor one, since removed);
-   * middleware/requireAdmin.ts still guards on it for the next operator route.
-   *
-   * WHY A COLUMN AND NOT A JWT CLAIM: requireAdmin re-reads this on every admin request, so revoking
-   * the flag takes effect at the next call rather than whenever a fifteen-minute access token happens
-   * to expire.
-   */
-  isPlatformAdmin: integer('is_platform_admin', { mode: 'boolean' }).notNull().default(false),
   // Notifications (Settings → Notifications: six explicit toggles)
   notifyAnalysisComplete: integer('notify_analysis_complete', { mode: 'boolean' }).notNull().default(true),
   notifyCriticalIssues: integer('notify_critical_issues', { mode: 'boolean' }).notNull().default(true),
@@ -88,23 +73,17 @@ export const users = sqliteTable('users', {
 });
 
 // ─── user_sessions ───────────────────────────────────────────────────
-// One row per signed-in device. THIS is the authoritative refresh-credential store from Phase 2
-// onward.
+// One row per signed-in device, for the redirect sign-in (start → Shopify → grant → session). The
+// app inside the Shopify admin does not use it: there every request proves itself with a Shopify ID
+// token and nothing is stored.
 //
-// WHY A TABLE: the old `users.refresh_token_hash` column (dropped in the move to D1) held exactly
-// one value, overwritten by every login, so signing in anywhere silently ended the session everywhere
-// else. A row per session is what makes "these are your devices", "sign this one out" and "sign out
-// everywhere else" expressible at all.
+// WHY A TABLE: a single value on `users` would be overwritten by every login, so signing in anywhere
+// would silently end the session everywhere else. A row per session is what makes "these are your
+// devices", "sign this one out" and "sign out everywhere else" expressible at all.
 //
-// The legacy columns on `users` are deliberately NOT dropped — they stay for rollback. They are no
-// longer read once this table is live, which means a refresh token issued before the cutover has
-// no session row and will be rejected. That signs existing customers out once. No row is invented
-// to avoid it: a fabricated session would claim a device and a time nobody can vouch for.
-//
-// SECURITY: token_hash is SHA-256 of the refresh token — the same construction auth.service and
-// password-reset already use, and correct here because a JWT is high-entropy, so there is nothing
-// for a slow hash to protect and lookup must stay an indexed point-read. The raw token is never
-// stored, never logged.
+// SECURITY: token_hash is SHA-256 of the refresh token — correct here because a JWT is high-entropy,
+// so there is nothing for a slow hash to protect and lookup must stay an indexed point-read. The raw
+// token is never stored, never logged.
 //
 // ip_address and user_agent are recorded ONLY when the request actually carries them, and are NULL
 // otherwise. There is no device column and no location column: both would be guesses.
@@ -142,9 +121,9 @@ export const userSessions = sqliteTable(
 // EVERY ROW COMES FROM A REAL BACKEND ACTION. Nothing seeds this table, nothing backfills it, and
 // an account that has done nothing shows an empty history rather than an invented one.
 //
-// SECURITY: `metadata` describes WHAT HAPPENED, never the credential involved. No password,
-// refresh token, access token, reset ticket or hash is ever written here — see
-// security-event.service.ts, which is the only writer, precisely so that rule holds in one place.
+// SECURITY: `metadata` describes WHAT HAPPENED, never the credential involved. No refresh token,
+// access token or hash is ever written here — see security-event.service.ts, which is the only
+// writer, precisely so that rule holds in one place.
 export const securityEvents = sqliteTable(
   'security_events',
   {
@@ -164,8 +143,11 @@ export const securityEvents = sqliteTable(
     index('security_events_user_created_idx').on(table.userId, table.createdAt),
     check(
       'security_events_type_valid',
-      // `email_verified` is no longer recorded (email verification was removed). It stays listed
-      // because rows copied from the old MySQL database may hold it and would be refused otherwise.
+      // The list still names three events no code records any more — password_changed,
+      // password_reset and email_verified, from when the app had email sign-in. It is NOT shortened:
+      // rows copied from the old database may hold them, and SQLite can only change a CHECK by
+      // rebuilding the table, which would have to refuse or delete those rows. Nothing writes them
+      // (SecurityEventType in security-event.service.ts is the live vocabulary).
       sql`${table.type} IN ('login_success', 'login_failed', 'logout', 'password_changed', 'password_reset', 'email_verified', 'session_revoked', 'sessions_revoked')`,
     ),
   ],

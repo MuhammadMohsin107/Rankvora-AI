@@ -14,7 +14,7 @@ import { format } from 'node:util';
  * WHY, WITHOUT WHAT WAS IN IT. Most failures here are database errors, and drizzle's message is
  * "Failed query: <sql>\nparams: <every bound value>". Logged as-is — which is what the
  * `error.message` in every catch block did — a failed write put its values into the log: email
- * addresses, password hashes, encrypted Shopify tokens, notification text, across several lines.
+ * addresses, names, encrypted Shopify tokens, notification text, across several lines.
  * And it STILL never said why the query failed: the driver's reason lives on `error.cause`, which
  * nothing printed. A
  * migration that could not reach MySQL logged "Failed query: create table if not exists

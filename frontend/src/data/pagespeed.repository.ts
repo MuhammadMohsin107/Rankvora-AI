@@ -113,7 +113,7 @@ export function describePageSpeedFailure(error: unknown): string {
       ? 'This account has no store yet. Connect your Shopify store first — PageSpeed Insights measures your public storefront.'
       : 'This server has no PageSpeed Insights endpoint. The API is running an older build — redeploy and restart it.';
   }
-  if (error.status === 401) return 'Your session has expired. Sign in again, then reopen this page.';
+  if (error.status === 401) return 'Your session has expired. Open Rankvora AI again from your Shopify admin.';
   // 409 (no storefront), 502 (Google refused or could not finish) and the rest already carry a
   // sentence written for the merchant.
   return error.message;

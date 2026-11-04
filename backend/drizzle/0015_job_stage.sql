@@ -1,1 +1,0 @@
-ALTER TABLE `jobs` ADD `stage` varchar(191);

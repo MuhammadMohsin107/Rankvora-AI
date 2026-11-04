@@ -34,7 +34,6 @@
     "cf:logs:production": "tsx src/scripts/wrangler.ts tail --env production"
   },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.45.2",
@@ -43,7 +42,6 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.5",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.7",

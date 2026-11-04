@@ -24,7 +24,7 @@ const metadata = { ipAddress: '203.0.113.9', userAgent: 'sign-in-session test' }
 
 describe('finishing a Shopify sign-in', () => {
   it('returns a finished session and nothing that asks for a second step', async () => {
-    const account = await insertReturning(users, { fullName: 'Ada', email: 'ada-session@example.com', passwordHash: 'x' });
+    const account = await insertReturning(users, { fullName: 'Ada', email: 'ada-session@example.com' });
 
     const result = await completeExternalSignIn(account.id, metadata);
 
@@ -35,7 +35,7 @@ describe('finishing a Shopify sign-in', () => {
   });
 
   it('stores the session and records the sign-in, with the real device details', async () => {
-    const account = await insertReturning(users, { fullName: 'Grace', email: 'grace-session@example.com', passwordHash: 'x' });
+    const account = await insertReturning(users, { fullName: 'Grace', email: 'grace-session@example.com' });
 
     await completeExternalSignIn(account.id, metadata);
 
@@ -46,10 +46,11 @@ describe('finishing a Shopify sign-in', () => {
     assert.deepEqual(events.map((event) => event.type), ['login_success']);
   });
 
-  it('never hands the password hash to the browser', async () => {
-    const account = await insertReturning(users, { fullName: 'Edsger', email: 'edsger-session@example.com', passwordHash: 'secret-hash' });
+  it('returns the tokens and the account, and the account carries no field that looks like a credential', async () => {
+    const account = await insertReturning(users, { fullName: 'Edsger', email: 'edsger-session@example.com' });
     const result = await completeExternalSignIn(account.id, metadata);
-    assert.equal(JSON.stringify(result).includes('secret-hash'), false);
+    assert.deepEqual(Object.keys(result).sort(), ['accessToken', 'refreshToken', 'user']);
+    assert.deepEqual(Object.keys(result.user).filter((key) => /password|secret|hash|credential/i.test(key)), []);
   });
 
   it('refuses an account that does not exist, instead of inventing a session', async () => {

@@ -25,7 +25,7 @@ const later = () => new Date(Date.now() + refreshTokenTtlMs());
 let counter = 0;
 async function account(options: { connected?: 'installed' | 'uninstalled' | 'none' } = {}) {
   counter += 1;
-  const user = await insertReturning(users, { fullName: 'Test', email: `session${counter}@example.com`, passwordHash: 'x' });
+  const user = await insertReturning(users, { fullName: 'Test', email: `session${counter}@example.com` });
   const store = await insertReturning(stores, {
     ownerId: user.id, workspaceName: 'W', name: `Store ${counter}`, url: 'https://s.example', platform: 'Shopify',
     industry: 'x', country: 'PK', timezone: 'UTC', currency: 'PKR',

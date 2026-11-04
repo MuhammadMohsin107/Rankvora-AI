@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { AlertTriangle, Check, Eye, EyeOff, Info, X } from 'lucide-react';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { AlertTriangle, Check, Info, X } from 'lucide-react';
 import { Button } from '../workflows/WorkflowPrimitives';
 
 /** Card shell — matches Integrations / Reports exactly. */
@@ -97,13 +97,6 @@ export function TextInput({
   prefix?: string;
   describedBy?: string;
 }) {
-  const [revealed, setRevealed] = useState(false);
-
-  // Derived, never stored as a second source of truth: the caller still says `type="password"`,
-  // and revealing only changes what this render hands to the DOM.
-  const isPassword = type === 'password';
-  const resolvedType = isPassword && revealed ? 'text' : type;
-
   const tone = invalid
     ? 'border-critical-300 focus:border-critical-500 focus:ring-critical-100'
     : 'border-surface-200 focus:border-brand-400 focus:ring-brand-100';
@@ -139,41 +132,15 @@ export function TextInput({
     <div className="relative">
       <input
         id={id}
-        type={resolvedType}
+        type={type}
         value={value}
         disabled={disabled}
         aria-invalid={invalid || undefined}
         aria-describedby={describedBy}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        // Room for the reveal button, but only when there is one — a non-password field keeps its
-        // full width rather than carrying a gap for a control it does not have.
-        className={`${controlBase} ${tone} ${isPassword ? 'pr-9' : ''}`}
+        className={`${controlBase} ${tone}`}
       />
-
-      {/* THE FIELD STAYS type="password" UNTIL ASKED. Revealing is a per-field, per-visit choice
-          that resets on every render of a fresh form — nothing here remembers it, so a password is
-          never left on screen by a preference set on some earlier page.
-
-          `tabIndex={-1}` keeps the toggle out of the tab order: someone tabbing from the password
-          field expects to land on the submit button, not on a decorative control between them. It
-          stays fully clickable, and screen readers still reach it. */}
-      {isPassword && (
-        <button
-          type="button"
-          tabIndex={-1}
-          disabled={disabled}
-          onClick={() => setRevealed((previous) => !previous)}
-          aria-label={revealed ? 'Hide password' : 'Show password'}
-          aria-pressed={revealed}
-          aria-controls={id}
-          className="absolute right-1 top-1/2 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded text-surface-400 transition-colors hover:text-surface-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {revealed
-            ? <EyeOff size={14} strokeWidth={2} aria-hidden="true" />
-            : <Eye size={14} strokeWidth={2} aria-hidden="true" />}
-        </button>
-      )}
     </div>
   );
 }

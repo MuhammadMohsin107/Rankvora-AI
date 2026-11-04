@@ -12,8 +12,8 @@ import { describeError } from '../lib/logger.js';
  *
  * WHAT AN EVENT IS: a statement that an action happened, to whom, when, and — where the request
  * genuinely carried them — from what IP and User-Agent. It is never a record of the credential
- * involved. No password, refresh token, access token, reset ticket or hash of any of them is
- * written here or accepted by this module's types.
+ * involved. No refresh token, access token or hash of either is written here or accepted by this
+ * module's types.
  *
  * NOTHING SEEDS THIS TABLE. An account that has taken no security action has no events.
  */
@@ -22,16 +22,13 @@ import { describeError } from '../lib/logger.js';
  * The complete vocabulary of events this code records. Adding a member here without adding it to
  * the table's CHECK constraint would fail at insert time rather than silently widening.
  *
- * The constraint also still lists 'email_verified', which nothing records any more: rows written
- * while email verification existed may hold it, and rows copied from the old MySQL database can
- * still carry it, so the constraint keeps accepting it.
+ * The constraint also still lists three events nothing records any more (see the note on
+ * security_events in db/schema.ts), so rows copied from the old database are not refused.
  */
 export type SecurityEventType =
   | 'login_success'
   | 'login_failed'
   | 'logout'
-  | 'password_changed'
-  | 'password_reset'
   | 'session_revoked'
   | 'sessions_revoked';
 
@@ -56,8 +53,8 @@ export interface RecordEventInput {
  * Appends one event.
  *
  * NEVER THROWS. An audit write failing must not take down the action it was describing: a
- * customer whose password change succeeded should not see an error because the log insert lost a
- * race. The failure is logged for operators and swallowed for the caller.
+ * merchant whose sign-in succeeded should not see an error because the log insert lost a race. The
+ * failure is logged for operators and swallowed for the caller.
  *
  * The trade-off is stated rather than hidden: this log is best-effort evidence for the account
  * owner, not a compliance-grade audit trail with delivery guarantees. Making it authoritative

@@ -55,7 +55,7 @@ function note(label: string, queries: number, per?: string) {
 let counter = 0;
 async function owner(overrides: Partial<typeof stores.$inferInsert> = {}) {
   counter += 1;
-  const user = await insertReturning(users, { fullName: 'Test', email: `budget${counter}@example.com`, passwordHash: 'x' });
+  const user = await insertReturning(users, { fullName: 'Test', email: `budget${counter}@example.com` });
   const store = await insertReturning(stores, {
     ownerId: user.id, workspaceName: 'W', name: `Store ${counter}`, url: 'https://s.example', platform: 'Shopify',
     industry: 'x', country: 'PK', timezone: 'UTC', currency: 'PKR', ...overrides,

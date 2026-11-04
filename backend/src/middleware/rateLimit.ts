@@ -4,11 +4,12 @@ import { ApiError } from './error.js';
 
 /**
  * ─── Fixed-window rate limiter ───────────────────────────────────────
- * Small, dependency-free. Introduced for the password-reset endpoints, which are unauthenticated
- * and therefore the only routes an anonymous caller can hammer.
+ * Small, dependency-free. It guards the few routes an anonymous caller can reach — the Shopify
+ * sign-in start/complete calls and the embedded app's open call — which can each end in a request
+ * to Shopify.
  *
- * WHAT THIS IS FOR: raising the cost of guessing at the sign-in endpoints and of hammering the
- * Shopify start/complete calls. It is not a DDoS defence — that belongs at the edge.
+ * WHAT THIS IS FOR: raising the cost of hammering those endpoints. It is not a DDoS defence — that
+ * belongs at the edge.
  *
  * WHERE THE COUNTS LIVE depends on where the API runs:
  *

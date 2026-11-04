@@ -75,7 +75,7 @@ function describeLoadFailure(error: unknown): string {
 
   switch (error.status) {
     case 401:
-      return 'Your session has expired. Sign in again, then reopen this page.';
+      return 'Your session has expired. Open Rankvora AI again from your Shopify admin.';
     case 503:
       return 'Google Search Console is not configured on this server yet.';
     default:

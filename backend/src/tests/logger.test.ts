@@ -16,8 +16,8 @@ function driverError(code: string, message: string): Error {
 }
 
 const insertUser = new DrizzleQueryError(
-  'insert into `users` (`full_name`, `email`, `password_hash`) values (?, ?, ?)',
-  ['Ayesha Khan', 'ayesha@shop.example', '$2a$12$abcdefghijklmnopqrstuv'],
+  'insert into `users` (`full_name`, `email`, `job_title`) values (?, ?, ?)',
+  ['Ayesha Khan', 'ayesha@shop.example', 'Head of Growth'],
   driverError('ER_DUP_ENTRY', "Duplicate entry 'ayesha@shop.example' for key 'users.users_email_unique'"),
 );
 
@@ -31,7 +31,7 @@ describe('describeError', () => {
     const line = describeError(insertUser);
     assert.doesNotMatch(line, /params:/);
     assert.doesNotMatch(line, /Ayesha Khan/);
-    assert.doesNotMatch(line, /\$2a\$12\$/);
+    assert.doesNotMatch(line, /Head of Growth/);
   });
 
   it('says why the query failed — the driver code and reason from `cause`', () => {

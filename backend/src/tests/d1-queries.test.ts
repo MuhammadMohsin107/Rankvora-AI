@@ -30,7 +30,7 @@ let counter = 0;
 /** A user with one store, unique per call. */
 async function owner(email?: string) {
   counter += 1;
-  const user = await insertReturning(users, { fullName: 'Test', email: email ?? `owner${counter}@example.com`, passwordHash: 'x' });
+  const user = await insertReturning(users, { fullName: 'Test', email: email ?? `owner${counter}@example.com` });
   const store = await insertReturning(stores, {
     ownerId: user.id, workspaceName: 'W', name: `Store ${counter}`, url: 'https://s.example', platform: 'Shopify',
     industry: 'x', country: 'PK', timezone: 'UTC', currency: 'PKR',

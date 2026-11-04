@@ -1,1 +1,0 @@
-ALTER TABLE `stores` ADD `weekly_summary_at` datetime;

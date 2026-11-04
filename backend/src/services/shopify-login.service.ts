@@ -1,5 +1,4 @@
-import bcrypt from 'bcryptjs';
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { integrations, shopifyConnections, stores, users } from '../db/schema.js';
@@ -63,8 +62,6 @@ import { applyShopifyFacts, factsFromShop } from './store-profile.service.js';
  */
 
 const SHOP_DOMAIN = /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
-
-const SALT_ROUNDS = 12;
 
 function hashNonce(nonce: string): string {
   return createHash('sha256').update(nonce).digest('hex');
@@ -320,9 +317,8 @@ async function signInToKnownShop(
  * Shopify does not share it — the merchant can add it in Settings, and an empty name is honest
  * where a made-up one is not.
  *
- * The account has NO usable password. The hash is of 32 random bytes that are discarded immediately,
- * so no one knows it and nothing can ever match it. The merchant signs in with Shopify, and only
- * with Shopify.
+ * The account holds no credential at all — no password, no second factor — so there is nothing to
+ * hash, reset or recover. The merchant signs in with Shopify, and only with Shopify.
  *
  * Exported for tests only (tests/d1-transactions.test.ts drives it with a stand-in Shopify client);
  * the app reaches it through completeShopifyLogin.
@@ -351,8 +347,6 @@ export async function createAccountForShop(
     );
   }
 
-  const passwordHash = await bcrypt.hash(randomBytes(32).toString('base64url'), SALT_ROUNDS);
-
   // The same facts, built the same way, as the Connect flow and every later refresh — and
   // recorded, so the first refresh can tell these values from a merchant's later edit.
   const facts = factsFromShop({
@@ -374,7 +368,7 @@ export async function createAccountForShop(
   const newUserId = sql<number>`(SELECT ${users.id} FROM ${users} WHERE ${users.email} = ${email})`;
   const newStoreId = sql<number>`(SELECT MAX(${stores.id}) FROM ${stores} WHERE ${stores.ownerId} = ${newUserId})`;
   const [createdUser, createdStore] = await db.batch([
-    db.insert(users).values({ fullName: owner.name ?? '', email, passwordHash }).returning({ id: users.id }),
+    db.insert(users).values({ fullName: owner.name ?? '', email }).returning({ id: users.id }),
     db.insert(stores).values({
       ownerId: newUserId,
       workspaceName: facts.name ?? '',

@@ -97,7 +97,7 @@ export default function ProfileSection({ profile, workspace, errors, onChange }:
       {/* ── Editable details ────────────────────────────────────────── */}
       <SettingsCard
         title="Personal information"
-        description="Shown across your Rankvora AI workspace and used as the address for account email."
+        description="Shown across your Rankvora AI workspace."
       >
         <div className="grid gap-2 sm:grid-cols-2">
           <Field label="Full name" htmlFor="fullName" error={errors.fullName} hint="Used across your Rankvora AI workspace.">
@@ -115,7 +115,7 @@ export default function ProfileSection({ profile, workspace, errors, onChange }:
             label="Email address"
             htmlFor="email"
             error={errors.email}
-            hint="Used to sign in and as the address for account email."
+            hint="Your contact address in Rankvora AI. Shopify signs you in, and Rankvora AI sends no email."
           >
             <TextInput
               id="email"

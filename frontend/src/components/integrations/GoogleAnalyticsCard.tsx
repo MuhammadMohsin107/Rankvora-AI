@@ -54,7 +54,7 @@ function describeLoadFailure(error: unknown): string {
       ? 'This account has no store yet. Create or connect a store first.'
       : 'This server has no Google Analytics endpoint. The API is running an older build — redeploy and restart it.';
   }
-  if (error.status === 401) return 'Your session has expired. Sign in again, then reopen this page.';
+  if (error.status === 401) return 'Your session has expired. Open Rankvora AI again from your Shopify admin.';
   return error.status >= 500
     ? `The server could not read the connection state (HTTP ${error.status}). ${error.message}`
     : error.message;

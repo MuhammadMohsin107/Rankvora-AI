@@ -24,10 +24,10 @@ function recordingDatabase() {
 
 describe('db outside a request (Node)', () => {
   it('is the local SQLite database, with the D1 tables in it', async () => {
-    const [user] = await db.insert(schema.users).values({ fullName: 'Ada', email: 'ada@example.com', passwordHash: 'x' }).returning();
+    const [user] = await db.insert(schema.users).values({ fullName: 'Ada', email: 'ada@example.com' }).returning();
     assert.ok(user && user.id > 0);
     assert.equal(user.role, 'Administrator', 'column defaults come from the D1 schema');
-    assert.equal(user.isPlatformAdmin, false, 'booleans come back as booleans');
+    assert.equal(user.reduceMotion, false, 'booleans come back as booleans');
     assert.ok(user.createdAt instanceof Date, 'timestamps come back as dates');
 
     const [read] = await db.select().from(schema.users).where(eq(schema.users.id, user.id));
@@ -55,7 +55,7 @@ describe('db inside a request (Cloudflare)', () => {
     await runWithDatabase(database, async () => {
       await db.select().from(schema.users);
       await new Promise((resolve) => setTimeout(resolve, 2));
-      await db.insert(schema.users).values({ fullName: 'B', email: 'b@example.com', passwordHash: 'x' });
+      await db.insert(schema.users).values({ fullName: 'B', email: 'b@example.com' });
     });
 
     assert.equal(statements.length, 2);

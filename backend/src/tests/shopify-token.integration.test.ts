@@ -29,7 +29,6 @@ async function makeConnection(overrides: Partial<typeof shopifyConnections.$infe
   const user = await insertReturning(users, {
     fullName: 'Token Test',
     email: `token-${stamp}@example.test`,
-    passwordHash: 'x',
     jobTitle: 'QA',
   });
   created.push(user.id);

@@ -44,7 +44,7 @@ backend/                    API
   src/audit-engine/         reads a store and runs the checks behind every score
   src/services/             everything the routes call
   src/tests/                the test suite (npm test)
-  drizzle-d1/               D1 migrations (drizzle/ is the history of the MySQL database it replaced)
+  drizzle-d1/               D1 migrations
   wrangler.jsonc            Cloudflare configuration: local development, staging, and the public app (production)
   .env.example              every setting, for running on Node
 shopify.app.toml            the Shopify app's configuration (read by the Shopify CLI only)

@@ -28,7 +28,7 @@ let counter = 0;
 
 async function account(overrides: Partial<typeof users.$inferInsert> = {}) {
   counter += 1;
-  return insertReturning(users, { fullName: 'T', email: `tx${counter}@example.com`, passwordHash: 'x', ...overrides });
+  return insertReturning(users, { fullName: 'T', email: `tx${counter}@example.com`, ...overrides });
 }
 
 async function storeOf(ownerId: number) {

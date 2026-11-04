@@ -14,7 +14,7 @@ import { launchAuditRun, useAuditRunStarter } from '../services/job.service.js';
 
 /** A user, a store and one queued job — what createAuditJob leaves behind before it starts the run. */
 async function queuedJob() {
-  const [user] = await db.insert(users).values({ fullName: 'T', email: `t${Date.now()}${Math.random()}@example.com`, passwordHash: 'x' }).returning();
+  const [user] = await db.insert(users).values({ fullName: 'T', email: `t${Date.now()}${Math.random()}@example.com` }).returning();
   const [store] = await db.insert(stores).values({
     ownerId: user!.id, workspaceName: 'W', name: 'S', url: 'https://s.example', platform: 'Shopify',
     industry: 'x', country: 'PK', timezone: 'UTC', currency: 'PKR',

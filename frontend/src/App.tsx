@@ -58,10 +58,6 @@ export default function App() {
               SignedOutEntry). These render outside AppShell — no sidebar or header around them. */}
           <Route path="/login" element={<SignedOutEntry />} />
           <Route path="/signup" element={<SignedOutEntry />} />
-          {/* Email sign-in is gone. These addresses can still arrive from old emails and bookmarks,
-              so they lead to Shopify sign-in rather than to a page that no longer exists. */}
-          <Route path="/forgot-password" element={<Navigate to="/login" replace />} />
-          <Route path="/reset-password" element={<Navigate to="/login" replace />} />
           {/* Guided setup renders outside AppShell: a merchant answering these five questions has
               no populated dashboard to navigate to yet, and a sidebar of empty pillars competes
               with the only task on screen. Still behind RequireAuth — it reads their store. */}

@@ -42,8 +42,8 @@ describe('session token hashing', () => {
   });
 
   it('is deterministic, so a session can be found by point-read', () => {
-    // Unlike a 6-digit OTP — which is bcrypt-hashed precisely because it must NOT be searchable —
-    // a refresh token is high-entropy and has to be looked up by its hash.
+    // A refresh token is high-entropy and has to be looked up by its hash, so the hash must be the
+    // same every time — a salted hash could never be found again.
     assert.equal(hashSessionToken('abc'), hashSessionToken('abc'));
     assert.notEqual(hashSessionToken('abc'), hashSessionToken('abd'));
   });

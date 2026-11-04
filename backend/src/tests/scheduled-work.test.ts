@@ -53,7 +53,7 @@ const minutesBefore = (minutes: number) => new Date(NOW.getTime() - minutes * 60
 
 /** One store per job, so the one-active-job-per-store rule never gets in the way of the setup. */
 async function jobInState(state: { status: string; startedAt?: Date; createdAt: Date }): Promise<number> {
-  const [user] = await db.insert(users).values({ fullName: 'T', email: `t${Math.random()}@example.com`, passwordHash: 'x' }).returning();
+  const [user] = await db.insert(users).values({ fullName: 'T', email: `t${Math.random()}@example.com` }).returning();
   const [store] = await db.insert(stores).values({
     ownerId: user!.id, workspaceName: 'W', name: 'S', url: 'https://s.example', platform: 'Shopify',
     industry: 'x', country: 'PK', timezone: 'UTC', currency: 'PKR',
