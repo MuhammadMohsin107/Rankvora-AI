@@ -522,6 +522,18 @@
     background: transparent;
   }
 
+  /* The guided setup's wrapper is its own scroll container when the app owns the whole window. Inside the
+   * admin the PAGE scrolls instead, and a wrapper that is still a scroller with `overscroll-behavior:
+   * contain` swallows the mouse wheel: it has nothing to scroll, yet the browser hands it the wheel and
+   * will not pass it on. So there it is not a scroller at all.
+   *
+   * `!important` because the wrapper also carries Tailwind's `overflow-y-auto` and `overscroll-contain`,
+   * which live in a later layer than this one and would otherwise win. */
+  html[data-embedded] .onboarding-frame {
+    overflow: visible !important;
+    overscroll-behavior: auto !important;
+  }
+
   button,
   input,
   select,

@@ -57,6 +57,10 @@ function scrollingAncestor(node: HTMLElement): HTMLElement | null {
     const { overflowY } = getComputedStyle(parent);
     if ((overflowY === 'auto' || overflowY === 'scroll') && parent.scrollHeight > parent.clientHeight + 1) return parent;
   }
+  // No element around it scrolls: inside the Shopify admin the PAGE does (the document itself), so that is
+  // the one to hand the wheel to. Without this the list kept the wheel at its edge, as described above.
+  const page = document.scrollingElement;
+  if (page instanceof HTMLElement && page.scrollHeight > page.clientHeight + 1) return page;
   return null;
 }
 

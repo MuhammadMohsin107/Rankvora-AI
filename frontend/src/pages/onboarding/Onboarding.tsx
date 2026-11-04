@@ -594,6 +594,11 @@ export default function Onboarding() {
  * partway down the window. A full viewport minimum keeps it full-bleed, and a longer step simply makes
  * the page scroll.
  *
+ * There, too, this wrapper must NOT be a scroll container, which `.onboarding-frame` in index.css sees
+ * to. Left as `overflow-y: auto` with `overscroll-behavior: contain`, it was a scroller that had nothing
+ * to scroll, and the browser still handed it the mouse wheel and refused to pass it on to the page — so
+ * a step taller than the window could not be scrolled at all.
+ *
  * Without a rail (loading, errors, not connected) the card is centred at a reading width.
  */
 function Frame({
@@ -614,7 +619,7 @@ function Frame({
   return (
     <div
       ref={scrollRef}
-      className="h-full min-h-screen overflow-y-auto overscroll-contain bg-surface-50"
+      className="onboarding-frame h-full min-h-screen overflow-y-auto overscroll-contain bg-surface-50"
       /**
        * Three layers, front to back.
        *

@@ -67,6 +67,18 @@ describe('index.css', () => {
   it('leaves the page background to the admin when embedded', () => {
     assert.match(css, /html\[data-embedded\] body\s*\{[^}]*background:\s*transparent/);
   });
+
+  it('stops the guided setup swallowing the mouse wheel inside the admin', () => {
+    // The wrapper is `overflow-y: auto` with `overscroll-behavior: contain`. In the admin the page scrolls
+    // instead, and a scroller with nothing to scroll still takes the wheel and will not pass it on, so a
+    // step taller than the window could not be scrolled at all. The override has to outrank Tailwind's own
+    // utilities (a later layer), hence !important.
+    const rule = css.match(/html\[data-embedded\] \.onboarding-frame\s*\{([^}]*)\}/);
+    assert.ok(rule, 'the override for .onboarding-frame is missing');
+    assert.match(rule![1]!, /overflow:\s*visible\s*!important/);
+    assert.match(rule![1]!, /overscroll-behavior:\s*auto\s*!important/);
+    assert.match(readFrontend('src/pages/onboarding/Onboarding.tsx'), /className="onboarding-frame /, 'the wrapper no longer carries the class the override targets');
+  });
 });
 
 describe('the page frame', () => {
