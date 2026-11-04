@@ -1,0 +1,910 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+/* ─── Theme tokens ─────────────────────────────────────────────────────
+ * ONE definition of every colour in the product. tailwind.config.js maps each palette entry to a
+ * variable below, so `bg-surface-50`, `text-surface-900` and `border-surface-200` — already
+ * written into 500+ places across the app — become theme-aware without a single component change.
+ * There are no `dark:` variants anywhere and no page-level palettes.
+ *
+ * THE SURFACE RAMP IS SEMANTIC. 50 means "page background", 950 means "strongest text". Dark mode
+ * therefore INVERTS the ramp rather than defining a second scale: `bg-surface-50` becomes a near
+ * black ground and `text-surface-900` becomes near-white type, automatically and everywhere.
+ *
+ * Three states, because the viewer has three:
+ *   :root                                    the complete light palette (unchanged baseline)
+ *   @media (prefers-color-scheme: dark)      the OS preference, when the customer chose "System"
+ *   :root[data-theme="dark"]                 dark — the default for anyone who has not chosen, or
+ *                                            an explicit choice; beats the OS either way
+ *
+ * The media query is guarded with :not([data-theme="light"]) so choosing light on a dark OS wins.
+ * Never declare a colour ONLY inside the media block — a value that exists in one state and not
+ * the others is how a page ends up rendering one theme's text on the other theme's ground.
+ */
+:root {
+  color-scheme: light;
+
+  --c-brand-50:  #eef2ff;
+  --c-brand-100: #e0e7ff;
+  --c-brand-200: #c7d2fe;
+  --c-brand-300: #a5b4fc;
+  --c-brand-400: #818cf8;
+  --c-brand-500: #6366f1;
+  --c-brand-600: #4f46e5;
+  --c-brand-700: #4338ca;
+  --c-brand-800: #3730a3;
+  --c-brand-900: #312e81;
+  --c-brand-950: #1e1b4b;
+
+  --c-surface-0:   #ffffff;
+  --c-surface-50:  #fafafa;
+  --c-surface-100: #f4f4f5;
+  --c-surface-200: #e4e4e7;
+  --c-surface-300: #d4d4d8;
+  --c-surface-400: #a1a1aa;
+  --c-surface-500: #71717a;
+  --c-surface-600: #52525b;
+  --c-surface-700: #3f3f46;
+  --c-surface-800: #27272a;
+  --c-surface-900: #18181b;
+  --c-surface-950: #09090b;
+
+  --c-success-50:  #f0fdf4;
+  --c-success-100: #dcfce7;
+  --c-success-500: #22c55e;
+  --c-success-600: #16a34a;
+  --c-success-700: #15803d;
+
+  --c-warning-50:  #fefce8;
+  --c-warning-100: #fef9c3;
+  --c-warning-500: #eab308;
+  --c-warning-600: #ca8a04;
+  --c-warning-700: #a16207;
+
+  --c-critical-50:  #fef2f2;
+  --c-critical-100: #fee2e2;
+  --c-critical-200: #fecaca;
+  --c-critical-300: #fca5a5;
+  --c-critical-400: #f87171;
+  --c-critical-500: #ef4444;
+  --c-critical-600: #dc2626;
+  --c-critical-700: #b91c1c;
+
+  --c-info-50:  #eff6ff;
+  --c-info-100: #dbeafe;
+  --c-info-500: #3b82f6;
+  --c-info-600: #2563eb;
+  --c-info-700: #1d4ed8;
+
+  --c-sidebar:             #0f172a;
+  --c-sidebar-hover:       #1e293b;
+  --c-sidebar-active:      #1e293b;
+  --c-sidebar-border:      #1e293b;
+  --c-sidebar-text:        #94a3b8;
+  --c-sidebar-text-active: #ffffff;
+
+  /* Chrome the sidebar and header paint directly. Named by role, not by hue, so the dark values
+   * are a considered set rather than a lightened guess. */
+  --c-chrome:        #f7f6f4;
+  --c-chrome-border: #e6e2dc;
+  --c-chrome-raised: #ffffff;
+  --c-chrome-hover:  #f0eeea;
+  --c-chrome-active: #e9e7e4;
+  --c-chrome-muted:  #64748b;
+  --c-logo-mark:     #5b4ee4;
+  --c-logo-text:     #101828;
+
+  /* Data visualisation. Kept apart from the accent so a chart series and a button never have to
+   * fight over one value, and so both stay legible on either ground. */
+  --c-chart-grid:   #e4e4e7;
+  --c-chart-axis:   #a1a1aa;
+  --c-chart-line:   #4f46e5;
+  --c-chart-fill:   rgba(79, 70, 229, 0.12);
+  --c-chart-target: #a1a1aa;
+
+  /* Shadows read as depth on light and as noise on dark, so they are tokenised too. */
+  --c-shadow-sm: rgba(15, 23, 42, 0.06);
+  --c-shadow-md: rgba(15, 23, 42, 0.10);
+  --c-shadow-lg: rgba(15, 23, 42, 0.20);
+
+  /* ── Per-pillar identity colours ───────────────────────────────────────────
+   * One accent per audit pillar, so a pillar is recognisable at a glance wherever it appears —
+   * sidebar, dashboard rows, report tables, comparison badges.
+   *
+   * TOKENISED because these are used AS TEXT, not only as fills. They were five fixed hexes in
+   * pillarMeta.ts, and SEO's #4f46e5 is a dark indigo: on a near-black ground that is roughly
+   * 3.2:1, which fails WCAG AA for the small bold type it labels. The dark values below are the
+   * -400 step of each hue — light enough to read on the dark ground, still unmistakably the same
+   * colour.
+   *
+   * The `-tint` companion is the translucent ground the same colour sits on in a badge. It exists
+   * as its own token because the alternative — concatenating an alpha suffix onto the hex, as
+   * Reports.tsx did with `${pillar.color}12` — cannot work once the value is a var(). */
+  --c-pillar-seo:     #4f46e5;
+  --c-pillar-content: #f59e0b;
+  --c-pillar-speed:   #0ea5e9;
+  --c-pillar-cro:     #f97316;
+  --c-pillar-ai:      #10b981;
+
+  --c-pillar-seo-tint:     rgba(79, 70, 229, 0.07);
+  --c-pillar-content-tint: rgba(245, 158, 11, 0.07);
+  --c-pillar-speed-tint:   rgba(14, 165, 233, 0.07);
+  --c-pillar-cro-tint:     rgba(249, 115, 22, 0.07);
+  --c-pillar-ai-tint:      rgba(16, 185, 129, 0.07);
+}
+
+/* The OS preference, applied only when the customer has not chosen for themselves. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    /* Brand: lifted, because #4f46e5 on a near-black ground is legible but joyless. The mid
+     * values brighten for text and icons; the tints darken, since a tint's job is to sit quietly
+     * behind content in either theme. */
+    --c-brand-50:  #1c1b33;
+    --c-brand-100: #262450;
+    --c-brand-200: #322f6b;
+    --c-brand-300: #4b47a1;
+    --c-brand-400: #6a66d6;
+    --c-brand-500: #7c78f0;
+    --c-brand-600: #8b87f5;
+    --c-brand-700: #a5a1ff;
+    --c-brand-800: #c0bdff;
+    --c-brand-900: #d9d7ff;
+    --c-brand-950: #ecebff;
+
+    /* The inversion. Read it as: 0 = raised sheet, 50 = page ground, 200 = hairline,
+     * 500 = muted type, 900 = body type, 950 = headings. */
+    --c-surface-0:   #17171a;
+    --c-surface-50:  #0c0c0e;
+    --c-surface-100: #191a1d;
+    --c-surface-200: #2a2b2f;
+    --c-surface-300: #3a3b40;
+    --c-surface-400: #6d6e75;
+    --c-surface-500: #9b9ca3;
+    --c-surface-600: #babbc1;
+    --c-surface-700: #d5d6da;
+    --c-surface-800: #e7e8ea;
+    --c-surface-900: #f2f3f4;
+    --c-surface-950: #fbfbfc;
+
+    /* Semantic colours: tints go dark, the -600/-700 text values go light. Both directions are
+     * needed — a badge is a tinted ground WITH text on it, and only inverting one half would
+     * leave dark text on a dark chip. */
+    --c-success-50:  #10231a;
+    --c-success-100: #16311f;
+    --c-success-500: #3ddc84;
+    --c-success-600: #4ade80;
+    --c-success-700: #86efac;
+
+    --c-warning-50:  #241f0c;
+    --c-warning-100: #332c11;
+    --c-warning-500: #f5c518;
+    --c-warning-600: #facc15;
+    --c-warning-700: #fde047;
+
+    --c-critical-50:  #2a1416;
+    --c-critical-100: #3c1a1e;
+    --c-critical-200: #55242a;
+    --c-critical-300: #7c343c;
+    --c-critical-400: #f87171;
+    --c-critical-500: #f87171;
+    --c-critical-600: #fca5a5;
+    --c-critical-700: #fecaca;
+
+    --c-info-50:  #101d2e;
+    --c-info-100: #16283f;
+    --c-info-500: #60a5fa;
+    --c-info-600: #7db8fb;
+    --c-info-700: #bfdbfe;
+
+    /* The sidebar was already dark. In dark mode it goes DARKER than the page rather than
+     * lighter, so the app still reads as chrome-then-content and not as two competing panels. */
+    --c-sidebar:             #08080a;
+    --c-sidebar-hover:       #17171a;
+    --c-sidebar-active:      #17171a;
+    --c-sidebar-border:      #2a2b2f;
+    --c-sidebar-text:        #9b9ca3;
+    --c-sidebar-text-active: #fbfbfc;
+
+    --c-chrome:        #121214;
+    --c-chrome-border: #2a2b2f;
+    --c-chrome-raised: #1d1d21;
+    --c-chrome-hover:  #26262b;
+    --c-chrome-active: #303036;
+    --c-chrome-muted:  #9b9ca3;
+    --c-logo-mark:     #8b87f5;
+    --c-logo-text:     #f2f3f4;
+
+    --c-chart-grid:   #2a2b2f;
+    --c-chart-axis:   #6d6e75;
+    --c-chart-line:   #8b87f5;
+    --c-chart-fill:   rgba(139, 135, 245, 0.18);
+    --c-chart-target: #6d6e75;
+
+    /* Black shadows vanish on a black ground. Deepened so elevation still reads. */
+    --c-shadow-sm: rgba(0, 0, 0, 0.40);
+    --c-shadow-md: rgba(0, 0, 0, 0.55);
+    --c-shadow-lg: rgba(0, 0, 0, 0.70);
+
+    /* Pillar accents lifted to the -400 step. SEO moves the most because #4f46e5 was the one
+     * that genuinely failed as text on this ground; the other four were merely dull. Tints are
+     * raised to 12% since a 7% wash is invisible over near-black. */
+    --c-pillar-seo:     #8b87f5;
+    --c-pillar-content: #fbbf24;
+    --c-pillar-speed:   #38bdf8;
+    --c-pillar-cro:     #fb923c;
+    --c-pillar-ai:      #34d399;
+
+    --c-pillar-seo-tint:     rgba(139, 135, 245, 0.12);
+    --c-pillar-content-tint: rgba(251, 191, 36, 0.12);
+    --c-pillar-speed-tint:   rgba(56, 189, 248, 0.12);
+    --c-pillar-cro-tint:     rgba(251, 146, 60, 0.12);
+    --c-pillar-ai-tint:      rgba(52, 211, 153, 0.12);
+  }
+}
+
+/* An explicit dark choice. Same values, higher specificity, so the toggle wins over a light OS. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --c-brand-50:  #1c1b33;
+  --c-brand-100: #262450;
+  --c-brand-200: #322f6b;
+  --c-brand-300: #4b47a1;
+  --c-brand-400: #6a66d6;
+  --c-brand-500: #7c78f0;
+  --c-brand-600: #8b87f5;
+  --c-brand-700: #a5a1ff;
+  --c-brand-800: #c0bdff;
+  --c-brand-900: #d9d7ff;
+  --c-brand-950: #ecebff;
+
+  --c-surface-0:   #17171a;
+  --c-surface-50:  #0c0c0e;
+  --c-surface-100: #191a1d;
+  --c-surface-200: #2a2b2f;
+  --c-surface-300: #3a3b40;
+  --c-surface-400: #6d6e75;
+  --c-surface-500: #9b9ca3;
+  --c-surface-600: #babbc1;
+  --c-surface-700: #d5d6da;
+  --c-surface-800: #e7e8ea;
+  --c-surface-900: #f2f3f4;
+  --c-surface-950: #fbfbfc;
+
+  --c-success-50:  #10231a;
+  --c-success-100: #16311f;
+  --c-success-500: #3ddc84;
+  --c-success-600: #4ade80;
+  --c-success-700: #86efac;
+
+  --c-warning-50:  #241f0c;
+  --c-warning-100: #332c11;
+  --c-warning-500: #f5c518;
+  --c-warning-600: #facc15;
+  --c-warning-700: #fde047;
+
+  --c-critical-50:  #2a1416;
+  --c-critical-100: #3c1a1e;
+  --c-critical-200: #55242a;
+  --c-critical-300: #7c343c;
+  --c-critical-400: #f87171;
+  --c-critical-500: #f87171;
+  --c-critical-600: #fca5a5;
+  --c-critical-700: #fecaca;
+
+  --c-info-50:  #101d2e;
+  --c-info-100: #16283f;
+  --c-info-500: #60a5fa;
+  --c-info-600: #7db8fb;
+  --c-info-700: #bfdbfe;
+
+  --c-sidebar:             #08080a;
+  --c-sidebar-hover:       #17171a;
+  --c-sidebar-active:      #17171a;
+  --c-sidebar-border:      #2a2b2f;
+  --c-sidebar-text:        #9b9ca3;
+  --c-sidebar-text-active: #fbfbfc;
+
+  --c-chrome:        #121214;
+  --c-chrome-border: #2a2b2f;
+  --c-chrome-raised: #1d1d21;
+  --c-chrome-hover:  #26262b;
+  --c-chrome-active: #303036;
+  --c-chrome-muted:  #9b9ca3;
+  --c-logo-mark:     #8b87f5;
+  --c-logo-text:     #f2f3f4;
+
+  --c-chart-grid:   #2a2b2f;
+  --c-chart-axis:   #6d6e75;
+  --c-chart-line:   #8b87f5;
+  --c-chart-fill:   rgba(139, 135, 245, 0.18);
+  --c-chart-target: #6d6e75;
+
+  --c-shadow-sm: rgba(0, 0, 0, 0.40);
+  --c-shadow-md: rgba(0, 0, 0, 0.55);
+  --c-shadow-lg: rgba(0, 0, 0, 0.70);
+
+  /* Mirrors the media-query block above — the explicit toggle must win over a light OS. */
+  --c-pillar-seo:     #8b87f5;
+  --c-pillar-content: #fbbf24;
+  --c-pillar-speed:   #38bdf8;
+  --c-pillar-cro:     #fb923c;
+  --c-pillar-ai:      #34d399;
+
+  --c-pillar-seo-tint:     rgba(139, 135, 245, 0.12);
+  --c-pillar-content-tint: rgba(251, 191, 36, 0.12);
+  --c-pillar-speed-tint:   rgba(56, 189, 248, 0.12);
+  --c-pillar-cro-tint:     rgba(251, 146, 60, 0.12);
+  --c-pillar-ai-tint:      rgba(52, 211, 153, 0.12);
+}
+
+/* ── Auth shell palette ───────────────────────────────────────────────────────
+ * The auth pages are the one surface with a palette of their own: a world-map panel on the left
+ * (AuthWorldMap.tsx) on a deep-blue stage where a live node network moves (AuthBackdrop.tsx), and
+ * a light form side on the right that fades into it. None of it follows the app theme — it is brand colour, not theme colour — so it
+ * lives on its own class, and AuthLayout, AuthBackdrop, AuthField and AuthSubmitButton read only
+ * these. Re-skinning the auth pages means editing here and nowhere else. */
+.auth-shell {
+  /* The stage the network animates on. */
+  --auth-stage: radial-gradient(ellipse 75% 85% at 62% 48%, #1d2f7a 0%, #0f1a4f 42%, #080d2b 78%, #050819 100%);
+
+  /* The light form side. */
+  --auth-light: linear-gradient(160deg, #ffffff 0%, #f3f2fb 48%, #e7e5f6 100%);
+
+  /* How wide the light form side (on the right) is on wide screens. */
+  --auth-split: max(42vw, 520px);
+
+  /* Map panel: a dark world-map wall (AuthWorldMap.tsx) with the copy set on it. The scrim darkens
+   * the side the copy sits on, so the paragraph stays readable over the brightest dots. */
+  --auth-panel-bg: #040817;
+  --auth-panel-border: rgba(140, 170, 255, 0.22);
+  --auth-panel-scrim: linear-gradient(100deg, rgba(3, 6, 18, 0.42) 0%, rgba(3, 6, 18, 0.18) 50%, rgba(3, 6, 18, 0) 80%);
+  --auth-panel-ink: #ffffff;
+  --auth-panel-muted: rgba(238, 242, 255, 0.92);
+  --auth-pill-ink: #1d1f3d;
+
+  /* Accent: links, focus rings and the panel's dot. */
+  --auth-accent:       #6d4cf0;
+  --auth-accent-hover: #5b3bd9;
+  --auth-ring:         rgba(109, 76, 240, 0.20);
+
+  /* Submit button. */
+  --auth-btn-from: #7357f6;
+  --auth-btn-to:   #5236d6;
+  --auth-btn-glow: rgba(109, 76, 240, 0.55);
+}
+
+/* ── The form sheet stays LIGHT in every theme ────────────────────────────────
+ * The card is a designed object sitting on a coloured page — its left half is a brand gradient
+ * and its right half is a white sheet, in the reference and in every theme. A dark app theme
+ * inverting only the right half produced a near-black slab welded to a bright panel: the
+ * two halves stopped reading as one card.
+ *
+ * So the sheet re-declares the surface ramp to the light values, scoped to itself. Every token
+ * consumer inside it — labels, input wells, hint text, the reveal toggle — renders exactly as it
+ * does in light mode, and nothing outside the sheet is touched. `color-scheme: light` keeps
+ * native pieces (autofill, the caret, scrollbars) in step. Light mode is byte-identical, since
+ * these ARE the light values.
+ *
+ * It also means the accent never needs a dark variant: it only ever sits on this light sheet.
+ *
+ * ── AND THE BRAND RAMP HAS TO COME WITH IT ───────────────────────────────────
+ * Re-declaring only the surfaces left the sheet internally inconsistent, because .btn-primary
+ * pairs `bg-brand-600` with `text-surface-0` and relies on the two inverting TOGETHER: dark indigo
+ * on white in light mode, light lavender on near-black in dark. Pinning the surfaces alone broke
+ * that pairing inside the sheet — in a dark theme the label went back to white while the button
+ * stayed lavender (#8b87f5), which is about 2.2:1 and effectively unreadable. That is what made
+ * "Go to sign in" on the verified-email screen look blank.
+ *
+ * So the brand ramp is pinned to its light values here too. The sheet is a light object in every
+ * theme; every token it consumes must agree on that, not just half of them. */
+.auth-sheet {
+  color-scheme: light;
+  /* The logo sits on this light side too. Its utilities read the resolved --color-* values, so
+   * those are pinned here, not only the --c-* sources. */
+  --c-logo-mark: #5b4ee4;
+  --c-logo-text: #101828;
+  --color-logo-mark: #5b4ee4;
+  --color-logo-text: #101828;
+  --c-brand-50:  #eef2ff;
+  --c-brand-100: #e0e7ff;
+  --c-brand-200: #c7d2fe;
+  --c-brand-300: #a5b4fc;
+  --c-brand-400: #818cf8;
+  --c-brand-500: #6366f1;
+  --c-brand-600: #4f46e5;
+  --c-brand-700: #4338ca;
+  --c-brand-800: #3730a3;
+  --c-brand-900: #312e81;
+  --c-brand-950: #1e1b4b;
+  --c-surface-0:   #ffffff;
+  --c-surface-50:  #fafafa;
+  --c-surface-100: #f4f4f5;
+  --c-surface-200: #e4e4e7;
+  --c-surface-300: #d4d4d8;
+  --c-surface-400: #a1a1aa;
+  --c-surface-500: #71717a;
+  --c-surface-600: #52525b;
+  --c-surface-700: #3f3f46;
+  --c-surface-800: #27272a;
+  --c-surface-900: #18181b;
+  --c-surface-950: #09090b;
+}
+
+@theme {
+  /* Chrome and chart roles exposed as Tailwind utilities (bg-chrome, text-chart-axis, …) so the
+   * components that used to hardcode these hexes have a token to use instead. */
+  --color-chrome: var(--c-chrome);
+  --color-chrome-border: var(--c-chrome-border);
+  --color-chrome-raised: var(--c-chrome-raised);
+  --color-chrome-hover: var(--c-chrome-hover);
+  --color-chrome-active: var(--c-chrome-active);
+  --color-chrome-muted: var(--c-chrome-muted);
+  --color-logo-mark: var(--c-logo-mark);
+  --color-logo-text: var(--c-logo-text);
+  --color-chart-grid: var(--c-chart-grid);
+  --color-chart-axis: var(--c-chart-axis);
+  --color-chart-line: var(--c-chart-line);
+  --color-chart-fill: var(--c-chart-fill);
+  --color-chart-target: var(--c-chart-target);
+}
+
+@font-face {
+  font-family: 'Geist Sans';
+  src: url('/fonts/Geist-Variable.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/GeistMono-Variable.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-family: 'Geist Sans', sans-serif;
+    font-size: 16px;
+    /* 1.45 rather than 1.5: across a page of 13px body copy and table cells this removes roughly
+     * one line of dead space every twenty, without ever touching the glyphs themselves. */
+    line-height: 1.45;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    @apply bg-surface-50 text-surface-900 font-sans;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    font-weight: 400;
+    line-height: 1.45;
+  }
+
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  code,
+  pre,
+  kbd,
+  samp {
+    font-family: 'Geist Mono', monospace;
+  }
+
+  /* Minimal scrollbar */
+  .sidebar-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+  .sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .sidebar-scroll::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+  }
+  .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+}
+
+@layer components {
+  /* ─── Compact density system ───────────────────────────────────────────────
+   * ONE definition of the page rhythm every audit screen uses. These exist because the same six
+   * measurements — outer padding, the gap between sections, a card's inner padding, a page title,
+   * the line under it, a table row — were previously re-decided per page, so /seo and /content
+   * disagreed about all of them and each was more generous than a data screen can afford.
+   *
+   * The scale is 4 / 6 / 8 / 12 / 16px. Anything larger has to earn it as STRUCTURAL separation,
+   * not as decoration.
+   *
+   * Typography is one ramp, so shrinking a heading shrinks what sits under it:
+   *   page title 20-22px · section 15px · card title 13px · body 13px · meta 11px · eyebrow 10px
+   * Hierarchy is carried by weight, colour and position rather than by size alone — which is what
+   * makes the compact version still readable rather than merely small.
+   */
+
+  /* Outer page frame. Replaces the per-page `max-w-7xl px-6 md:px-8 py-8`, which wasted 32px of
+   * vertical space above every title and capped content at 1280px on monitors twice that wide. */
+  .page-shell {
+    @apply mx-auto w-full max-w-[1600px] px-4 pb-8 pt-4 md:px-6;
+  }
+
+  /* Title · supporting line · actions, on one row from `sm` up. */
+  .page-head {
+    @apply flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between;
+  }
+
+  /* 17/18px. The page already announces itself in the sidebar, the breadcrumb and the browser
+   * tab, so the title's job here is to anchor the page, not to be read first. Dropping it from
+   * 20/22 gives back a line of vertical space on every screen, and the hierarchy still holds
+   * because the supporting line under it is 12px and semi-muted. */
+  .page-title {
+    @apply text-[17px] font-semibold leading-[1.2] tracking-[-0.02em] text-surface-950 md:text-[18px];
+  }
+
+  .page-subtitle {
+    @apply mt-0.5 max-w-2xl text-[12px] leading-[1.4] text-surface-500;
+  }
+
+  /* Vertical rhythm between the major blocks of a page. */
+  .section-stack {
+    @apply space-y-3;
+  }
+
+  .section-head {
+    @apply mb-2.5 flex flex-wrap items-end justify-between gap-2;
+  }
+
+  .section-title {
+    @apply text-[14px] font-semibold tracking-[-0.01em] text-surface-900;
+  }
+
+  .section-subtitle {
+    @apply mt-0.5 text-[11.5px] leading-[1.4] text-surface-500;
+  }
+
+  /* Heading inside a card — one step below a section, two below the page. */
+  .card-title {
+    @apply text-[12.5px] font-semibold tracking-[-0.01em] text-surface-950;
+  }
+
+  .eyebrow {
+    @apply text-[10px] font-semibold uppercase tracking-[0.14em] text-surface-400;
+  }
+
+  .meta-text {
+    @apply text-[11px] leading-[1.4] text-surface-500;
+  }
+
+  /* Small bordered fact ("Last analyzed · 2h ago"). Was a 2.5/1.5 padded pill on every header.
+   *
+   * `min-w-0` and `max-w-full` are load-bearing, not decoration. These chips carry the store's
+   * own domain, and a flex item does not shrink below its content width without min-width:0 — so
+   * a long myshopify domain widened the chip past the viewport and put a horizontal scrollbar on
+   * the whole page at 390px. The truncate on the value inside only takes effect once the chip is
+   * allowed to be narrower than its text. */
+  .meta-chip {
+    @apply inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md border border-surface-200 bg-surface-0 px-2 py-1 text-[11px] text-surface-600;
+  }
+
+  /* Card grids. Denser columns at each breakpoint than the old 1/2/3 ladder, so a 1440px viewport
+   * shows four area cards per row instead of three half-empty ones. */
+  .grid-cards {
+    @apply grid gap-2.5;
+  }
+
+  /* ─── Data table density ──────────────────────────────────────────────────
+   * Applied to a <table>, so every cell inherits it and no page re-specifies padding per column.
+   * ~34px rows at 12px type: about a third more audit rows per screen than the 48px rows this
+   * replaces, and still above the 32px floor where scanning starts to hurt. */
+  .table-compact th {
+    @apply px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.07em] text-surface-400;
+  }
+  .table-compact td {
+    @apply px-3 py-1.5 text-[12px] align-middle;
+  }
+
+  /* Refined Card styling: depth without heavy borders */
+  .card {
+    @apply bg-surface-0 rounded-card shadow-sm transition-shadow duration-200;
+  }
+  .card:hover {
+    @apply shadow-md;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-1.5 py-0.5 rounded text-[10.5px] font-semibold tracking-wide uppercase;
+  }
+  /* Minimal badges: subtle backgrounds, text mostly dark gray */
+  .badge-critical {
+    @apply bg-critical-50 text-critical-700 border border-critical-100;
+  }
+  .badge-warning {
+    @apply bg-warning-50 text-warning-700 border border-warning-100;
+  }
+  .badge-success {
+    @apply bg-success-50 text-success-700 border border-success-100;
+  }
+  .badge-info {
+    @apply bg-info-50 text-info-700 border border-info-100;
+  }
+  .badge-neutral {
+    @apply bg-surface-100 text-surface-600 border border-surface-200;
+  }
+
+  /* Professional buttons */
+  /* `text-surface-0`, NOT `text-white`. The label has to invert with its own background: brand-600
+     is a DARK indigo (#4f46e5) in light mode and a LIGHT lavender (#8b87f5) in dark, so a fixed
+     white label goes from 8.6:1 contrast to about 2.2:1 — the "Re-analyze" and "Review evidence"
+     buttons were legible in light mode and barely readable in dark. surface-0 is white in light
+     and near-black in dark, which is ~8.6:1 both ways. Light mode is therefore unchanged. */
+  /* Control heights: 32px standard, 28px compact (.btn-xs). Both clear the 24px minimum for a
+     comfortable pointer target while giving back 4-8px per control against the old 36px. */
+  .btn-primary {
+    @apply inline-flex min-h-[32px] items-center justify-center gap-1.5 rounded-md bg-brand-600 px-3 py-1.5 text-[12.5px] font-medium text-surface-0 shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.2)] border border-brand-700
+      transition-all duration-200 hover:bg-brand-500 hover:shadow-[0_2px_4px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+      active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none;
+  }
+
+  .btn-secondary {
+    @apply inline-flex min-h-[32px] items-center justify-center gap-1.5 rounded-md border border-surface-200 bg-surface-0 px-3 py-1.5 text-[12.5px] font-medium text-surface-700 shadow-sm
+      transition-all duration-200 hover:border-surface-300 hover:bg-surface-50 hover:text-surface-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+      active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none;
+  }
+
+  .btn-outline {
+    @apply inline-flex min-h-[32px] items-center justify-center gap-1.5 rounded-md border border-surface-200 bg-transparent px-3 py-1.5 text-[12.5px] font-medium text-surface-700
+      transition-all duration-200 hover:border-surface-300 hover:bg-surface-50 hover:text-surface-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+      active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-transparent;
+  }
+
+  .btn-ghost {
+    @apply inline-flex min-h-[32px] items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium text-surface-600
+      transition-all duration-200 hover:bg-surface-100 hover:text-surface-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+      active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-transparent;
+  }
+
+  .btn-destructive {
+    @apply inline-flex min-h-[32px] items-center justify-center gap-1.5 rounded-md border border-critical-200 bg-critical-50 px-3 py-1.5 text-[12.5px] font-medium text-critical-700 shadow-sm
+      transition-all duration-200 hover:border-critical-300 hover:bg-critical-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-critical-500 focus-visible:ring-offset-2
+      active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none;
+  }
+
+  /* Row-level and toolbar actions. Pair with any .btn-* above. */
+  .btn-xs {
+    @apply min-h-[28px] gap-1 px-2 py-1 text-[11.5px];
+  }
+
+    button {
+      font-family: inherit;
+    }
+
+    button:focus-visible,
+    a:focus-visible,
+    select:focus-visible,
+    input:focus-visible {
+      outline: 2px solid theme('colors.brand.500');
+      outline-offset: 2px;
+  }
+
+  /* Crisp Score ring */
+  .score-ring {
+    transition: stroke-dashoffset 1s ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .score-ring {
+      transition: none;
+    }
+  }
+
+  /* Minimal Skeleton */
+  .skeleton {
+    @apply bg-surface-200 rounded animate-pulse;
+  }
+}
+
+@layer utilities {
+  @media (min-width: 1280px) {
+    [aria-labelledby$='-integrations'] > .xl\:grid-cols-3 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+}
+
+/* ─── Authentication experience ───────────────────────────────────────────────
+   Scoped to the Sign in / Sign up screens (AuthLayout and the components under components/auth).
+   All animations are disabled under `prefers-reduced-motion`.
+──────────────────────────────────────────────────────────────────────────── */
+
+@keyframes auth-rise {
+  from { opacity: 0; transform: translate3d(0, 24px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes auth-btn-sheen {
+  0%   { transform: translateX(-150%) skewX(-15deg); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translateX(300%) skewX(-15deg); opacity: 0; }
+}
+
+/* ── Error shake ─────────────────────────────────────────────────────────────
+   A gentle horizontal shake applied to the field wrapper when a validation
+   error fires. Short enough not to distract, strong enough to be noticed. */
+@keyframes auth-field-shake {
+  0%, 100% { transform: translateX(0); }
+  16%       { transform: translateX(-5px); }
+  33%       { transform: translateX(4px); }
+  50%       { transform: translateX(-3px); }
+  66%       { transform: translateX(2px); }
+  83%       { transform: translateX(-1px); }
+}
+
+@keyframes auth-drift {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, -9px, 0); }
+}
+
+@keyframes auth-pulse {
+  0%   { transform: scale(0.92); opacity: 0.65; }
+  100% { transform: scale(1.32); opacity: 0; }
+}
+
+@layer utilities {
+  /* ── Entrance animation — form card and brand copy ── */
+  .auth-rise {
+    animation: auth-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  /* ── Light form side ── */
+  .auth-light {
+    width: 100%;
+    background: var(--auth-light);
+  }
+  /* From `lg` up the light side is on the right and fades out leftwards, into the gap beside the
+   * map panel. */
+  @media (min-width: 1024px) {
+    .auth-light {
+      width: calc(var(--auth-split) + 150px);
+      -webkit-mask-image: linear-gradient(270deg, #000 calc(100% - 170px), rgba(0, 0, 0, 0.8) calc(100% - 120px), rgba(0, 0, 0, 0.35) calc(100% - 60px), transparent 100%);
+      mask-image: linear-gradient(270deg, #000 calc(100% - 170px), rgba(0, 0, 0, 0.8) calc(100% - 120px), rgba(0, 0, 0, 0.35) calc(100% - 60px), transparent 100%);
+    }
+  }
+
+  /* ── World-map panel ── */
+  .auth-map-panel {
+    background: var(--auth-panel-bg);
+    border: 1px solid var(--auth-panel-border);
+    box-shadow: 0 40px 90px -35px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+  .auth-map-scrim {
+    background: var(--auth-panel-scrim);
+  }
+  .auth-map-copy h2,
+  .auth-map-copy p {
+    text-shadow: 0 2px 14px rgba(2, 6, 20, 0.7);
+  }
+
+  /* ── Floating cards and the AI node ── */
+  .auth-drift {
+    animation: auth-drift 9s ease-in-out infinite;
+    animation-delay: var(--drift-delay, 0s);
+    will-change: transform;
+  }
+  .auth-pulse {
+    animation: auth-pulse 3.2s ease-out infinite;
+  }
+
+  /* ── Input base ── */
+  .auth-input {
+    transition:
+      border-color 0.18s ease,
+      box-shadow 0.18s ease,
+      background-color 0.22s ease;
+  }
+
+  /* ── Field group: micro-lift on focus-within ── */
+  .auth-field-group {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .auth-field-group:focus-within {
+    transform: translateY(-2px);
+  }
+  /* Error shake: applied via JS by adding the class on submit with errors. */
+  .auth-field-group.auth-shake {
+    animation: auth-field-shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  }
+
+  /* ── Submit button hover / active ── */
+  .auth-submit-btn:hover:not(:disabled) {
+    box-shadow:
+      0 0 0 1px rgba(124, 58, 237, 0.30),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 16px 32px -8px rgba(124, 58, 237, 0.55) !important;
+    background: linear-gradient(90deg, #8b5cf6 0%, #6d28d9 100%) !important;
+    transform: translateY(-2px) scale(1.008);
+  }
+  .auth-submit-btn:active:not(:disabled) {
+    transform: translateY(1px) scale(0.995);
+    box-shadow:
+      0 0 0 1px rgba(124, 58, 237, 0.20),
+      inset 0 2px 4px rgba(0, 0, 0, 0.18),
+      0 4px 12px -4px rgba(124, 58, 237, 0.35) !important;
+  }
+
+  /* ── Sheen sweep on button hover ── */
+  .auth-btn-sheen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      105deg,
+      transparent 25%,
+      rgba(255, 255, 255, 0.18) 45%,
+      rgba(255, 255, 255, 0.32) 50%,
+      rgba(255, 255, 255, 0.18) 55%,
+      transparent 75%
+    );
+    transform: translateX(-150%) skewX(-15deg);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .auth-submit-btn:hover:not(:disabled) .auth-btn-sheen::after {
+    animation: auth-btn-sheen 0.85s ease-out forwards;
+  }
+
+  /* ── Reduced motion overrides ── */
+  @media (prefers-reduced-motion: reduce) {
+    .auth-rise          { animation: none !important; opacity: 1; transform: none; }
+    .auth-drift         { animation: none !important; }
+    .auth-pulse         { animation: none !important; opacity: 0; }
+    .auth-field-group.auth-shake { animation: none !important; }
+    .auth-submit-btn:hover:not(:disabled) .auth-btn-sheen::after { animation: none !important; }
+    .auth-submit-btn    { transition: none !important; }
+    .auth-field-group   { transition: none !important; }
+    .auth-field-group:focus-within { transform: none; }
+    .auth-input         { transition: none !important; }
+  }
+}

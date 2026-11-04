@@ -1,0 +1,25 @@
+# Normalize text in the repository; working copies still follow each developer's core.autocrlf.
+* text=auto
+
+# Scripts that run on the Linux server must keep LF regardless of who commits them.
+# bash reads a CRLF shebang literally and fails with: /usr/bin/env: 'bash\r': No such file or directory
+*.sh text eol=lf
+
+# Cloudflare reads this file as configuration; keep it byte-for-byte the same on every checkout.
+_headers text eol=lf
+
+# Windows-only scripts want CRLF for the same reason, in reverse.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets must never be line-ending converted.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.pdf binary

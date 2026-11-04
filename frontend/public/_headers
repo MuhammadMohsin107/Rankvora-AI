@@ -1,0 +1,24 @@
+# Headers Cloudflare sends with the website's files (frontend/dist, served by the Worker's static
+# assets — see backend/wrangler.jsonc). Vite copies this file into dist/ on build; Cloudflare reads
+# it as configuration and never serves it as a page.
+#
+# /api/* responses come from the API, which sets the same security headers itself
+# (backend/src/middleware/cloudflareEdge.ts).
+
+# Four of the five security headers nginx added to every page on the old server, unchanged.
+#
+# The fifth, X-Frame-Options, is deliberately NOT here. The site runs inside the Shopify admin's
+# iframe, which SAMEORIGIN would refuse. Who may frame a page is decided per request by the Worker
+# (backend/src/cloudflare/shell.ts), which sends `Content-Security-Policy: frame-ancestors` naming the
+# shop that is showing it — a value a static file cannot hold, because it differs for every shop.
+/*
+  X-Content-Type-Options: nosniff
+  X-XSS-Protection: 1; mode=block
+  X-Permitted-Cross-Domain-Policies: master-only
+  Referrer-Policy: same-origin
+
+# Vite names every built file after a hash of its content, so a file at a given name never changes:
+# browsers may keep it for a year. index.html is not under /assets/ and keeps Cloudflare's default
+# (revalidate on every load), so a new deploy is picked up straight away.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

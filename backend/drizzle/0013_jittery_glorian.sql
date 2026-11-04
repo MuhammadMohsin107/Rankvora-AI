@@ -1,0 +1,33 @@
+CREATE TABLE `onboarding_state` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`store_id` int NOT NULL,
+	`current_step` int NOT NULL DEFAULT 1,
+	`organization_name` varchar(255),
+	`brand_name` varchar(255),
+	`primary_domain` varchar(512),
+	`industry` varchar(128),
+	`sells_description` text,
+	`business_model` varchar(64),
+	`catalog_shape` varchar(64),
+	`target_countries` json,
+	`target_languages` json,
+	`primary_market` varchar(128),
+	`target_keywords` json,
+	`branded_terms` json,
+	`competitor_domains` json,
+	`primary_goal` varchar(64),
+	`priority_pillars` json,
+	`automation_consent` varchar(32),
+	`alert_frequency` varchar(32),
+	`skipped_steps` json,
+	`started_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`deferred_at` datetime,
+	`completed_at` datetime,
+	CONSTRAINT `onboarding_state_id` PRIMARY KEY(`id`),
+	CONSTRAINT `onboarding_state_store_id_unique` UNIQUE(`store_id`),
+	CONSTRAINT `onboarding_state_step_range` CHECK(`onboarding_state`.`current_step` BETWEEN 1 AND 5),
+	CONSTRAINT `onboarding_state_consent_valid` CHECK(`onboarding_state`.`automation_consent` IS NULL OR `onboarding_state`.`automation_consent` IN ('none', 'ask', 'low_risk'))
+);
+--> statement-breakpoint
+ALTER TABLE `onboarding_state` ADD CONSTRAINT `onboarding_state_store_id_stores_id_fk` FOREIGN KEY (`store_id`) REFERENCES `stores`(`id`) ON DELETE cascade ON UPDATE no action;

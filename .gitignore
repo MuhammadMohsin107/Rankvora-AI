@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+build/
+
+# TypeScript
+*.tsbuildinfo
+
+# Vite
+.vite/
+*.local
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Cloudflare Wrangler: local secrets file and local state (the local D1 database, Workflow and
+# Durable Object data). Real secrets live in Cloudflare, set with `wrangler secret put`.
+.dev.vars
+.dev.vars.*
+.wrangler/
+
+# Local SQLite databases (DATABASE_PATH, e.g. backend/local.db) and the files SQLite keeps beside them.
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor / IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+backups/

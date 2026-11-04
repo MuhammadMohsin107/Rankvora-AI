@@ -1,0 +1,210 @@
+// ─── Rankvora AI on Cloudflare Workers ───────────────────────────────
+//
+// One Worker serves the whole site: the built frontend (frontend/dist) as static assets, and the
+// API (src/worker.ts — the same Express app as server.ts) for every /api/* request. Behind it:
+//
+//   DB              Cloudflare D1 (SQLite). Schema: src/db/schema.ts; migrations: drizzle-d1/
+//   AUDIT_WORKFLOW  a Workflow that runs one audit per instance (worker.ts AuditWorkflow)
+//   RATE_LIMITER    a Durable Object holding the rate-limit counts every copy of the Worker shares
+//   cron            every 30 minutes: close stuck jobs, queue due re-analyses, write weekly summaries
+//
+// THREE PLACES THIS RUNS, and the bindings are written out for each (Cloudflare does not carry
+// bindings from the top level into an environment):
+//
+//   top level       LOCAL DEVELOPMENT only — `wrangler dev`. Its database id is not a real
+//                   database, so deploying the top level is refused rather than creating a stray
+//                   Worker.
+//   env.staging     scorelo-staging.tlxapps.com — `wrangler deploy --env staging`.
+//   env.production  the public app, on whichever account and domain it is deployed to. Its
+//                   account, domain and database are placeholders until they are filled in.
+//
+// SECRETS NEVER GO IN THIS FILE. They are set once per environment with
+// `wrangler secret put NAME --env staging`, and deploy refuses to run while a required one is
+// missing (`secrets.required`). Locally they come from backend/.dev.vars, which git ignores.
+{
+  "$schema": "https://unpkg.com/wrangler@4.153.0/config-schema.json",
+  "name": "rankvora-dev",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-10-01",
+  // Node's APIs (crypto, AsyncLocalStorage, Buffer, http for Express) and process.env filled from
+  // vars and secrets, which config/env.ts reads.
+  "compatibility_flags": ["nodejs_compat"],
+
+  // The company account ("Cp.chahmad@gmail.com's Account"). Pinned so that a login holding more
+  // than one account can never deploy to the wrong one.
+  "account_id": "4a36991256542f145b006329cb04abd3",
+
+  // Express's body reader imports iconv-lite, whose "browser" build has no streaming module; Wrangler
+  // follows that build for Workers and the Worker dies at start-up. TextDecoder covers what a request
+  // body can carry. See the file for details.
+  "alias": { "iconv-lite": "./src/cloudflare/iconv-shim.mjs" },
+
+  // The website. A file that exists is served as it is; any other path that is not /api/* gets
+  // index.html, so the React router handles deep links like /settings/profile on a refresh.
+  //
+  // The Worker runs for every request EXCEPT the built files listed with "!". It has to: inside the
+  // Shopify admin the site runs in an iframe, and Shopify requires each page response to carry a
+  // Content-Security-Policy `frame-ancestors` naming the shop that is showing it — different for every
+  // shop, so a static file cannot hold it. The Worker (src/cloudflare/shell.ts) fetches the page
+  // through the ASSETS binding below and adds the header; /api/* goes to the API as before, so an
+  // unknown API path still answers with the API's own JSON 404, never with the website's HTML.
+  // Built scripts, styles and fonts are never touched: they are served straight from the edge.
+  //
+  // /__scheduled is the local `wrangler dev --test-scheduled` hook for the cron. On Cloudflare nothing
+  // serves it, so it gets the API's JSON 404 — the cron itself is never triggered by a request there.
+  "assets": {
+    "directory": "../frontend/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/*", "!/assets/*", "!/fonts/*", "!/favicon.svg", "!/onboarding-bg.svg"]
+  },
+
+  // CPU time per invocation, raised from the 30-second default to the 5-minute maximum. An audit runs
+  // every check over the whole catalogue in one Workflow step, and a large store's checks can need
+  // more than 30 seconds of CPU. It is a ceiling, not a charge: only CPU actually used is billed.
+  //
+  // FREE MODE (since 2026-10-29): TURNED OFF BELOW — PAID ONLY. Cloudflare refuses this setting on
+  // the Free plan ("CPU limits are not supported for the Free plan", code 100328), and the company
+  // account is on Free until the Workers Paid plan is bought. While it is off the deploy works, but
+  // the app is limited by Free's own caps (10 ms of CPU and 50 database queries per request or
+  // Workflow step): the website, the health check and start-up work; analyses and the sign-in of a
+  // new store do not. RE-ENABLE the line the day Paid is active (and the test asserts it again).
+  // "limits": { "cpu_ms": 300000 },
+
+  // Run the Worker near its database rather than near each visitor: most requests make several D1
+  // queries, and each one pays the distance.
+  "placement": { "mode": "smart" },
+
+  // Keep every log line (Workers Logs), so a merchant's report can be traced by its request id.
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+
+  // worker.ts `scheduled` → services/scheduled-work.service.ts. The same 30 minutes the Node timers use.
+  "triggers": { "crons": ["*/30 * * * *"] },
+
+  // Durable Object storage history. The RateLimiter class keeps its counts in SQLite-backed storage.
+  // Append new tags here; never edit or remove one that has been deployed.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RateLimiter"] }],
+
+  // ── Local development (wrangler dev) ──
+  "vars": {
+    "NODE_ENV": "development",
+    "BACKEND_URL": "http://localhost:8787",
+    "FRONTEND_URL": "http://localhost:8787"
+  },
+  "secrets": { "required": ["JWT_ACCESS_SECRET", "JWT_REFRESH_SECRET"] },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "rankvora-local",
+      // Not a real database: local development keeps its data in .wrangler/. It also makes a deploy
+      // of the top level fail, which is what should happen — deploys always name an environment.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "drizzle-d1"
+    }
+  ],
+  "workflows": [{ "name": "rankvora-dev-audit", "binding": "AUDIT_WORKFLOW", "class_name": "AuditWorkflow" }],
+  "durable_objects": { "bindings": [{ "name": "RATE_LIMITER", "class_name": "RateLimiter" }] },
+
+  "env": {
+    // ── scorelo-staging.tlxapps.com ──
+    "staging": {
+      "name": "rankvora-staging",
+      // Pinned here too: Wrangler does not carry the top-level account_id into an environment for
+      // every command (`d1 migrations` with --env asked which account to use). The company account
+      // only — never the personal one on the same login.
+      "account_id": "4a36991256542f145b006329cb04abd3",
+
+      // The workers.dev address is on while it is tested there, before the domain moves over. At
+      // go-live a custom-domain route for scorelo-staging.tlxapps.com is added here.
+      "workers_dev": true,
+      "preview_urls": false,
+
+      "vars": {
+        "NODE_ENV": "production",
+        // The one public origin: the browser, Shopify's OAuth redirect and its webhooks all use it.
+        //
+        // TEST ADDRESS, until go-live: Shopify sends a merchant back to BACKEND_URL after sign-in, so
+        // while the app is tested on workers.dev this must be that address — otherwise the merchant
+        // lands on the old server. At go-live both lines go back to https://scorelo-staging.tlxapps.com
+        // (and the custom-domain route is added above). The address is the company account's
+        // workers.dev name (cp-chahmad) plus the Worker's name.
+        "BACKEND_URL": "https://rankvora-staging.cp-chahmad.workers.dev",
+        "FRONTEND_URL": "https://rankvora-staging.cp-chahmad.workers.dev"
+      },
+
+      // Deploy refuses to run while any of these is unset. Optional integrations (Google, PageSpeed,
+      // the AI provider) are set the same way when used, and are not listed: the app runs without them.
+      "secrets": {
+        "required": [
+          "JWT_ACCESS_SECRET",
+          "JWT_REFRESH_SECRET",
+          "TOKEN_ENCRYPTION_KEY",
+          "SHOPIFY_API_KEY",
+          "SHOPIFY_API_SECRET"
+        ]
+      },
+
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "rankvora-staging",
+          // Created 2026-10-28 in Western Europe (weur), on the company account above.
+          "database_id": "7578237c-a69b-4f4c-8ac8-3402a40fdabc",
+          "migrations_dir": "drizzle-d1"
+        }
+      ],
+      "workflows": [{ "name": "rankvora-staging-audit", "binding": "AUDIT_WORKFLOW", "class_name": "AuditWorkflow" }],
+      "durable_objects": { "bindings": [{ "name": "RATE_LIMITER", "class_name": "RateLimiter" }] }
+    },
+
+    // ── The public app: the real domain, on whichever Cloudflare account it is deployed to ──
+    //
+    // NOT DEPLOYABLE UNTIL EVERY "REPLACE_WITH_…" BELOW IS FILLED IN. Each is a value only the person
+    // deploying knows, and each is a placeholder rather than a guess so that a deploy fails loudly
+    // instead of reaching the wrong account or announcing the wrong address to Shopify.
+    // `npm run cf:*:production` (src/scripts/wrangler.ts) refuses to run while any is left.
+    //
+    //   account_id    the Cloudflare account to deploy to (dashboard → Workers & Pages → Account ID)
+    //   routes        the public domain; it must already be a zone on that account
+    //   BACKEND_URL / FRONTEND_URL   the same https origin as the route — Shopify's app URL, its
+    //                 redirect URLs and its webhooks (shopify.app.toml) all point at it
+    //   database_id   printed by `wrangler d1 create rankvora-production` (README → Deploying)
+    //
+    // Needs the Workers PAID plan: an audit runs far past the Free plan's 10 ms of CPU, and the
+    // "limits" setting above is refused on Free.
+    "production": {
+      "name": "rankvora",
+      "account_id": "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID",
+      "workers_dev": false,
+      "preview_urls": false,
+      "routes": [{ "pattern": "REPLACE_WITH_YOUR_DOMAIN", "custom_domain": true }],
+
+      "vars": {
+        "NODE_ENV": "production",
+        "BACKEND_URL": "https://REPLACE_WITH_YOUR_DOMAIN",
+        "FRONTEND_URL": "https://REPLACE_WITH_YOUR_DOMAIN"
+      },
+
+      "secrets": {
+        "required": [
+          "JWT_ACCESS_SECRET",
+          "JWT_REFRESH_SECRET",
+          "TOKEN_ENCRYPTION_KEY",
+          "SHOPIFY_API_KEY",
+          "SHOPIFY_API_SECRET"
+        ]
+      },
+
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "rankvora-production",
+          "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+          "migrations_dir": "drizzle-d1"
+        }
+      ],
+      "workflows": [{ "name": "rankvora-production-audit", "binding": "AUDIT_WORKFLOW", "class_name": "AuditWorkflow" }],
+      "durable_objects": { "bindings": [{ "name": "RATE_LIMITER", "class_name": "RateLimiter" }] }
+    }
+  }
+}

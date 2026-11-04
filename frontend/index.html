@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Rankvora AI — Optimize your store's SEO, speed, schema, and conversions with intelligent insights." />
+    <title>Rankvora AI — Store Optimization Dashboard</title>
+    <!--
+      Shopify App Bridge, for when the app runs inside the Shopify admin. It MUST be the first <script>
+      on the page, loaded from Shopify's CDN with no async, defer or type=module — App Bridge checks
+      this itself and aborts otherwise — so nothing may be added above it. It does two things the app
+      relies on: it adds an ID token to every request the page makes to this site, which is how the
+      backend knows which shop is calling (no sign-in page, no stored session), and it provides the
+      <s-app-nav> that puts the app's links in the admin's own sidebar.
+
+      The key is the app's PUBLIC client id, supplied at build time (VITE_SHOPIFY_API_KEY, see
+      .env.example); vite.config.ts refuses to build without it. Outside the admin App Bridge finds no
+      shop and does nothing.
+    -->
+    <meta name="shopify-api-key" content="%VITE_SHOPIFY_API_KEY%" />
+    <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+    <script>
+      // Stamps the theme BEFORE the first paint. Without this a dark-mode customer sees the app
+      // render light and correct itself a frame later, on every single load — the white flash that
+      // makes a theme feel bolted on. It has to be inline and blocking for that reason; a module
+      // script would run after the browser has already painted.
+      //
+      // Deliberately duplicates three things from ThemeContext (the storage key, the attribute name
+      // and the dark default) because it cannot import from the bundle. All are commented there.
+      (function () {
+        var theme = 'dark';
+        // Inside the Shopify admin the app is always light, and reads nothing from storage. The same
+        // test as src/lib/embedded.ts: framed, or opened with Shopify's embedded=1 flag.
+        var embedded = /[?&]embedded=1(&|$)/.test(window.location.search);
+        try {
+          embedded = embedded || window.self !== window.top;
+        } catch (error) {
+          embedded = true; // reading a cross-origin parent's window throws, which means: framed
+        }
+        if (embedded) {
+          theme = 'light';
+        } else {
+          try {
+            var stored = localStorage.getItem('scorelo.theme');
+            if (stored === 'dark' || stored === 'light' || stored === 'system') theme = stored;
+          } catch (error) {
+            // Storage blocked (private window, embedded webview). The dark default still applies.
+          }
+        }
+        // 'system' leaves the attribute off, which hands control to the prefers-color-scheme block
+        // in index.css. Anything else — including never having chosen — is stamped.
+        if (theme !== 'system') document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+  </head>
+  <body class="antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

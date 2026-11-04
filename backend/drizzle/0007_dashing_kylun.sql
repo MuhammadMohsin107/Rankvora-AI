@@ -1,0 +1,5 @@
+ALTER TABLE `auth_challenges` DROP CONSTRAINT `auth_challenges_purpose_valid`;--> statement-breakpoint
+ALTER TABLE `security_events` DROP CONSTRAINT `security_events_type_valid`;--> statement-breakpoint
+ALTER TABLE `users` ADD `two_factor_enabled_at` datetime;--> statement-breakpoint
+ALTER TABLE `auth_challenges` ADD CONSTRAINT `auth_challenges_purpose_valid` CHECK (`auth_challenges`.`purpose` IN ('email_verification', 'password_reset', 'password_reset_ticket', 'login_2fa', 'login_2fa_ticket'));--> statement-breakpoint
+ALTER TABLE `security_events` ADD CONSTRAINT `security_events_type_valid` CHECK (`security_events`.`type` IN ('login_success', 'login_failed', 'logout', 'password_changed', 'password_reset', 'email_verified', 'session_revoked', 'sessions_revoked', 'two_factor_enabled', 'two_factor_disabled'));

@@ -1,0 +1,1 @@
+ALTER TABLE `google_connections` ADD `ga4_property_id` varchar(32);

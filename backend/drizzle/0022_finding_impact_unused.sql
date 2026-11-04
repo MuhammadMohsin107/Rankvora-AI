@@ -1,0 +1,1 @@
+ALTER TABLE `findings` MODIFY COLUMN `impact` varchar(32);
