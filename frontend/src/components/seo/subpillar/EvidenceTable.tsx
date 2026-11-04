@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, Search, SlidersHorizontal } from 'lucide-react';
 import {
   HEALTHY,
   describeIssueUnits,
@@ -17,6 +16,8 @@ import SeverityBadge from './SeverityBadge';
 import BulkFixWorkflow from './BulkFixWorkflow';
 import { card, cardHeader, cardHeadingRow, cardTitle, eyebrow } from './tone';
 import { scrollChaining } from '../../../lib/scrollChaining';
+import Button from '../../../components/polaris/Button';
+import { SearchField, SelectField } from '../../polaris/fields';
 
 interface Props {
   evidence: EvidenceConfig;
@@ -230,7 +231,7 @@ export default function EvidenceTable({
       : primary;
     const sub = column.subKey ? row.cells[column.subKey] : undefined;
 
-    if (column.variant === 'severity') return <SeverityBadge severity={severityForStatus(row.status, findings, evidence.healthyStatus)} showIcon={false} />;
+    if (column.variant === 'severity') return <SeverityBadge severity={severityForStatus(row.status, findings, evidence.healthyStatus)} />;
     if (column.variant === 'status') {
       const issue = isIssueStatus(row.status, evidence.healthyStatus);
       return <span className={`text-[12px] ${issue ? 'font-medium text-surface-800' : 'text-surface-400'}`}>{issue ? row.status : '—'}</span>;
@@ -243,9 +244,9 @@ export default function EvidenceTable({
       // any other row is a question about that row alone, whatever else happens to be ticked.
       const investigating = selectedIds.includes(row.id) ? selectedRows : [row];
       return finding ? (
-        <button type="button" onClick={() => onInvestigate(finding, investigating)} className="inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 text-[11.5px] font-semibold text-brand-700 transition-colors hover:bg-brand-50 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500" aria-label={`Investigate ${row.status} issue`}>
-          Investigate <ArrowRight size={11} />
-        </button>
+        <Button variant="ghost" onClick={() => onInvestigate(finding, investigating)} accessibilityLabel={`Investigate ${row.status} issue`}>
+          Investigate 
+        </Button>
       ) : <span className="text-[12px] text-surface-300">—</span>;
     }
 
@@ -280,14 +281,30 @@ export default function EvidenceTable({
         {/* Search, facet, sort and the issue filters share one row from `lg` up: four controls that
             each fit in 28px have no reason to occupy three stacked bands above the data. */}
         <div className="mt-2 flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center">
-          <label className="relative block lg:w-56">
-            <span className="sr-only">Search evidence</span>
-            <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-surface-400" aria-hidden="true" />
-            <input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={evidence.searchPlaceholder} className="h-7 w-full rounded-md border border-surface-200 bg-surface-50 pl-7 pr-2 text-[12px] text-surface-900 outline-none transition-colors placeholder:text-surface-400 focus:border-brand-400 focus:bg-surface-0 focus:ring-2 focus:ring-brand-100" />
-          </label>
+          <div className="lg:w-56">
+            <SearchField label="Search evidence" placeholder={evidence.searchPlaceholder} value={search} onChange={setSearch} />
+          </div>
           <div className="flex flex-wrap items-center gap-1.5">
-            {evidence.facet && <label className="inline-flex items-center gap-1 text-[11px] text-surface-500"><SlidersHorizontal size={12} aria-hidden="true" /><span className="sr-only">{evidence.facet.label}</span><select value={facet} onChange={(event) => setFacet(event.target.value)} className="h-7 cursor-pointer rounded-md border border-surface-200 bg-surface-0 px-1.5 text-[11.5px] font-medium text-surface-700 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"><option value="All">{evidence.facet.allLabel}</option>{evidence.facet.values.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>}
-            {evidence.sorts.length > 0 && <label className="inline-flex items-center gap-1 text-[11px] text-surface-500"><span className="sr-only">Sort</span><select value={sortKey} onChange={(event) => setSortKey(event.target.value)} className="h-7 cursor-pointer rounded-md border border-surface-200 bg-surface-0 px-1.5 text-[11.5px] font-medium text-surface-700 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100">{evidence.sorts.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label>}
+            {evidence.facet && (
+              <SelectField
+                label={evidence.facet.label}
+                labelHidden
+                value={facet}
+                options={['All', ...evidence.facet.values]}
+                optionLabel={(option) => (option === 'All' ? evidence.facet!.allLabel : option)}
+                onChange={setFacet}
+              />
+            )}
+            {evidence.sorts.length > 0 && (
+              <SelectField
+                label="Sort"
+                labelHidden
+                value={sortKey}
+                options={evidence.sorts.map((option) => option.key)}
+                optionLabel={(key) => evidence.sorts.find((option) => option.key === key)?.label ?? key}
+                onChange={setSortKey}
+              />
+            )}
           </div>
           <div className="inline-flex flex-wrap gap-0.5 rounded-md border border-surface-200 bg-surface-100/70 p-0.5" role="group" aria-label="Filter by issue">
             {statusFilters.map((status) => {
@@ -297,7 +314,7 @@ export default function EvidenceTable({
             })}
           </div>
         </div>
-        {supportsBulkFix && selectedIds.length > 0 && <div className="mt-2 flex flex-col gap-1.5 rounded-md border border-brand-100 bg-brand-50/60 px-2.5 py-1.5 sm:flex-row sm:items-center sm:justify-between"><span className="text-[11.5px] font-semibold text-brand-800">{selectedIds.length} selected</span><div className="flex flex-wrap gap-1.5"><button type="button" onClick={() => setIsBulkFixOpen(true)} disabled={fixableRows.length === 0} title={fixableRows.length === 0 ? 'None of the selected rows has an issue to fix.' : undefined} className="btn-primary btn-xs">Generate fixes{fixableRows.length !== selectedIds.length ? ` (${fixableRows.length})` : ''}</button><button type="button" onClick={() => setSelectedIds([])} className="btn-ghost btn-xs">Deselect all</button></div></div>}
+        {supportsBulkFix && selectedIds.length > 0 && <div className="mt-2 flex flex-col gap-1.5 rounded-md border border-brand-100 bg-brand-50/60 px-2.5 py-1.5 sm:flex-row sm:items-center sm:justify-between"><span className="text-[11.5px] font-semibold text-brand-800">{selectedIds.length} selected</span><div className="flex flex-wrap gap-1.5"><Button variant="primary" onClick={() => setIsBulkFixOpen(true)} disabled={fixableRows.length === 0}>Generate fixes{fixableRows.length !== selectedIds.length ? ` (${fixableRows.length})` : ''}</Button><Button variant="ghost" onClick={() => setSelectedIds([])}>Deselect all</Button></div></div>}
       </div>
 
       {visible.length === 0 ? <div className="px-4 py-8 text-center"><p className="text-[13px] font-semibold text-surface-900">Nothing matches these filters</p><p className="mt-0.5 text-[11.5px] text-surface-500">Clear the search or pick a different issue.</p></div> : <div ref={setTableScroll} style={tableMaxHeight ? { maxHeight: tableMaxHeight } : undefined} className="overflow-auto [scrollbar-color:var(--c-surface-300)_transparent] [scrollbar-width:thin]"><table className="table-compact w-full"><caption className="sr-only">{evidence.caption}</caption><thead className="border-b border-surface-200 bg-surface-0 [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-surface-0 [&_th]:shadow-[inset_0_-1px_0_var(--c-surface-200)]"><tr>{supportsBulkFix && <th scope="col" className="w-9"><input type="checkbox" checked={allVisibleSelected} ref={(element) => { if (element) element.indeterminate = someVisibleSelected; }} onChange={toggleVisibleSelection} aria-label="Select visible rows" className="h-3.5 w-3.5 cursor-pointer rounded border-surface-300 text-brand-600 focus:ring-brand-500" /></th>}{columns.map((column) => <th key={column.key} scope="col" className={alignClass[column.align ?? 'left']}>{column.header}</th>)}</tr></thead><tbody className="divide-y divide-surface-200">{visible.map((row) => <tr key={row.id} className="transition-colors hover:bg-surface-50">{supportsBulkFix && <td><input type="checkbox" checked={selectedIds.includes(row.id)} onChange={() => toggleRowSelection(row.id)} aria-label={`Select ${String(row.cells.url ?? row.id)}`} className="h-3.5 w-3.5 cursor-pointer rounded border-surface-300 text-brand-600 focus:ring-brand-500" /></td>}{columns.map((column) => <td key={column.key} className={alignClass[column.align ?? 'left']}>{renderCell(row, column)}</td>)}</tr>)}</tbody></table></div>}

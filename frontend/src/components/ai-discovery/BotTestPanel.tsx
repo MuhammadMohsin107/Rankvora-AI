@@ -10,6 +10,7 @@ import {
 import { ApiError } from '../../lib/api';
 import { cardClass } from '../dashboard/scoreTone';
 import { Button, StatusBadge } from '../workflows/WorkflowPrimitives';
+import { SelectField, TextField } from '../polaris/fields';
 
 /**
  * ─── Test as a bot ───────────────────────────────────────────────────
@@ -107,31 +108,23 @@ export default function BotTestPanel() {
       </div>
 
       <div className="flex flex-wrap items-end gap-2.5 px-3 py-2.5">
-        <label className="min-w-[180px] flex-1">
-          <span className="mb-1 block text-[11px] font-medium text-surface-600">Crawler</span>
-          <select
+        <div className="min-w-[180px] flex-1">
+          <SelectField
+            label="Crawler"
             value={bot}
-            onChange={(event) => setBot(event.target.value)}
-            className="w-full rounded-lg border border-surface-200 bg-surface-0 px-2.5 py-1.5 text-[12.5px] text-surface-900"
-          >
-            {bots.map((entry) => (
-              <option key={entry.name} value={entry.name} disabled={!entry.probeable}>
-                {entry.name} — {entry.vendor}
-                {entry.probeable ? '' : ' (robots.txt token only)'}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="min-w-[180px] flex-1">
-          <span className="mb-1 block text-[11px] font-medium text-surface-600">Path on your store</span>
-          <input
-            value={path}
-            onChange={(event) => setPath(event.target.value)}
-            placeholder="/"
-            className="w-full rounded-lg border border-surface-200 bg-surface-0 px-2.5 py-1.5 text-[12.5px] text-surface-900"
+            options={bots.map((entry) => entry.name)}
+            onChange={setBot}
+            optionLabel={(name) => {
+              const entry = bots.find((candidate) => candidate.name === name);
+              return entry ? `${entry.name} — ${entry.vendor}${entry.probeable ? '' : ' (robots.txt token only)'}` : name;
+            }}
+            optionDisabled={(name) => !bots.find((candidate) => candidate.name === name)?.probeable}
           />
-        </label>
+        </div>
+
+        <div className="min-w-[180px] flex-1">
+          <TextField label="Path on your store" value={path} onChange={setPath} placeholder="/" />
+        </div>
 
         <Button onClick={() => void run()} disabled={running || !bot || !selected?.probeable}>
           {running ? 'Fetching…' : 'Run test'}

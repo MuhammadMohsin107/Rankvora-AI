@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, CheckCircle2, Loader2, PencilLine, RefreshCw, Sparkles, Store, Wand2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, Sparkles, Store, Wand2 } from 'lucide-react';
 import type { EvidenceRow, SubPillarFinding } from '../../../data/seo/subpillar.model';
 import {
   applyFixes,
@@ -15,6 +15,8 @@ import {
 import { followAuditRun } from '../../../data/useAuditRun';
 import { titleFieldBounds } from '../../../data/fixBounds';
 import { ApiError } from '../../../lib/api';
+import Button from '../../../components/polaris/Button';
+import { TextAreaField } from '../../polaris/fields';
 
 /**
  * ─── The fix itself, for the item being investigated ─────────────────────────────────────────
@@ -328,10 +330,9 @@ export default function InvestigationFix({ finding, rows, capability, autoGenera
     <div className="space-y-2">
       {canDraft && !loadingEarlier && idleIds.length > 1 && !anyGenerating && (
         // Opened from the findings list there is no chosen item, so nothing is drafted until asked.
-        <button type="button" onClick={() => void generate(idleIds.slice(0, AUTO_GENERATE_LIMIT))} className="btn-primary btn-xs">
-          {fromTemplate ? <Wand2 size={12} aria-hidden="true" /> : <Sparkles size={12} aria-hidden="true" />}
+        <Button variant="primary" onClick={() => void generate(idleIds.slice(0, AUTO_GENERATE_LIMIT))}>
           {`${words.generate} for ${Math.min(idleIds.length, AUTO_GENERATE_LIMIT)} items`}
-        </button>
+        </Button>
       )}
       {!canDraft && (
         <p className="rounded-md bg-surface-50 px-2.5 py-2 text-[11.5px] leading-[1.45] text-surface-600 ring-1 ring-inset ring-surface-200">
@@ -431,15 +432,15 @@ export default function InvestigationFix({ finding, rows, capability, autoGenera
                 {/* ── Editing: the draft, or the merchant's own words ── */}
                 {editing && (
                   <div className="mt-1.5">
-                    <label htmlFor={`fix-${row.id}`} className="sr-only">{field.label}</label>
-                    <textarea
+                    <TextAreaField
                       id={`fix-${row.id}`}
+                      label={field.label}
+                      labelHidden
                       rows={3}
                       value={item.text}
-                      onChange={(event) => patch(row.id, { text: event.target.value, saveError: null })}
+                      onChange={(next) => patch(row.id, { text: next, saveError: null })}
                       disabled={item.saving}
                       placeholder={item.mode === 'manual' ? `Write the ${field.label.toLowerCase()} for this ${noun}` : undefined}
-                      className="w-full resize-y rounded-md border border-surface-200 bg-surface-0 px-2.5 py-1.5 text-[12.5px] leading-[1.5] text-surface-900 outline-none placeholder:text-surface-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 disabled:opacity-60"
                     />
                     <p className={`mt-0.5 text-[10.5px] tabular-nums ${textProblem ? 'text-warning-700' : 'text-success-700'}`} aria-live="polite">
                       {textProblem ?? `${length} characters · within ${minLength}–${maxLength}`}
@@ -458,50 +459,36 @@ export default function InvestigationFix({ finding, rows, capability, autoGenera
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
                   {item.phase === 'draft' && item.mode === 'view' && (
                     <>
-                      <button type="button" onClick={() => void save(row, item.draft, item.proposalId)} disabled={item.saving || draftProblem !== null} className="btn-primary btn-xs">
-                        {item.saving ? <Loader2 size={12} className="animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <CheckCircle2 size={12} aria-hidden="true" />}
+                      <Button loading={item.saving} variant="primary" onClick={() => void save(row, item.draft, item.proposalId)} disabled={item.saving || draftProblem !== null}>
                         {item.saving ? 'Saving to your store…' : words.apply}
-                      </button>
-                      <button type="button" onClick={() => patch(row.id, { mode: 'edit', text: item.draft, saveError: null })} disabled={item.saving} className="btn-secondary btn-xs">
-                        <PencilLine size={12} aria-hidden="true" />
+                      </Button>
+                      <Button variant="secondary" onClick={() => patch(row.id, { mode: 'edit', text: item.draft, saveError: null })} disabled={item.saving}>
                         Edit
-                      </button>
+                      </Button>
                     </>
                   )}
 
                   {editing && (
                     <>
-                      <button
-                        type="button"
-                        onClick={() => void save(row, item.text, item.mode === 'edit' ? item.proposalId : null)}
-                        disabled={item.saving || textProblem !== null}
-                        className="btn-primary btn-xs"
-                      >
-                        {item.saving ? <Loader2 size={12} className="animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <CheckCircle2 size={12} aria-hidden="true" />}
+                      <Button loading={item.saving} variant="primary" onClick={() => void save(row, item.text, item.mode === 'edit' ? item.proposalId : null)} disabled={item.saving || textProblem !== null}>
                         {item.saving ? 'Saving to your store…' : 'Apply to your store'}
-                      </button>
-                      <button type="button" onClick={() => patch(row.id, { mode: 'view', saveError: null })} disabled={item.saving} className="btn-ghost btn-xs">
+                      </Button>
+                      <Button variant="ghost" onClick={() => patch(row.id, { mode: 'view', saveError: null })} disabled={item.saving}>
                         Cancel
-                      </button>
+                      </Button>
                     </>
                   )}
 
                   {canDraft && item.mode === 'view' && (item.phase === 'draft' || item.phase === 'unavailable' || (item.phase === 'idle' && !loadingEarlier)) && (
-                    <button type="button" onClick={() => void generate([row.id])} disabled={item.saving} className="btn-secondary btn-xs">
-                      {item.phase === 'idle' ? <Sparkles size={12} aria-hidden="true" /> : <RefreshCw size={12} aria-hidden="true" />}
+                    <Button variant="secondary" onClick={() => void generate([row.id])} disabled={item.saving}>
                       {item.phase === 'idle' ? words.generate : item.phase === 'unavailable' ? 'Try again' : words.again}
-                    </button>
+                    </Button>
                   )}
 
                   {item.mode === 'view' && item.phase !== 'generating' && !(loadingEarlier && item.phase === 'idle') && (
-                    <button
-                      type="button"
-                      onClick={() => patch(row.id, { mode: 'manual', text: item.phase === 'applied' ? item.appliedValue ?? '' : '', saveError: null })}
-                      disabled={item.saving}
-                      className="btn-ghost btn-xs"
-                    >
+                    <Button variant="ghost" onClick={() => patch(row.id, { mode: 'manual', text: item.phase === 'applied' ? item.appliedValue ?? '' : '', saveError: null })} disabled={item.saving}>
                       {item.phase === 'applied' ? 'Edit again' : 'Apply manually'}
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

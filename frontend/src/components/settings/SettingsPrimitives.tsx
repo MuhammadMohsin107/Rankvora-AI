@@ -1,5 +1,7 @@
-import { useEffect, useRef, type ReactNode } from 'react';
-import { AlertTriangle, Check, Info, X } from 'lucide-react';
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
+import { Check, X } from 'lucide-react';
+import Banner from '../polaris/Banner';
+import { SelectField, SwitchField, TextField } from '../polaris/fields';
 import { Button } from '../workflows/WorkflowPrimitives';
 
 /** Card shell — matches Integrations / Reports exactly. */
@@ -32,126 +34,89 @@ export function SettingsCard({
   );
 }
 
-/** Label + control + helper/error text. */
+/**
+ * What a field tells the control inside it: the label, the helper text and the error. Polaris draws all
+ * three itself, as part of the field element, so `Field` no longer draws any markup of its own — it only
+ * hands them down to the TextInput / SelectInput placed inside it.
+ */
+const FieldContext = createContext<{ label: string; error?: string; hint?: ReactNode } | null>(null);
+
+function useFieldContext(control: string) {
+  const field = useContext(FieldContext);
+  if (!field) throw new Error(`${control} must be placed inside a Field, which gives it its label.`);
+  return field;
+}
+
+/** Label + control + helper/error text: the label, hint and error shown by the TextInput or SelectInput inside. */
 export function Field({
   label,
-  htmlFor,
   hint,
   error,
   children,
   className = '',
 }: {
   label: string;
-  htmlFor: string;
+  /** The id of the control inside. Kept so call sites read the same; Polaris links label and control itself. */
+  htmlFor?: string;
   /** Helper line under the control. A node, so it can carry a link or an action. */
   hint?: ReactNode;
   error?: string;
   children: ReactNode;
   className?: string;
 }) {
+  const value = useMemo(() => ({ label, error, hint }), [label, error, hint]);
   return (
-    <div className={className}>
-      <label htmlFor={htmlFor} className="block text-[12.5px] font-semibold text-surface-800">
-        {label}
-      </label>
-      <div className="mt-1">{children}</div>
-      {error ? (
-        <p id={`${htmlFor}-error`} className="mt-1 flex items-center gap-1.5 text-[11.5px] font-medium text-critical-700">
-          <AlertTriangle size={12} aria-hidden="true" />
-          {error}
-        </p>
-      ) : (
-        hint && (
-          <div id={`${htmlFor}-hint`} className="mt-1 text-[11.5px] leading-[1.45] text-surface-500">
-            {hint}
-          </div>
-        )
-      )}
-    </div>
+    <FieldContext.Provider value={value}>
+      <div className={className}>{children}</div>
+    </FieldContext.Provider>
   );
 }
 
-// 32px controls, matching the .btn-* height in index.css so an input and the button beside it are
-// the same size. They were 44px against 36px buttons, which is what made every form row feel loose.
-const controlBase =
-  'w-full rounded-md border bg-surface-0 px-2.5 py-1.5 text-[12.5px] text-surface-900 outline-none transition-colors placeholder:text-surface-400 focus:ring-2 disabled:cursor-not-allowed disabled:bg-surface-50 disabled:text-surface-500';
-
+/** A text field — Polaris's `<s-text-field>` (or its email / url variant), labelled by the Field around it. */
 export function TextInput({
   id,
   value,
   onChange,
   placeholder,
   type = 'text',
-  invalid = false,
   disabled = false,
   prefix,
-  describedBy,
 }: {
   id: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   type?: string;
+  /** Kept so call sites read the same: the Field's `error` is what marks the field invalid. */
   invalid?: boolean;
   disabled?: boolean;
   prefix?: string;
   describedBy?: string;
 }) {
-  const tone = invalid
-    ? 'border-critical-300 focus:border-critical-500 focus:ring-critical-100'
-    : 'border-surface-200 focus:border-brand-400 focus:ring-brand-100';
-
-  if (prefix) {
-    return (
-      <div
-        className={`flex items-stretch overflow-hidden rounded-md border transition-colors focus-within:ring-2 ${
-          invalid
-            ? 'border-critical-300 focus-within:border-critical-500 focus-within:ring-critical-100'
-            : 'border-surface-200 focus-within:border-brand-400 focus-within:ring-brand-100'
-        }`}
-      >
-        <span className="flex items-center border-r border-surface-200 bg-surface-50 px-2.5 font-mono text-[11.5px] text-surface-500">
-          {prefix}
-        </span>
-        <input
-          id={id}
-          type={type}
-          value={value}
-          disabled={disabled}
-          aria-invalid={invalid || undefined}
-          aria-describedby={describedBy}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-          className="w-full bg-surface-0 px-2.5 py-1.5 text-[12.5px] text-surface-900 outline-none placeholder:text-surface-400"
-        />
-      </div>
-    );
-  }
-
+  const { label, error, hint } = useFieldContext('TextInput');
   return (
-    <div className="relative">
-      <input
-        id={id}
-        type={type}
-        value={value}
-        disabled={disabled}
-        aria-invalid={invalid || undefined}
-        aria-describedby={describedBy}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className={`${controlBase} ${tone}`}
-      />
-    </div>
+    <TextField
+      id={id}
+      label={label}
+      details={hint}
+      error={error}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      type={type === 'email' || type === 'url' ? type : 'text'}
+      disabled={disabled}
+      prefix={prefix}
+    />
   );
 }
 
+/** A choice from a list — Polaris's `<s-select>`, labelled by the Field around it. */
 export function SelectInput<T extends string>({
   id,
   value,
   options,
   onChange,
   disabled = false,
-  describedBy,
   labelFor,
 }: {
   id: string;
@@ -163,29 +128,11 @@ export function SelectInput<T extends string>({
   /** How an option is shown, when that differs from the value stored — e.g. "PKR — Pakistani Rupee" for PKR. */
   labelFor?: (option: T) => string;
 }) {
-  // The stored value is always an option. A <select> whose value matches none of its options
-  // silently SHOWS the first one — so a store in "Unspecified" read as "Pakistan", and a London
-  // timezone as "Karachi", on a page presenting them as the merchant's real details.
-  const choices = options.includes(value) ? options : [value, ...options];
-  return (
-    <select
-      id={id}
-      value={value}
-      disabled={disabled}
-      aria-describedby={describedBy}
-      onChange={(event) => onChange(event.target.value as T)}
-      className={`${controlBase} cursor-pointer border-surface-200 focus:border-brand-400 focus:ring-brand-100`}
-    >
-      {choices.map((option) => (
-        <option key={option} value={option}>
-          {labelFor ? labelFor(option) : option}
-        </option>
-      ))}
-    </select>
-  );
+  const { label, error, hint } = useFieldContext('SelectInput');
+  return <SelectField id={id} label={label} details={hint} error={error} value={value} options={options} onChange={onChange} disabled={disabled} optionLabel={labelFor} />;
 }
 
-/** Toggle row: label, microcopy, switch. Microcopy is required. */
+/** Toggle row: label, microcopy, switch — Polaris's `<s-switch>`. Microcopy is required. */
 export function ToggleRow({
   id,
   label,
@@ -202,32 +149,8 @@ export function ToggleRow({
   disabled?: boolean;
 }) {
   return (
-    <div className="flex items-start justify-between gap-3 py-2">
-      <div className="min-w-0">
-        <label htmlFor={id} className={`block text-[12.5px] font-semibold ${disabled ? 'text-surface-400' : 'text-surface-800'}`}>
-          {label}
-        </label>
-        <p className="mt-0.5 max-w-xl text-[11.5px] leading-[1.4] text-surface-500">{description}</p>
-      </div>
-      <button
-        id={id}
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-label={label}
-        disabled={disabled}
-        onClick={() => onChange(!checked)}
-        className={`relative mt-0.5 inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none ${
-          checked ? 'bg-brand-600' : 'bg-surface-300'
-        }`}
-      >
-        <span
-          aria-hidden="true"
-          className={`inline-block h-[18px] w-[18px] transform rounded-full bg-surface-0 shadow-sm transition-transform duration-200 motion-reduce:transition-none ${
-            checked ? 'translate-x-[22px]' : 'translate-x-1'
-          }`}
-        />
-      </button>
+    <div className="py-2">
+      <SwitchField id={id} label={label} details={description} checked={checked} onChange={onChange} disabled={disabled} />
     </div>
   );
 }
@@ -248,10 +171,9 @@ export function ReadOnlyRow({ label, value, hint }: { label: string; value: Reac
 /** Explains why a group is display-only in this build. */
 export function PreviewNotice({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-start gap-2 rounded-md border border-info-100 bg-info-50 px-2.5 py-2">
-      <Info size={14} className="mt-px flex-shrink-0 text-info-700" aria-hidden="true" />
-      <p className="text-[11px] leading-[1.4] text-info-800">{children}</p>
-    </div>
+    <Banner tone="info">
+      <s-text>{children}</s-text>
+    </Banner>
   );
 }
 
@@ -317,124 +239,6 @@ export function SavedToast({ visible, onDismiss }: { visible: boolean; onDismiss
       >
         <X size={13} />
       </button>
-    </div>
-  );
-}
-
-/** Destructive-action confirmation. Requires an explicit typed match. */
-export function ConfirmDialog({
-  open,
-  title,
-  description,
-  impact,
-  confirmLabel,
-  confirmWord,
-  typedValue,
-  onTypedValueChange,
-  onCancel,
-  onConfirm,
-}: {
-  open: boolean;
-  title: string;
-  description: string;
-  impact: string[];
-  confirmLabel: string;
-  confirmWord: string;
-  typedValue: string;
-  onTypedValueChange: (value: string) => void;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  const closeRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCancel();
-    };
-    document.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    closeRef.current?.focus();
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [open, onCancel]);
-
-  if (!open) return null;
-  const matches = typedValue.trim().toUpperCase() === confirmWord.toUpperCase();
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-3 sm:items-center">
-      {/* Deliberately NOT a surface token. A scrim's job is to darken whatever is behind it, in
-          both themes — running it through the inverting ramp would turn it into a white wash over
-          dark content, which lightens the page instead of dimming it. */}
-      <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]" onClick={onCancel} aria-hidden="true" />
-      <div
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="confirm-title"
-        aria-describedby="confirm-description"
-        className="relative w-full max-w-md rounded-lg border border-surface-200 bg-surface-0 shadow-2xl motion-safe:animate-scale-in"
-      >
-        <div className="flex items-start gap-3 border-b border-surface-200 p-3">
-          <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-critical-50 text-critical-700">
-            <AlertTriangle size={17} aria-hidden="true" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <h2 id="confirm-title" className="text-[13px] font-bold text-surface-950">
-              {title}
-            </h2>
-            <p id="confirm-description" className="mt-1 text-[12.5px] leading-[1.45] text-surface-600">
-              {description}
-            </p>
-          </div>
-          <button
-            ref={closeRef}
-            type="button"
-            onClick={onCancel}
-            className="rounded-lg p-1.5 text-surface-400 transition-colors hover:bg-surface-100 hover:text-surface-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-            aria-label="Cancel"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="p-3">
-          <p className="text-[11.5px] font-bold uppercase tracking-wide text-surface-500">What happens</p>
-          <ul className="mt-2 space-y-1.5">
-            {impact.map((item) => (
-              <li key={item} className="flex items-start gap-2 text-[12.5px] text-surface-700">
-                <span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-surface-400" aria-hidden="true" />
-                {item}
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-2.5">
-            <label htmlFor="confirm-input" className="block text-[12.5px] font-semibold text-surface-800">
-              Type <span className="font-mono text-critical-700">{confirmWord}</span> to confirm
-            </label>
-            <input
-              id="confirm-input"
-              value={typedValue}
-              onChange={(event) => onTypedValueChange(event.target.value)}
-              autoComplete="off"
-              className="mt-1.5 w-full rounded-lg border border-surface-200 px-3 py-2.5 text-[12.5px] outline-none transition-colors focus:border-critical-400 focus:ring-2 focus:ring-critical-100"
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2 border-t border-surface-200 bg-surface-50/60 p-3">
-          <Button variant="secondary" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={onConfirm} disabled={!matches}>
-            {confirmLabel}
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, ArrowRight, Clock3, ImagePlus, Radar, RefreshCw, Settings2 } from 'lucide-react';
+import { AlertCircle, Clock3, Radar } from 'lucide-react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { type EvidenceRow, type RowStatus, type SubPillarAnalysis, type SubPillarFinding } from '../data/seo/subpillar.model';
 import { fetchSubPillarAnalysis, isNotAuditedYet } from '../data/seo/subpillar.repository';
 import { buildAnalysis } from '../data/genericAnalysis';
+import AppPage from '../components/polaris/AppPage';
 import ScoreCard from '../components/seo/subpillar/ScoreCard';
 import HealthCard from '../components/seo/subpillar/HealthCard';
 import FindingsList from '../components/seo/subpillar/FindingsList';
@@ -21,6 +22,7 @@ import GrantShopifyAccess from '../components/audit/GrantShopifyAccess';
 import { fetchSubPillarSettings, saveSubPillarSettings } from '../data/pageSettings.repository';
 import { useAuditCompletion, useAuditRun } from '../data/useAuditRun';
 import MissingImagesPanel from '../components/images/MissingImagesPanel';
+import Button from '../components/polaris/Button';
 
 /** Where an unrecognised slug is sent. The pillar LABELS that used to sit beside this were only
  * needed by the in-page breadcrumb, which the header now owns on its own. */
@@ -102,6 +104,14 @@ export default function NonSeoSubPillarPage() {
   // A page with nothing real to configure shows no Settings button — never another page's settings,
   // and never controls no check reads. Same rule as the SEO template.
   const settingsAvailable = hasSubPillarSettings(routeKey);
+  // The page's main action, in the page frame (the admin's title bar) on every state that has results.
+  const reanalyzeAction = {
+    label: auditRun.running ? `Analyzing… ${auditRun.progress}%` : isRefreshing ? 'Loading results…' : 'Re-analyze',
+    onClick: reanalyze,
+    loading: auditRun.running || isRefreshing,
+    disabled: auditRun.running || isRefreshing,
+    accessibilityLabel: `Re-analyze this store and refresh ${config?.title ?? 'this page'}`,
+  };
   const updatePageSetting = (key: string, value: PageSettingValue) => setPageSettings((current) => ({ ...current, [key]: value }));
   const savePageSettings = () => {
     savedSettingsRef.current = pageSettings;
@@ -119,14 +129,17 @@ export default function NonSeoSubPillarPage() {
     const pillarKey = routeKey.split('/')[0] ?? '';
     return <Navigate to={backRoutes[pillarKey] ?? '/'} replace />;
   }
-  if (state === 'loading') return <SubPillarSkeleton />;
+  // Every state sits in the same page frame, so the title bar keeps this area's name while its data
+  // loads, is missing, or fails to load. Re-analyze (and Settings) join it only on the page that has
+  // results to refresh; the other states carry their own "Run the audit" or "Retry".
+  if (state === 'loading') return <AppPage heading={config.title}><SubPillarSkeleton /></AppPage>;
   // "Not audited yet" is a first-run state, not a failure — the page must not imply a fault,
   // and must not fill its layout with numbers to compensate.
-  if (state === 'empty') return <div className="mx-auto max-w-2xl px-4 py-10"><div className={`${card} flex flex-col items-center p-6 text-center`}><Radar size={18} className="text-brand-600" /><h1 className="mt-2.5 text-[15px] font-semibold text-surface-900">No {config.title} audit available</h1>{implemented === false
+  if (state === 'empty') return <AppPage heading={config.title}><div className="mx-auto max-w-2xl py-10"><div className={`${card} flex flex-col items-center p-6 text-center`}><Radar size={18} className="text-brand-600" /><h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">No {config.title} audit available</h2>{implemented === false
     ? <p className="mt-1 max-w-md text-[12.5px] leading-[1.5] text-surface-500">Rankvora AI does not measure this check yet, so running an audit will not populate this page. Support for it is still being built.</p>
-    : <><p className="mt-1 max-w-sm text-[12.5px] leading-[1.5] text-surface-500">Run an audit to generate real results for this check. Nothing on this page is estimated.</p><RunAuditButton /></>}</div></div>;
+    : <><p className="mt-1 max-w-sm text-[12.5px] leading-[1.5] text-surface-500">Run an audit to generate real results for this check. Nothing on this page is estimated.</p><RunAuditButton /></>}</div></div></AppPage>;
 
-  if (state === 'error' || !data) return <div className="mx-auto max-w-2xl px-4 py-10"><div className={`${card} flex flex-col items-center p-6 text-center`}><AlertCircle size={18} className="text-critical-600" /><h1 className="mt-2.5 text-[15px] font-semibold text-surface-900">Unable to load {config.title} analysis</h1><button type="button" onClick={() => load()} className="btn-primary mt-3"><RefreshCw size={14} />Retry</button></div></div>;
+  if (state === 'error' || !data) return <AppPage heading={config.title}><div className="mx-auto max-w-2xl py-10"><div className={`${card} flex flex-col items-center p-6 text-center`}><AlertCircle size={18} className="text-critical-600" /><h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">Unable to load {config.title} analysis</h2><Button variant="primary" onClick={() => load()} className="mt-3">Retry</Button></div></div></AppPage>;
 
   /**
    * ─── The check ran, and could not measure anything ─────────────────
@@ -143,24 +156,16 @@ export default function NonSeoSubPillarPage() {
    */
   if (data.status === 'unavailable') {
     return (
-      <div className="bg-surface-50">
+      <AppPage heading={config.title} primaryAction={reanalyzeAction}>
         <div className="page-shell">
-          <header className="page-head">
-            <div className="min-w-0">
-              <h1 className="page-title">{data.title}</h1>
-              <p className="page-subtitle">{data.description}</p>
-            </div>
-            <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
-              <span className="meta-chip">
-                <Clock3 size={12} className="text-surface-400" aria-hidden="true" />
-                Last analyzed <span className="font-medium text-surface-800">{data.lastAnalyzed}</span>
-              </span>
-              <button type="button" onClick={reanalyze} disabled={auditRun.running || isRefreshing} className="btn-primary btn-xs">
-                <RefreshCw size={12} className={auditRun.running || isRefreshing ? 'animate-spin motion-reduce:animate-none' : ''} aria-hidden="true" />
-                {auditRun.running ? `Analyzing… ${auditRun.progress}%` : isRefreshing ? 'Loading results…' : 'Re-analyze'}
-              </button>
-            </div>
-          </header>
+          {/* One line of context and when the audit last ran: the title and Re-analyze are in the page frame. */}
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="page-subtitle min-w-0">{data.description}</p>
+            <span className="meta-chip flex-shrink-0">
+              <Clock3 size={12} className="text-surface-400" aria-hidden="true" />
+              Last analyzed <span className="font-medium text-surface-800">{data.lastAnalyzed}</span>
+            </span>
+          </div>
 
           <div className={`${card} mt-3 flex flex-col items-center px-4 py-5 text-center`}>
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-100 text-surface-500">
@@ -187,7 +192,7 @@ export default function NonSeoSubPillarPage() {
             </div>
           )}
         </div>
-      </div>
+      </AppPage>
     );
   }
 
@@ -223,17 +228,21 @@ export default function NonSeoSubPillarPage() {
   // grid on a 12px gutter. The two templates render the same components, so they must also agree
   // on the space around them — a Content sub-pillar and an SEO sub-pillar are the same screen.
   return (
-    <div className="bg-surface-50">
+    // The area's name, its Settings / image actions and its Re-analyze are in the page frame (AppPage),
+    // drawn by the Shopify admin's title bar. What is left is the content, on the admin's own background.
+    <AppPage
+      heading={config.title}
+      primaryAction={reanalyzeAction}
+      secondaryActions={[
+        ...(settingsAvailable ? [{ label: 'Settings', onClick: () => setSettingsOpen(true), accessibilityLabel: `${config.title} settings` }] : []),
+        ...(offersImages ? [{ label: 'Add product images', onClick: () => setImagesOpen(true) }] : []),
+      ]}
+    >
       <div className="page-shell">
-        {/* NO in-page breadcrumb. The header already renders one for every route, so this second
-            trail printed the same path twice — "Content › Duplicate / Templated Copy" directly
-            under "Dashboard › Content › Duplicate / Templated Copy". The SEO template never had
-            one, which is why only these pages showed it. */}
-        <header className="page-head">
-          <div className="min-w-0">
-            <h1 className="page-title">{data.title}</h1>
-            <p className="page-subtitle">{data.description}</p>
-          </div>
+        {/* NO in-page breadcrumb and NO second title: the page frame carries the area's name. One line of
+            context and when the audit last ran, on a single row. */}
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="page-subtitle min-w-0">{data.description}</p>
           <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
             {/* A seeded fixture is never passed off as a measurement of the merchant's store. */}
             {data.source === 'seed' && (
@@ -245,29 +254,8 @@ export default function NonSeoSubPillarPage() {
               <Clock3 size={12} className="text-surface-400" aria-hidden="true" />
               Last analyzed <span className="font-medium text-surface-800">{data.lastAnalyzed}</span>
             </span>
-            {settingsAvailable && (
-              <button type="button" onClick={() => setSettingsOpen(true)} className="btn-secondary btn-xs">
-                <Settings2 size={12} aria-hidden="true" />
-                Settings
-              </button>
-            )}
-            {offersImages && (
-              <button type="button" onClick={() => setImagesOpen(true)} className="btn-secondary btn-xs">
-                <ImagePlus size={12} aria-hidden="true" />
-                Add product images
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={reanalyze}
-              disabled={auditRun.running || isRefreshing}
-              className="btn-primary btn-xs"
-            >
-              <RefreshCw size={12} className={auditRun.running || isRefreshing ? 'animate-spin motion-reduce:animate-none' : ''} aria-hidden="true" />
-              {auditRun.running ? `Analyzing… ${auditRun.progress}%` : isRefreshing ? 'Loading results…' : 'Re-analyze'}
-            </button>
           </div>
-        </header>
+        </div>
 
         {/* The analysis running, finished or failed is shown by the banner above every page
             (components/audit/AnalysisBanner.tsx). The results below are the previous audit's until it finishes. */}
@@ -321,14 +309,10 @@ export default function NonSeoSubPillarPage() {
                 It used to pass 'All' in that case, which is already the default filter, so on a
                 healthy sub-pillar the button changed nothing at all and read as broken.
               */}
-              <button
-                type="button"
-                onClick={() => focusEvidence(leadFinding?.issueType ?? data.evidence.healthyStatus ?? 'Healthy')}
-                className="btn-primary btn-xs flex-shrink-0"
-              >
-                <ArrowRight size={12} />
+              <Button variant="primary" onClick={() => focusEvidence(leadFinding?.issueType ?? data.evidence.healthyStatus ?? 'Healthy')} className="flex-shrink-0">
+                
                 Review evidence
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -359,6 +343,6 @@ export default function NonSeoSubPillarPage() {
           onSave={savePageSettings}
         />
       )}
-    </div>
+    </AppPage>
   );
 }

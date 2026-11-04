@@ -1,8 +1,9 @@
-import { ArrowRight, CheckCircle2, ScanSearch } from 'lucide-react';
+import { CheckCircle2, ScanSearch } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { RecommendedAction } from '../../data/dashboard/dashboard.types';
 import PillarTag from './PillarTag';
 import { cardClass, hairline, severityTone } from './scoreTone';
+import Button from '../../components/polaris/Button';
 
 interface Props {
   actions: RecommendedAction[];
@@ -69,15 +70,10 @@ export default function RecommendedActions({ actions }: Props) {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <p className="pt-0.5 text-[12.5px] font-semibold leading-snug text-surface-900">{action.title}</p>
-                    <button
-                      type="button"
-                      onClick={() => navigate(action.route)}
-                      className="inline-flex flex-shrink-0 cursor-pointer items-center gap-0.5 rounded-md border border-surface-200 bg-surface-0 px-2 py-0.5 text-[11px] font-semibold text-surface-700 shadow-sm transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1"
-                      aria-label={`Review ${action.title}`}
-                    >
+                    <Button variant="secondary" onClick={() => navigate(action.route)} accessibilityLabel={`Review ${action.title}`}>
                       Review
-                      <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
-                    </button>
+                      
+                    </Button>
                   </div>
                   {/* Clamped to two lines; the whole text is on the sub-pillar page Review opens. */}
                   <p className="mt-0.5 line-clamp-2 text-[11px] leading-[1.45] text-surface-500" title={action.description}>{action.description}</p>

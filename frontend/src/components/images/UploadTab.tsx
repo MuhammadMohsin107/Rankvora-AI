@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, ImagePlus, Loader2, RefreshCw, UploadCloud, X } from 'lucide-react';
+import { Loader2, UploadCloud } from 'lucide-react';
 import { ApiError } from '../../lib/api';
 import {
   uploadProductImage,
@@ -9,6 +9,9 @@ import {
 } from '../../data/productImages.repository';
 import AddedImageResult from './AddedImageResult';
 import { acceptedTypesLabel, formatBytes, inspectImage, type PickedImage } from './imageFile';
+import Button from '../../components/polaris/Button';
+import Banner from '../polaris/Banner';
+import { TextField } from '../polaris/fields';
 
 type Phase =
   | { name: 'choose' }
@@ -131,10 +134,9 @@ export default function UploadTab({ product, limits, canWrite, onBusyChange, onA
           <p className="mt-0.5 text-[11.5px] text-surface-500">
             {acceptedTypesLabel(limits)} · up to {formatBytes(limits.maxBytes)} · up to {limits.maxSide} × {limits.maxSide} px
           </p>
-          <button type="button" onClick={() => inputRef.current?.click()} className="btn-secondary mt-3">
-            <ImagePlus size={15} aria-hidden="true" />
+          <Button variant="secondary" onClick={() => inputRef.current?.click()} className="mt-3">
             Choose from your computer
-          </button>
+          </Button>
           <input
             ref={inputRef}
             type="file"
@@ -150,14 +152,7 @@ export default function UploadTab({ product, limits, canWrite, onBusyChange, onA
           <div className="relative flex items-center justify-center bg-[repeating-conic-gradient(var(--c-surface-100)_0%_25%,transparent_0%_50%)] [background-size:16px_16px]">
             <img src={picked.previewUrl} alt={`Preview of ${picked.file.name}`} className="max-h-72 w-auto object-contain" />
             {!sending && (
-              <button
-                type="button"
-                onClick={discard}
-                className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-surface-0/90 text-surface-600 shadow ring-1 ring-surface-200 hover:text-surface-900"
-                aria-label="Remove this photo"
-              >
-                <X size={14} aria-hidden="true" />
-              </button>
+              <Button variant="ghost" onClick={discard} accessibilityLabel="Remove this photo" icon="x" />
             )}
           </div>
           <figcaption className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 border-t border-surface-200 bg-surface-0 px-3 py-1.5 text-[11px] text-surface-500">
@@ -168,25 +163,18 @@ export default function UploadTab({ product, limits, canWrite, onBusyChange, onA
       )}
 
       {pickError && (
-        <p className="flex items-start gap-1.5 rounded-md bg-critical-50 px-2.5 py-2 text-[12px] text-critical-700 ring-1 ring-inset ring-critical-100" role="alert">
-          <AlertCircle size={14} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
-          {pickError}
-        </p>
+        <Banner tone="critical"><s-text>{pickError}</s-text></Banner>
       )}
 
       {picked && (
-        <div>
-          <label htmlFor="upload-alt" className="text-[12px] font-medium text-surface-700">Alt text</label>
-          <input
-            id="upload-alt"
-            value={alt}
-            onChange={(event) => setAlt(event.target.value)}
-            maxLength={512}
-            disabled={sending}
-            className="mt-1 w-full rounded-lg border border-surface-200 bg-surface-0 px-3 py-2 text-[12.5px] text-surface-900 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-surface-50"
-          />
-          <p className="mt-1 text-[11px] text-surface-500">Describes the photo for shoppers who cannot see it, and for search engines. It starts as the product’s name — say what the photo shows.</p>
-        </div>
+        <TextField
+          id="upload-alt"
+          label="Alt text"
+          value={alt}
+          onChange={(next) => setAlt(next.slice(0, 512))}
+          disabled={sending}
+          details="Describes the photo for shoppers who cannot see it, and for search engines. It starts as the product’s name — say what the photo shows."
+        />
       )}
 
       {sending && (
@@ -202,25 +190,20 @@ export default function UploadTab({ product, limits, canWrite, onBusyChange, onA
       )}
 
       {sendError && (
-        <div className="rounded-md bg-critical-50 px-2.5 py-2 text-[12px] text-critical-700 ring-1 ring-inset ring-critical-100" role="alert">
-          <p className="flex items-start gap-1.5">
-            <AlertCircle size={14} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
-            {sendError.message}
-          </p>
+        <Banner tone="critical">
+          <s-text>{sendError.message}</s-text>
           {picked && (
-            <button type="button" onClick={() => void send()} className="btn-secondary btn-xs mt-2">
-              <RefreshCw size={12} aria-hidden="true" />
+            <Button slot="secondary-actions" variant="secondary" onClick={() => void send()}>
               Try again
-            </button>
+            </Button>
           )}
-        </div>
+        </Banner>
       )}
 
       {picked && (
-        <button type="button" onClick={() => void send()} disabled={sending || !canWrite || alt.trim() === ''} className="btn-primary w-full">
-          {sending ? <Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <UploadCloud size={15} aria-hidden="true" />}
+        <Button loading={sending} variant="primary" onClick={() => void send()} disabled={sending || !canWrite || alt.trim() === ''} fullWidth>
           {sending ? 'Adding to your store…' : 'Add this image to the product in Shopify'}
-        </button>
+        </Button>
       )}
       {picked && !canWrite && (
         <p className="text-[11.5px] text-surface-500">Adding images is switched off for this store — see the notice above.</p>

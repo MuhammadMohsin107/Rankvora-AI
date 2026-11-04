@@ -1,34 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { scrollChaining } from '../lib/scrollChaining';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import {
-  AlertCircle,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-  Clock3,
-  Info,
-  Radar,
-  RefreshCw,
-  Search,
-  Trophy,
-  X,
-} from 'lucide-react';
+import { AlertCircle, ChevronDown, ChevronRight, ChevronUp, Clock3, Info, Radar } from 'lucide-react';
 import { fetchCatalog, itemsForMove, type Catalog, type CatalogItem } from '../data/catalog.repository';
 import { CATALOG_KINDS, type CatalogKind } from '../data/catalogKinds';
 import { fetchOnboardingShared } from '../data/onboarding.repository';
 import { isNotAuditedYet } from '../data/seo/subpillar.repository';
 import { fetchDashboardData, formatLastUpdated } from '../data/dashboard/dashboard.repository';
 import type { DashboardData, PriorityIssue } from '../data/dashboard/dashboard.types';
+import AppPage from '../components/polaris/AppPage';
 import WinningMovesPanel from '../components/dashboard/WinningMovesPanel';
 import MovesPanel from '../components/catalog/MovesPanel';
 import { IssueBadges, Thumbnail, formatCatalogDate } from '../components/catalog/CatalogBits';
 import RunAuditButton from '../components/audit/RunAuditButton';
 import { cardClass } from '../components/dashboard/scoreTone';
+import Button from '../components/polaris/Button';
+import { SearchField, SelectField } from '../components/polaris/fields';
 
 type Tab = 'all' | 'critical' | 'warnings' | 'passing';
 type Sort = 'worst' | 'name' | 'best' | 'updated';
+const SORTS: readonly Sort[] = ['worst', 'best', 'updated', 'name'];
+const SORT_LABELS: Record<Sort, string> = { worst: 'Needs most work first', best: 'Healthiest first', updated: 'Recently updated', name: 'Name A–Z' };
 
 /** Rows per page — a long, scannable list, as in a store's own product table. */
 const PAGE_SIZE = 50;
@@ -200,9 +192,11 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
 
   if (state === 'loading') {
     return (
+      <AppPage heading={config.navLabel}>
       <div className="page-shell space-y-2.5 pt-3" aria-busy="true" aria-label={`Loading ${config.nouns}`}>
+        {/* The page's one line of context and its chips; the title is in the page frame (AppPage). */}
         <div className="flex items-center justify-between gap-2">
-          <div className="space-y-1.5"><div className="skeleton h-5 w-52" /><div className="skeleton h-3 w-72" /></div>
+          <div className="skeleton h-3 w-72" />
           <div className="skeleton h-7 w-64 rounded-lg" />
         </div>
         <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -223,32 +217,37 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
           </div>
         </div>
       </div>
+      </AppPage>
     );
   }
 
   if (state === 'empty') {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-10 md:px-6">
+      <AppPage heading={config.navLabel}>
+      <div className="mx-auto max-w-2xl py-10">
         <div className={`${cardClass} flex flex-col items-center p-6 text-center`}>
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-600"><Radar size={18} /></span>
-          <h1 className="mt-2.5 text-[15px] font-semibold text-surface-900">{config.emptyTitle}</h1>
+          <h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">{config.emptyTitle}</h2>
           <p className="mt-1 max-w-sm text-[12.5px] leading-[1.5] text-surface-500">{config.emptyBody}</p>
           <RunAuditButton onComplete={() => { void load(true); void loadMoves(); }} />
         </div>
       </div>
+      </AppPage>
     );
   }
 
   if (state === 'error' || !catalog) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-10 md:px-6">
+      <AppPage heading={config.navLabel}>
+      <div className="mx-auto max-w-2xl py-10">
         <div className={`${cardClass} flex flex-col items-center p-6 text-center`}>
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-critical-50 text-critical-600"><AlertCircle size={18} /></span>
-          <h1 className="mt-2.5 text-[15px] font-semibold text-surface-900">{config.errorTitle}</h1>
+          <h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">{config.errorTitle}</h2>
           <p className="mt-1 max-w-sm text-[12.5px] leading-[1.5] text-surface-500">{errorMessage ?? 'The latest audit could not be read.'} Your results are unaffected.</p>
-          <button type="button" onClick={() => void load(true)} className="btn-primary mt-3"><RefreshCw size={14} />Retry</button>
+          <Button variant="primary" onClick={() => void load(true)} className="mt-3">Retry</Button>
         </div>
       </div>
+      </AppPage>
     );
   }
 
@@ -269,12 +268,15 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
   const activeIssue = move ? issues.find((candidate) => candidate.route === move.route && candidate.title === move.title) ?? null : null;
 
   return (
+    // The list's title and its Reload action are in the page frame (AppPage), drawn by the Shopify admin's
+    // title bar. What is left is the content, on the admin's own background.
+    <AppPage
+      heading={config.navLabel}
+      secondaryActions={[{ label: 'Reload', onClick: () => { void load(true); void loadMoves(); }, accessibilityLabel: `Reload ${config.nouns} from the latest audit` }]}
+    >
     <div className="page-shell space-y-2.5 pt-3">
-      <header className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-[20px] font-semibold leading-tight tracking-[-0.02em] text-surface-950">{config.overviewTitle}</h1>
-          <p className="page-subtitle">{config.overviewSubtitle}</p>
-        </div>
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+        <p className="page-subtitle min-w-0">{config.overviewSubtitle}</p>
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           {catalog.lastAnalyzed && (
             <span className="meta-chip">
@@ -293,13 +295,12 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
             {unavailable > 0 && <span className="font-semibold text-warning-700">· {unavailable} not included</span>}
             {aboutOpen ? <ChevronUp size={12} aria-hidden="true" /> : <ChevronDown size={12} aria-hidden="true" />}
           </button>
-          <button type="button" onClick={() => { void load(true); void loadMoves(); }} className="btn-secondary btn-xs"><RefreshCw size={12} aria-hidden="true" />Reload</button>
-          <button type="button" onClick={() => setMovesOpen(true)} className="btn-primary btn-xs xl:hidden">
-            <Trophy size={12} aria-hidden="true" />
+          <Button variant="primary" onClick={() => setMovesOpen(true)} className="xl:hidden">
+            
             Winning moves
-          </button>
+          </Button>
         </div>
-      </header>
+      </div>
 
       {aboutOpen && (
         <div className={`${cardClass} space-y-1 px-3 py-2 text-[11px] leading-[1.5] text-surface-600`}>
@@ -339,27 +340,22 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
               })}
             </div>
             <div className="flex items-center gap-1.5">
-              <label className="relative min-w-0 flex-1 lg:w-52 lg:flex-none">
-                <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-surface-400" aria-hidden="true" />
-                <span className="sr-only">{config.searchPlaceholder}</span>
-                <input
-                  value={query}
-                  onChange={(event) => { setQuery(event.target.value); setPage(0); }}
+              <div className="min-w-0 flex-1 lg:w-52 lg:flex-none">
+                <SearchField
+                  label={config.searchPlaceholder}
                   placeholder={config.searchPlaceholder}
-                  className="h-7 w-full rounded-lg border border-surface-200 bg-surface-0 pl-8 pr-2.5 text-[12px] outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                  value={query}
+                  onChange={(value) => { setQuery(value); setPage(0); }}
                 />
-              </label>
-              <select
+              </div>
+              <SelectField
+                label={`Sort ${config.nouns}`}
+                labelHidden
                 value={sort}
-                onChange={(event) => { setSort(event.target.value as Sort); setPage(0); }}
-                aria-label={`Sort ${config.nouns}`}
-                className="h-7 rounded-lg border border-surface-200 bg-surface-0 px-2 text-[12px] text-surface-700 outline-none focus:border-brand-400"
-              >
-                <option value="worst">Needs most work first</option>
-                <option value="best">Healthiest first</option>
-                <option value="updated">Recently updated</option>
-                <option value="name">Name A–Z</option>
-              </select>
+                options={SORTS}
+                optionLabel={(option) => SORT_LABELS[option]}
+                onChange={(value) => { setSort(value); setPage(0); }}
+              />
             </div>
           </div>
 
@@ -372,9 +368,7 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
                   <span className="text-info-700"> ({activeIssue.affectedCount.toLocaleString()} store-wide; the rest are outside this audit’s sample)</span>
                 )}
               </p>
-              <button type="button" onClick={clearMove} className="flex-shrink-0 rounded p-0.5 text-info-700 hover:bg-info-100" aria-label="Clear the filter">
-                <X size={14} />
-              </button>
+              <Button variant="ghost" onClick={clearMove} accessibilityLabel="Clear the filter" icon="x" />
             </div>
           )}
 
@@ -448,12 +442,8 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
                 {(from + 1).toLocaleString()}–{Math.min(from + PAGE_SIZE, visible.length).toLocaleString()} of {visible.length.toLocaleString()}
               </span>
               <div className="flex items-center gap-1">
-                <button type="button" onClick={() => setPage(currentPage - 1)} disabled={currentPage === 0} className="btn-secondary btn-xs min-h-[26px] px-1.5" aria-label="Previous page">
-                  <ChevronLeft size={14} aria-hidden="true" />
-                </button>
-                <button type="button" onClick={() => setPage(currentPage + 1)} disabled={currentPage >= pageCount - 1} className="btn-secondary btn-xs min-h-[26px] px-1.5" aria-label="Next page">
-                  <ChevronRight size={14} aria-hidden="true" />
-                </button>
+                <Button variant="secondary" icon="chevron-left" onClick={() => setPage(currentPage - 1)} disabled={currentPage === 0} accessibilityLabel="Previous page" />
+                <Button variant="secondary" icon="chevron-right" onClick={() => setPage(currentPage + 1)} disabled={currentPage >= pageCount - 1} accessibilityLabel="Next page" />
               </div>
             </div>
           )}
@@ -474,5 +464,6 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
 
       <WinningMovesPanel open={movesOpen} onClose={closeMoves} />
     </div>
+    </AppPage>
   );
 }

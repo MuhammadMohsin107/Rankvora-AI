@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { AlertCircle, CheckCircle2, Loader2, PlugZap, RefreshCw } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { CheckCircle2 } from 'lucide-react';
 import type { WorkspaceSettings } from '../../data/settings.config';
 import type { StoreRow } from '../../data/api.types';
 import { fetchIndustryOptions, refreshWorkspaceFromShopify } from '../../data/settings.repository';
 import { countryNames, currencyCodes, currencyLabel, timeZoneNames } from '../../data/referenceLists';
 import { ApiError } from '../../lib/api';
 import { Field, SelectInput, SettingsCard, TextInput } from './SettingsPrimitives';
+import Button from '../../components/polaris/Button';
+import Banner from '../polaris/Banner';
 
 /**
  * ─── Settings · the store, as Shopify knows it ───────────────────────
@@ -73,9 +74,9 @@ function Source({
   return (
     <span className="flex flex-wrap items-center gap-x-1.5">
       <span>Edited · Shopify says <span className="font-medium text-surface-700">{display(fromShopify)}</span></span>
-      <button type="button" onClick={() => onUse(fromShopify)} className="font-semibold text-brand-600 hover:text-brand-700">
+      <Button variant="ghost" onClick={() => onUse(fromShopify)}>
         Use Shopify value
-      </button>
+      </Button>
     </span>
   );
 }
@@ -135,30 +136,21 @@ export default function WorkspaceStoreCard({
               ? <>Read from Shopify {readAt}. Refreshed on every sync and audit.</>
               : 'Not read from Shopify yet — refresh to fill these in now.'}
           </p>
-          <button
-            type="button"
-            onClick={() => void refresh()}
-            disabled={refreshing || dirty}
-            title={dirty ? 'Save or discard your changes first' : undefined}
-            className="inline-flex items-center gap-1 rounded border border-surface-200 bg-surface-0 px-2 py-1 text-[11px] font-semibold text-surface-700 hover:bg-surface-50 disabled:opacity-50"
-          >
-            {refreshing ? <Loader2 size={12} className="animate-spin" aria-hidden="true" /> : <RefreshCw size={12} aria-hidden="true" />}
+          <Button loading={refreshing} variant="secondary" onClick={() => void refresh()} disabled={refreshing || dirty}>
             {refreshing ? 'Reading Shopify…' : 'Refresh from Shopify'}
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-info-100 bg-info-50 px-2.5 py-1.5">
           <p className="text-[11.5px] text-info-800">
             No Shopify store is connected, so nothing is known about the store yet. Connect it and these fill in automatically.
           </p>
-          <Link to="/integrations" className="btn-primary btn-xs"><PlugZap size={12} aria-hidden="true" />Connect Shopify</Link>
+          <Button variant="primary" to="/integrations">Connect Shopify</Button>
         </div>
       )}
 
       {refreshError && (
-        <p className="mb-2 flex items-center gap-1.5 text-[11.5px] text-critical-700" role="alert">
-          <AlertCircle size={13} aria-hidden="true" /> {refreshError}
-        </p>
+        <div className="mb-2"><Banner tone="critical"><s-text>{refreshError}</s-text></Banner></div>
       )}
 
       <div className="grid gap-2 sm:grid-cols-2">

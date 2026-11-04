@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { scrollChaining } from '../../lib/scrollChaining';
-import { AlertCircle, Check, ChevronRight, Code2, ExternalLink, Loader2, RefreshCw } from 'lucide-react';
+import { AlertCircle, Check, ChevronRight, Code2, ExternalLink, Loader2 } from 'lucide-react';
 import {
   fetchSchemaCatalog,
   fetchSchemaTemplate,
@@ -15,6 +15,7 @@ import {
 } from '../../data/schema.repository';
 import { ApiError } from '../../lib/api';
 import { settingsCard } from '../settings/SettingsPrimitives';
+import Button from '../../components/polaris/Button';
 
 /**
  * ─── Schema / JSON-LD settings ───────────────────────────────────────
@@ -339,12 +340,12 @@ export default function SchemaTemplateBuilder() {
           </div>
 
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
-            <button type="button" onClick={save} disabled={busy !== null} className="btn-primary btn-xs">
-              {busy === 'saving' ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}Save template
-            </button>
-            <button type="button" onClick={() => void runPreview()} disabled={busy !== null} className="btn-secondary btn-xs">
-              {busy === 'previewing' ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}Preview with my data
-            </button>
+            <Button loading={busy === 'saving'} variant="primary" onClick={save} disabled={busy !== null}>
+              Save template
+            </Button>
+            <Button loading={busy === 'previewing'} variant="secondary" onClick={() => void runPreview()} disabled={busy !== null}>
+              Preview with my data
+            </Button>
           </div>
 
           {notice && (

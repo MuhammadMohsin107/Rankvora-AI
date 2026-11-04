@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { RefreshCw, Clock, ExternalLink, Globe } from 'lucide-react';
+import { Clock, ExternalLink, Globe } from 'lucide-react';
 import type { DashboardData } from '../data/dashboard/dashboard.types';
 import { fetchDashboardData, formatLastUpdated } from '../data/dashboard/dashboard.repository';
+import AppPage from '../components/polaris/AppPage';
 import PillarOverview from '../components/dashboard/PillarOverview';
 import PriorityIssues, { type IssuesFocusRequest } from '../components/dashboard/PriorityIssues';
 import RecommendedActions from '../components/dashboard/RecommendedActions';
@@ -75,26 +76,29 @@ export default function Dashboard() {
     loadData();
   }, [loadData]);
 
+  // Every state sits in the same page frame, so the title bar keeps its "Dashboard" heading while the
+  // data loads, is missing, or fails to load. The main action (Re-analyze) is added only once there is
+  // a dashboard to refresh: before that, the empty state carries its own "Start first analysis".
   if (state === 'loading') {
-    return <DashboardSkeleton />;
+    return <AppPage heading="Dashboard"><DashboardSkeleton /></AppPage>;
   }
 
   if (state === 'empty') {
     // A store with no audit yet is the likeliest place to find unfinished setup, so the resume
     // card sits above the empty state rather than only on a populated dashboard.
     return (
-      <>
+      <AppPage heading="Dashboard">
         <div className="page-shell space-y-3 pb-0">
           <SetupResumeCard />
           <SetupStatusCard />
         </div>
         <DashboardEmpty notice={staleNotice} />
-      </>
+      </AppPage>
     );
   }
 
   if (state === 'error' || !data) {
-    return <DashboardError onRetry={() => loadData()} />;
+    return <AppPage heading="Dashboard"><DashboardError onRetry={() => loadData()} /></AppPage>;
   }
 
   const storeHost = data.storeUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
@@ -102,20 +106,27 @@ export default function Dashboard() {
   const storeInitial = data.storeName.trim().charAt(0).toUpperCase();
 
   return (
+    <AppPage
+      heading="Dashboard"
+      primaryAction={{
+        label: auditRun.running ? `Analyzing… ${auditRun.progress}%` : 'Re-analyze',
+        onClick: refresh,
+        loading: auditRun.running,
+        disabled: auditRun.running,
+        accessibilityLabel: 'Re-analyze this store and refresh the dashboard',
+      }}
+    >
     <div className="page-shell space-y-3 pt-3">
       {/* Renders nothing once guided setup is finished — see SetupResumeCard. */}
       <SetupResumeCard />
       {/* The reverse: renders only AFTER setup is finished, with what is still to set up and when
           the next scan is. */}
       <SetupStatusCard />
-      {/* Page header: title and the store's facts on ONE row. The "Store performance" eyebrow went
-          earlier for the same reason the subtitle is inline now — every line above the data is a
-          line of data pushed below the fold. */}
+      {/* The page's title and its main action are in the page frame (AppPage). What is left is the
+          store's own facts, on ONE row with the page's purpose: every line above the data is a line of
+          data pushed below the fold. */}
       <div className="flex flex-col gap-2 motion-safe:animate-fade-in lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 items-baseline gap-2.5">
-          <h1 className="text-[18px] font-semibold leading-tight tracking-[-0.02em] text-surface-950">Dashboard</h1>
-          <p className="hidden truncate text-[11.5px] text-surface-500 md:block">What is healthy, what changed, and what to fix next.</p>
-        </div>
+        <p className="min-w-0 truncate text-[12px] text-surface-500">What is healthy, what changed, and what to fix next.</p>
 
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           {/* Store identity: the name and address the backend holds for this store. A store with
@@ -147,15 +158,6 @@ export default function Dashboard() {
               Analyzed <span className="font-medium text-surface-900">{formatLastUpdated(data.lastUpdated)}</span>
             </span>
           )}
-          <button
-            onClick={refresh}
-            disabled={auditRun.running}
-            className="btn-primary h-8 min-h-0 rounded-lg px-3 text-[12px]"
-            aria-label="Re-analyze this store and refresh the dashboard"
-          >
-            <RefreshCw size={13} className={auditRun.running ? 'animate-spin motion-reduce:animate-none' : ''} aria-hidden="true" />
-            {auditRun.running ? `Analyzing… ${auditRun.progress}%` : 'Re-analyze'}
-          </button>
         </div>
       </div>
 
@@ -195,5 +197,6 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+    </AppPage>
   );
 }

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, RefreshCw, Trophy, X } from 'lucide-react';
+import { AlertCircle, Trophy, X } from 'lucide-react';
 import type { DashboardData } from '../../data/dashboard/dashboard.types';
 import { fetchDashboardData } from '../../data/dashboard/dashboard.repository';
 import PriorityIssues from './PriorityIssues';
 import { SCORE_TARGET, statusTone } from './scoreTone';
+import Button from '../../components/polaris/Button';
 
 interface Props {
   open: boolean;
@@ -108,7 +109,7 @@ export default function WinningMovesPanel({ open, onClose }: Props) {
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-critical-50 text-critical-600"><AlertCircle size={18} /></span>
               <p className="text-[12.5px] font-semibold text-surface-900">Winning moves could not be loaded</p>
               <p className="text-[11.5px] text-surface-500">Your results are unaffected.</p>
-              <button type="button" onClick={() => void load()} className="btn-primary btn-xs mt-1"><RefreshCw size={12} />Retry</button>
+              <Button variant="primary" onClick={() => void load()} className="mt-1">Retry</Button>
             </div>
           ) : (
             <PriorityIssues issues={data.priorityIssues} heading="Most severe first" height="panel" />

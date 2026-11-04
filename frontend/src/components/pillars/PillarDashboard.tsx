@@ -7,16 +7,18 @@ import {
   ChevronRight,
   FileSearch,
   Flag,
-  RefreshCw,
   type LucideIcon,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import AppPage from '../polaris/AppPage';
+import Badge, { type BadgeTone } from '../polaris/Badge';
 import PillarKpiCard, { type KpiAccent } from './PillarKpiCard';
 import PillarScoreRing from './PillarScoreRing';
 import { PillarDashboardEmpty, PillarDashboardError, PillarDashboardSkeleton, SeedDataNotice } from './PillarDashboardState';
 import { fetchPillarDashboard, isNoAuditError, type PillarDashboardData } from '../../data/pillars/pillarDashboard.repository';
 import type { PillarKey } from '../../data/dashboard/dashboard.types';
 import { useAuditCompletion, useAuditRun } from '../../data/useAuditRun';
+import Button from '../../components/polaris/Button';
 
 /**
  * ─── The pillar dashboard ────────────────────────────────────────────
@@ -77,18 +79,12 @@ const statusLabel = (score: number) =>
   score >= 85 ? 'Excellent' : score >= 70 ? 'Good' : score >= 50 ? 'Needs Work' : 'Critical';
 
 // Full class strings so Tailwind sees them at build time.
-const statusPill: Record<string, string> = {
-  Excellent: 'border-success-100 bg-success-50 text-success-700',
-  Good: 'border-info-100 bg-info-50 text-info-700',
-  'Needs Work': 'border-warning-100 bg-warning-50 text-warning-700',
-  Critical: 'border-critical-100 bg-critical-50 text-critical-700',
-};
-
-const statusBadge: Record<string, string> = {
-  Excellent: 'bg-success-50 text-success-700 ring-1 ring-success-100',
-  Good: 'bg-info-50 text-info-700 ring-1 ring-info-100',
-  'Needs Work': 'bg-warning-50 text-warning-700 ring-1 ring-warning-100',
-  Critical: 'bg-critical-50 text-critical-700 ring-1 ring-critical-100',
+// The score's verdict, as a Polaris badge. A label that is none of these (such as "Not measured") is neutral.
+const labelBadgeTone: Record<string, BadgeTone> = {
+  Excellent: 'success',
+  Good: 'info',
+  'Needs Work': 'warning',
+  Critical: 'critical',
 };
 
 const statusBar: Record<string, string> = {
@@ -173,9 +169,9 @@ function IssueRow({ lead, title, detail, onReview }: { lead: React.ReactNode; ti
         <p className="truncate text-[12.5px] font-medium text-surface-900">{title}</p>
         <p className="text-[10.5px] text-surface-500">{detail}</p>
       </div>
-      <button onClick={onReview} className="btn-secondary btn-xs flex-shrink-0">
+      <Button variant="secondary" onClick={onReview} className="flex-shrink-0">
         Review
-      </button>
+      </Button>
     </div>
   );
 }
@@ -253,23 +249,26 @@ export default function PillarDashboard({
   useEffect(() => { load(); }, [load]);
   useEffect(() => { setIssueFilter('all'); }, [pillar]);
 
-  if (state === 'loading') return <PillarDashboardSkeleton title={title} />;
+  // Every state sits in the same page frame, so the title bar keeps this pillar's name while the data
+  // loads, is missing, or fails to load. The Re-analyze action joins it only once there is a dashboard
+  // to refresh: before that, the empty state says how to run the first audit.
+  if (state === 'loading') return <AppPage heading={title}><PillarDashboardSkeleton title={title} /></AppPage>;
   // The extra panels survive both non-ready states: they read live APIs of their own, so an
   // unaudited — or failed — pillar says nothing about whether they have data. See extraPanels.
   if (state === 'empty') {
     return (
-      <>
+      <AppPage heading={title}>
         <PillarDashboardEmpty title={title} description={emptyDescription} />
         {extraPanels ? <div className="page-shell section-stack pb-8">{extraPanels}</div> : null}
-      </>
+      </AppPage>
     );
   }
   if (state === 'error' || !data) {
     return (
-      <>
+      <AppPage heading={title}>
         <PillarDashboardError title={title} onRetry={() => load()} />
         {extraPanels ? <div className="page-shell section-stack pb-8">{extraPanels}</div> : null}
-      </>
+      </AppPage>
     );
   }
 
@@ -295,21 +294,30 @@ export default function PillarDashboard({
   const filteredIssues = issueFilter === 'all' ? sortedIssues : sortedIssues.filter((issue) => issue.severity === issueFilter);
 
   return (
-    // No `min-h-screen`: the AppShell's <main> is the scroll container, so a second full-height
-    // element here only guaranteed dead space under short content.
-    <div className="bg-surface-50">
+    // The pillar's name and its Re-analyze action are in the page frame (AppPage), drawn by the Shopify
+    // admin's title bar. What is left is the content, on the admin's own background.
+    <AppPage
+      heading={title}
+      primaryAction={{
+        label: auditRun.running ? `Analyzing… ${auditRun.progress}%` : 'Re-analyze',
+        onClick: refresh,
+        loading: auditRun.running,
+        disabled: auditRun.running,
+        accessibilityLabel: `Re-analyze this store and refresh ${title}`,
+      }}
+    >
       <div className="page-shell section-stack">
-        {/* ── Header ────────────────────────────────────────────────
-            One band. The pillar, its score and the action are the facts; the blurred accent glows
-            that used to sit behind them were decoration measured in inches. The store name, its
-            address and "Last analyzed" are gone from here — removed at the merchant's request. */}
+        {/* ── Summary band ──────────────────────────────────────────
+            One band. The pillar's mark, what it covers and its score are the facts; the blurred accent
+            glows that used to sit behind them were decoration measured in inches. The title and the
+            action are in the page frame. The store name, its address and "Last analyzed" are gone from
+            here — removed at the merchant's request. */}
         <div className="flex flex-col gap-2.5 rounded-lg border border-surface-200 bg-surface-0 p-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-brand-600 text-white">
                 <Icon size={14} strokeWidth={2.2} />
               </span>
-              <h1 className="page-title">{title}</h1>
               <span className="inline-flex items-center rounded border border-brand-100 bg-brand-50 px-1.5 py-px text-[10.5px] font-medium text-brand-700">
                 {data.areas.length} areas monitored
               </span>
@@ -328,13 +336,7 @@ export default function PillarDashboard({
             )}
             <div>
               <p className="eyebrow">{title} Health</p>
-              <span className={`mt-1 inline-flex items-center rounded border px-1.5 py-px text-[11px] font-semibold ${statusPill[overallStatus] ?? 'border-surface-200 bg-surface-50 text-surface-500'}`}>
-                {overallStatus}
-              </span>
-              <button onClick={refresh} disabled={auditRun.running} className="btn-primary btn-xs mt-2 w-full">
-                <RefreshCw size={12} className={auditRun.running ? 'animate-spin motion-reduce:animate-none' : undefined} />
-                {auditRun.running ? `Analyzing… ${auditRun.progress}%` : 'Re-analyze'}
-              </button>
+              <span className="mt-1 inline-flex"><Badge tone={labelBadgeTone[overallStatus] ?? 'neutral'}>{overallStatus}</Badge></span>
             </div>
           </div>
         </div>
@@ -378,9 +380,7 @@ export default function PillarDashboard({
                     <h3 className="min-w-0 text-[12.5px] font-semibold leading-snug text-surface-900 transition-colors group-hover:text-brand-700">
                       {area.label}
                     </h3>
-                    <span className={`inline-flex flex-shrink-0 items-center rounded px-1.5 py-px text-[10px] font-semibold ${statusBadge[label] ?? 'bg-surface-50 text-surface-500 ring-1 ring-surface-200'}`}>
-                      {label}
-                    </span>
+                    <span className="flex-shrink-0"><Badge tone={labelBadgeTone[label] ?? 'neutral'}>{label}</Badge></span>
                   </div>
 
                   {measured ? (
@@ -501,9 +501,9 @@ export default function PillarDashboard({
                 <ChevronRight size={13} className="flex-shrink-0 text-surface-300" />
                 <p className="min-w-0 flex-1 truncate text-[12.5px] text-surface-800">{area.label}</p>
                 <span className="flex-shrink-0 text-[11px] tabular-nums text-surface-400">{area.score}/100</span>
-                <button onClick={() => navigate(area.route)} className="btn-secondary btn-xs flex-shrink-0">
+                <Button variant="secondary" onClick={() => navigate(area.route)} className="flex-shrink-0">
                   Review
-                </button>
+                </Button>
               </div>
             ))}
           </ListCard>
@@ -511,6 +511,6 @@ export default function PillarDashboard({
 
         {extraPanels}
       </div>
-    </div>
+    </AppPage>
   );
 }

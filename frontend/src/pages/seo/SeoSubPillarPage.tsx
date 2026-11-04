@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, ArrowRight, Clock3, Radar, RefreshCw, Settings2 } from 'lucide-react';
+import { AlertCircle, ArrowRight, Clock3, Radar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
   type EvidenceRow,
@@ -8,6 +8,7 @@ import {
   type SubPillarFinding,
 } from '../../data/seo/subpillar.model';
 import { fetchSubPillarAnalysis, isNotAuditedYet } from '../../data/seo/subpillar.repository';
+import AppPage from '../../components/polaris/AppPage';
 import ScoreCard from '../../components/seo/subpillar/ScoreCard';
 import HealthCard from '../../components/seo/subpillar/HealthCard';
 import FindingsList from '../../components/seo/subpillar/FindingsList';
@@ -28,6 +29,7 @@ import { useAuditCompletion, useAuditRun } from '../../data/useAuditRun';
 import { fetchSubPillarSettings, saveSubPillarSettings } from '../../data/pageSettings.repository';
 import GrantShopifyAccess from '../../components/audit/GrantShopifyAccess';
 import { ApiError } from '../../lib/api';
+import Button from '../../components/polaris/Button';
 
 type LoadState = 'loading' | 'success' | 'empty' | 'error';
 
@@ -160,19 +162,23 @@ export default function SeoSubPillarPage({ analysis, configurator }: Props) {
     setSettingsOpen(false);
   };
 
-  if (state === 'loading') return <SubPillarSkeleton />;
+  // Every state sits in the same page frame, so the title bar keeps this area's name while its data
+  // loads, is missing, or fails to load. Re-analyze (and Settings) join it only on the page that has
+  // results to refresh; the other states carry their own "Run the audit" or "Retry".
+  if (state === 'loading') return <AppPage heading={analysis.title}><SubPillarSkeleton /></AppPage>;
 
   // The check ran but could not measure anything (e.g. a store with no blog articles). The score
   // it carries is a placeholder zero, so this renders the reason instead of a fabricated result.
   // Distinct from 'empty', which means no audit has been run at all.
   if (data && data.status === 'unavailable') {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-10 md:px-6">
+      <AppPage heading={analysis.title}>
+      <div className="mx-auto max-w-2xl py-10">
         <div className={`${card} flex flex-col items-center p-6 text-center`}>
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-100 text-surface-500">
             <Radar size={18} />
           </span>
-          <h1 className="mt-2.5 text-[15px] font-semibold text-surface-900">{data.title} — not measured</h1>
+          <h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">{data.title} — not measured</h2>
           <p className="mt-1 max-w-md text-[12.5px] leading-[1.5] text-surface-500">
             {data.unavailableReason ?? 'Rankvora AI could not measure this check for your store.'}
           </p>
@@ -183,19 +189,21 @@ export default function SeoSubPillarPage({ analysis, configurator }: Props) {
           <RunAuditButton label="Run the audit again" />
         </div>
       </div>
+      </AppPage>
     );
   }
 
   if (state === 'empty') {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-10 md:px-6">
+      <AppPage heading={analysis.title}>
+      <div className="mx-auto max-w-2xl py-10">
         <div className={`${card} flex flex-col items-center p-6 text-center`}>
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-50 text-brand-600">
             <Radar size={18} />
           </span>
-          <h1 className="mt-2.5 text-[15px] font-semibold text-surface-900">
+          <h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">
             No {analysis.title} audit available
-          </h1>
+          </h2>
           {loadMessage && <p className="mt-1 max-w-md text-[12.5px] leading-[1.5] text-surface-600">{loadMessage}</p>}
           {implemented === false ? (
             /* Rankvora AI has no check registered for this sub-pillar, so an audit run provably
@@ -216,43 +224,53 @@ export default function SeoSubPillarPage({ analysis, configurator }: Props) {
           )}
         </div>
       </div>
+      </AppPage>
     );
   }
 
   if (state === 'error' || !data) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-10 md:px-6">
+      <AppPage heading={analysis.title}>
+      <div className="mx-auto max-w-2xl py-10">
         <div className={`${card} flex flex-col items-center p-6 text-center`}>
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-critical-50 text-critical-600">
             <AlertCircle size={18} />
           </span>
-          <h1 className="mt-2.5 text-[15px] font-semibold text-surface-900">
+          <h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">
             Unable to load {analysis.title} analysis
-          </h1>
+          </h2>
           <p className="mt-1 max-w-sm text-[12.5px] leading-[1.5] text-surface-500">
             {loadMessage ?? 'The analysis could not be retrieved.'} Your previous results are unaffected.
           </p>
-          <button type="button" onClick={() => load()} className="btn-primary mt-3">
-            <RefreshCw size={14} />
+          <Button variant="primary" onClick={() => load()} className="mt-3">
+            
             Retry
-          </button>
+          </Button>
         </div>
       </div>
+      </AppPage>
     );
   }
 
   return (
-    // The AppShell <main> is the scroll container, so this page must not
-    // declare its own viewport height — that would add dead space below.
-    <div className="bg-surface-50">
+    // The area's name, its Settings and its Re-analyze action are in the page frame (AppPage), drawn by the
+    // Shopify admin's title bar. What is left is the content, on the admin's own background.
+    <AppPage
+      heading={analysis.title}
+      primaryAction={{
+        label: auditRun.running ? `Analyzing… ${auditRun.progress}%` : isRefreshing ? 'Loading results…' : 'Re-analyze',
+        onClick: reanalyze,
+        loading: auditRun.running || isRefreshing,
+        disabled: auditRun.running || isRefreshing,
+        accessibilityLabel: `Re-analyze this store and refresh ${analysis.title}`,
+      }}
+      secondaryActions={settingsAvailable ? [{ label: 'Settings', onClick: () => setSettingsOpen(true), accessibilityLabel: `${analysis.title} settings` }] : undefined}
+    >
       <div className="page-shell">
-        {/* Header. Title, one line of context and the page's two actions on a single row — the
-            breadcrumb above it already says where the user is, so there is no second title. */}
-        <header className="page-head">
-          <div className="min-w-0">
-            <h1 className="page-title">{data.title}</h1>
-            <p className="page-subtitle">{data.description}</p>
-          </div>
+        {/* One line of context and when the audit last ran, on a single row: the title and the page's
+            actions are in the page frame, so there is no second title here. */}
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="page-subtitle min-w-0">{data.description}</p>
           <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
             {/* A seeded fixture is never passed off as a measurement of the merchant's store. */}
             {data.source === 'seed' && (
@@ -264,27 +282,8 @@ export default function SeoSubPillarPage({ analysis, configurator }: Props) {
               <Clock3 size={12} className="text-surface-400" aria-hidden="true" />
               Last analyzed <span className="font-medium text-surface-800">{data.lastAnalyzed}</span>
             </span>
-            {settingsAvailable && (
-              <button
-                type="button"
-                onClick={() => setSettingsOpen(true)}
-                className="btn-secondary btn-xs"
-              >
-                <Settings2 size={12} aria-hidden="true" />
-                Settings
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={reanalyze}
-              disabled={auditRun.running || isRefreshing}
-              className="btn-primary btn-xs"
-            >
-              <RefreshCw size={12} className={auditRun.running || isRefreshing ? 'animate-spin motion-reduce:animate-none' : ''} aria-hidden="true" />
-              {auditRun.running ? `Analyzing… ${auditRun.progress}%` : isRefreshing ? 'Loading results…' : 'Re-analyze'}
-            </button>
           </div>
-        </header>
+        </div>
 
         {/* The analysis running, finished or failed is shown by the banner above every page
             (components/audit/AnalysisBanner.tsx). The results below are the previous audit's until it finishes. */}
@@ -386,6 +385,6 @@ export default function SeoSubPillarPage({ analysis, configurator }: Props) {
           {configurator}
         </PageSettingsPanel>
       )}
-    </div>
+    </AppPage>
   );
 }

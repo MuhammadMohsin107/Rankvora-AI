@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, CheckCircle2, ImageOff, ImagePlus, Loader2, Package, RefreshCw, Search, ShieldAlert, Sparkles, UploadCloud, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ImageOff, ImagePlus, Package, Sparkles, UploadCloud, X } from 'lucide-react';
 import { ApiError } from '../../lib/api';
 import { scrollChaining } from '../../lib/scrollChaining';
 import {
@@ -16,6 +15,9 @@ import { followAuditRun } from '../../data/useAuditRun';
 import GrantShopifyAccess from '../audit/GrantShopifyAccess';
 import GenerateTab from './GenerateTab';
 import UploadTab from './UploadTab';
+import Button from '../../components/polaris/Button';
+import Banner from '../polaris/Banner';
+import { SearchField } from '../polaris/fields';
 
 type Tab = 'upload' | 'ai';
 
@@ -216,21 +218,19 @@ function PanelBody({ onClose, initialProductId, onImageAdded }: {
 
         {/* Whether Rankvora AI may change this store at all — said once, above everything else. */}
         {capabilityError && (
-          <p className="flex items-start gap-1.5 border-b border-critical-100 bg-critical-50 px-4 py-2 text-[12px] text-critical-700" role="alert">
-            <AlertCircle size={14} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
-            {capabilityError}
-          </p>
+          <div className="border-b border-surface-200 px-4 py-2">
+            <Banner tone="critical"><s-text>{capabilityError}</s-text></Banner>
+          </div>
         )}
         {write && !write.allowed && (
-          <div className="border-b border-warning-200 bg-warning-50 px-4 py-2.5" role="alert">
-            <p className="flex items-start gap-1.5 text-[12px] leading-[1.5] text-warning-900">
-              <ShieldAlert size={14} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
-              {write.reason}
-            </p>
+          <div className="border-b border-surface-200 px-4 py-2">
+            <Banner tone="warning">
+              <s-text>{write.reason}</s-text>
+              {write.code === 'AUTOMATION_NOT_PERMITTED' && (
+                <Button slot="secondary-actions" variant="secondary" to="/onboarding">Review your setup answers</Button>
+              )}
+            </Banner>
             {needsReconnect && <GrantShopifyAccess scope="write_products" />}
-            {write.code === 'AUTOMATION_NOT_PERMITTED' && (
-              <Link to="/onboarding" className="mt-1.5 inline-block text-[12px] font-semibold text-warning-900 underline underline-offset-2">Review your setup answers</Link>
-            )}
           </div>
         )}
 
@@ -238,17 +238,7 @@ function PanelBody({ onClose, initialProductId, onImageAdded }: {
           {/* ── Left: the products with no image ── */}
           <section className={`min-h-0 flex-col border-surface-200 md:flex md:border-r ${showingList ? 'flex' : 'hidden'}`} aria-label="Products with no image">
             <div className="border-b border-surface-200 px-3 py-2.5">
-              <label htmlFor="missing-search" className="sr-only">Search products by name</label>
-              <div className="relative">
-                <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-surface-400" aria-hidden="true" />
-                <input
-                  id="missing-search"
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  placeholder="Search by product name…"
-                  className="w-full rounded-lg border border-surface-200 bg-surface-0 py-1.5 pl-8 pr-3 text-[12.5px] text-surface-900 placeholder:text-surface-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
-                />
-              </div>
+              <SearchField id="missing-search" label="Search products by name" value={searchInput} onChange={setSearchInput} placeholder="Search by product name…" />
               <p className="mt-1.5 flex items-center justify-between text-[11px] text-surface-500" aria-live="polite">
                 {listState === 'ready'
                   ? (
@@ -269,11 +259,13 @@ function PanelBody({ onClose, initialProductId, onImageAdded }: {
               )}
 
               {listState === 'error' && listError && (
-                <div className="m-3 rounded-lg bg-critical-50 px-3 py-3 text-[12px] text-critical-700 ring-1 ring-inset ring-critical-100" role="alert">
-                  <p className="flex items-start gap-1.5"><AlertCircle size={14} className="mt-0.5 flex-shrink-0" aria-hidden="true" />{listError.message}</p>
-                  {listError.code === 'SHOPIFY_NOT_CONNECTED' || listError.code === 'SHOPIFY_RECONNECT_REQUIRED'
-                    ? <Link to="/integrations" className="mt-2 inline-block font-semibold underline underline-offset-2">Go to Integrations</Link>
-                    : <button type="button" onClick={() => void loadList(query, null)} className="btn-secondary btn-xs mt-2"><RefreshCw size={12} aria-hidden="true" />Try again</button>}
+                <div className="m-3">
+                  <Banner tone="critical">
+                    <s-text>{listError.message}</s-text>
+                    {listError.code === 'SHOPIFY_NOT_CONNECTED' || listError.code === 'SHOPIFY_RECONNECT_REQUIRED'
+                      ? <Button slot="secondary-actions" variant="secondary" to="/integrations">Go to Integrations</Button>
+                      : <Button slot="secondary-actions" variant="secondary" onClick={() => void loadList(query, null)}>Try again</Button>}
+                  </Banner>
                 </div>
               )}
 
@@ -337,10 +329,9 @@ function PanelBody({ onClose, initialProductId, onImageAdded }: {
 
               {listState === 'ready' && cursor && (
                 <div className="px-3 pb-3">
-                  <button type="button" onClick={() => void loadList(query, cursor)} disabled={loadingMore} className="btn-secondary btn-xs w-full">
-                    {loadingMore ? <Loader2 size={12} className="animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <RefreshCw size={12} aria-hidden="true" />}
+                  <Button loading={loadingMore} variant="secondary" onClick={() => void loadList(query, cursor)} disabled={loadingMore} fullWidth>
                     {loadingMore ? 'Reading more of your store…' : 'Look further down your catalogue'}
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -378,12 +369,12 @@ function PanelBody({ onClose, initialProductId, onImageAdded }: {
                 )}
 
                 {subjectState === 'error' && (
-                  <div className="rounded-lg bg-critical-50 px-3 py-3 text-[12px] text-critical-700 ring-1 ring-inset ring-critical-100" role="alert">
-                    <p className="flex items-start gap-1.5"><AlertCircle size={14} className="mt-0.5 flex-shrink-0" aria-hidden="true" />{subjectError}</p>
-                    <button type="button" onClick={() => { const id = selectedId; setSelectedId(null); setTimeout(() => setSelectedId(id), 0); }} className="btn-secondary btn-xs mt-2">
-                      <RefreshCw size={12} aria-hidden="true" />Try again
-                    </button>
-                  </div>
+                  <Banner tone="critical">
+                    <s-text>{subjectError}</s-text>
+                    <Button slot="secondary-actions" variant="secondary" onClick={() => { const id = selectedId; setSelectedId(null); setTimeout(() => setSelectedId(id), 0); }}>
+                      Try again
+                    </Button>
+                  </Banner>
                 )}
 
                 {subjectState === 'ready' && subject && capabilities && (
@@ -398,9 +389,11 @@ function PanelBody({ onClose, initialProductId, onImageAdded }: {
                         </span>
                       </p>
                       {subject.images.length > 0 && (
-                        <p className="mt-2 rounded-md bg-info-50 px-2.5 py-1.5 text-[11.5px] text-info-800 ring-1 ring-inset ring-info-100">
-                          This product already has {subject.images.length === 1 ? 'an image' : 'images'} in Shopify — it may have been added since your last analysis. A new image will be added alongside.
-                        </p>
+                        <div className="mt-2">
+                          <Banner tone="info">
+                            <s-text>This product already has {subject.images.length === 1 ? 'an image' : 'images'} in Shopify — it may have been added since your last analysis. A new image will be added alongside.</s-text>
+                          </Banner>
+                        </div>
                       )}
                     </header>
 

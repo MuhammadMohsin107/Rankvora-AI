@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { X } from 'lucide-react';
+import Badge, { type BadgeTone } from '../polaris/Badge';
 
 /**
  * Eyebrow and title share one baseline rather than stacking. The eyebrow is a two-word category
@@ -40,34 +41,9 @@ export function MetricTile({ label, value, detail, tone = 'neutral' }: { label: 
   );
 }
 
-export function StatusBadge({ label, tone = 'neutral' }: { label: string; tone?: 'neutral' | 'success' | 'warning' | 'critical' | 'info' }) {
-  const classes = {
-    neutral: 'bg-surface-100 text-surface-700 border-surface-200',
-    success: 'bg-success-50 text-success-700 border-success-100',
-    warning: 'bg-warning-50 text-warning-700 border-warning-100',
-    critical: 'bg-critical-50 text-critical-700 border-critical-100',
-    info: 'bg-info-50 text-info-700 border-info-100',
-  }[tone];
-  return <span className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10.5px] font-bold ${classes}`}><span className="h-1 w-1 rounded-full bg-current" />{label}</span>;
-}
-
-/**
- * The page header for Reports, Integrations and Settings.
- *
- * The eyebrow was dropped: every page already announces itself through the sidebar's active item
- * and the breadcrumb, so a third label above the title cost a line and told the customer nothing
- * they did not know. Title and one supporting line, on the same row as the actions.
- */
-export function ModuleHeader({ eyebrow, title, description, actions }: { eyebrow: string; title: string; description: string; actions?: ReactNode }) {
-  return (
-    <div className="page-head border-b border-surface-200 pb-2">
-      <div className="min-w-0">
-        <h1 className="page-title" title={eyebrow}>{title}</h1>
-        <p className="page-subtitle">{description}</p>
-      </div>
-      {actions && <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">{actions}</div>}
-    </div>
-  );
+/** A small status label — Polaris's `<s-badge>`, through components/polaris/Badge.tsx. */
+export function StatusBadge({ label, tone = 'neutral' }: { label: string; tone?: BadgeTone }) {
+  return <Badge tone={tone}>{label}</Badge>;
 }
 
 export function Drawer({ open, title, eyebrow, onClose, children }: { open: boolean; title: string; eyebrow?: string; onClose: () => void; children: ReactNode }) {
@@ -89,12 +65,5 @@ export function Drawer({ open, title, eyebrow, onClose, children }: { open: bool
   );
 }
 
-export function Button({ children, variant = 'primary', onClick, disabled = false, type = 'button' }: { children: ReactNode; variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; onClick?: () => void; disabled?: boolean; type?: 'button' | 'submit' }) {
-  const classes = {
-    primary: 'btn-primary',
-    secondary: 'btn-secondary',
-    ghost: 'btn-ghost',
-    danger: 'btn-destructive',
-  }[variant];
-  return <button type={type} onClick={onClick} disabled={disabled} className={classes}>{children}</button>;
-}
+/** A button — Polaris's `<s-button>`, through components/polaris/Button.tsx. Primary unless told otherwise. */
+export { default as Button } from '../polaris/Button';

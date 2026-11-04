@@ -1,6 +1,8 @@
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Compass } from 'lucide-react';
+import AppPage from '../components/polaris/AppPage';
 import { card } from '../components/seo/subpillar/tone';
+import Button from '../components/polaris/Button';
 
 /**
  * Catch-all for URLs that match no route.
@@ -17,21 +19,23 @@ export default function NotFound() {
   const { pathname } = useLocation();
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10 md:px-6">
+    <AppPage heading="Page not found">
+    <div className="mx-auto max-w-2xl py-10">
       <div className={`${card} flex flex-col items-center p-6 text-center`}>
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-100 text-surface-500">
           <Compass size={18} />
         </span>
-        <h1 className="mt-4 text-lg font-semibold text-surface-900">Page not found</h1>
+        <h2 className="mt-4 text-lg font-semibold text-surface-900">Page not found</h2>
         <p className="mt-1.5 max-w-md text-sm text-surface-500">
           We couldn&apos;t find anything at{' '}
           <span className="break-all font-mono text-[13px] text-surface-700">{pathname}</span>. The
           link may be out of date, or the page may have moved.
         </p>
-        <Link to="/" className="btn-primary mt-6">
+        <Button variant="primary" to="/" className="mt-6">
           Back to dashboard
-        </Link>
+        </Button>
       </div>
     </div>
+    </AppPage>
   );
 }

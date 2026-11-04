@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, ClipboardCheck, History, Loader2, Sparkles, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ClipboardCheck, Loader2, Sparkles } from 'lucide-react';
 import type { EvidenceRow, RowStatus } from '../../../data/seo/subpillar.model';
 import { applyFixes, fetchAiFixStatus, planAiFixes } from '../../../data/findings.repository';
 import { followAuditRun } from '../../../data/useAuditRun';
 import { titleFieldBounds } from '../../../data/fixBounds';
 import { ApiError } from '../../../lib/api';
 import { card, eyebrow } from './tone';
+import Button from '../../../components/polaris/Button';
+import { TextAreaField } from '../../polaris/fields';
 
 interface AppliedUpdate {
   id: string;
@@ -427,9 +429,7 @@ export default function BulkFixWorkflow({
             <h2 id="bulk-fix-title" className="mt-0.5 text-[15px] font-semibold tracking-tight text-surface-950">Review {mode === 'title-tags' ? 'title tag' : 'recommended'} fixes</h2>
             <p className="text-[11px] text-surface-500">Nothing changes until you press Save. Saved values are written to your live store.</p>
           </div>
-          <button type="button" onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-md text-surface-500 hover:bg-surface-100 hover:text-surface-900" aria-label="Close review">
-            <X size={15} />
-          </button>
+          <Button variant="ghost" onClick={onClose} accessibilityLabel="Close review" icon="x" />
         </header>
 
         {isGenerating ? (
@@ -453,8 +453,8 @@ export default function BulkFixWorkflow({
               it finishes. To change one back, edit it in Shopify admin under Search engine listing.
             </p>
             <div className="mt-1 flex flex-wrap justify-center gap-1.5">
-              <button type="button" onClick={() => setShowHistory((value) => !value)} className="btn-ghost btn-xs"><History size={12} /> What changed</button>
-              <button type="button" onClick={onClose} className="btn-primary btn-xs">Done</button>
+              <Button variant="ghost" onClick={() => setShowHistory((value) => !value)}>What changed</Button>
+              <Button variant="primary" onClick={onClose}>Done</Button>
             </div>
             {showHistory && <p className={`${card} mt-2 px-3 py-2 text-left text-[11.5px] text-surface-600`}>{applied.length} resource{applied.length === 1 ? '' : 's'} updated on Shopify.</p>}
           </div>
@@ -556,8 +556,7 @@ export default function BulkFixWorkflow({
                         <p className="mt-0.5 text-[12.5px] leading-[1.45] text-surface-700">{row.current?.value || 'No current value'}</p>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <label className="text-[9.5px] font-semibold uppercase tracking-[0.1em] text-surface-400" htmlFor={`bulk-fix-${row.id}`}>Recommended value</label>
-                        <textarea id={`bulk-fix-${row.id}`} value={value} onChange={(event) => updateDraft(row.id, event.target.value)} rows={2} className="mt-1 w-full resize-y rounded-md border border-surface-200 bg-surface-50 px-2.5 py-1.5 text-[12.5px] text-surface-900 outline-none focus:border-brand-400 focus:bg-surface-0 focus:ring-2 focus:ring-brand-100" />
+                        <TextAreaField id={`bulk-fix-${row.id}`} label="Recommended value" rows={2} value={value} onChange={(next) => updateDraft(row.id, next)} />
                         <div className="mt-0.5 flex items-center justify-between gap-2 text-[10.5px]">
                           <span className={error ? 'text-warning-700' : 'text-success-700'}>{error ?? 'Ready to apply'}</span>
                           <span className="tabular-nums text-surface-400">{mode === 'title-tags' ? `${value.length}/${maxTitleLength}` : `${value.length} characters`}</span>
@@ -598,15 +597,10 @@ export default function BulkFixWorkflow({
                   </p>
                 )}
                 <div className="flex justify-end gap-1.5">
-                  <button type="button" onClick={onClose} className="btn-secondary btn-xs">Cancel</button>
-                  <button
-                    type="button"
-                    onClick={() => void handleApply()}
-                    disabled={writable.length === 0 || isApplying}
-                    className="btn-primary btn-xs"
-                  >
+                  <Button variant="secondary" onClick={onClose}>Cancel</Button>
+                  <Button variant="primary" onClick={() => void handleApply()} disabled={writable.length === 0 || isApplying}>
                     {isApplying ? 'Saving to Shopify…' : `Save ${writable.length} to Shopify`}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </footer>

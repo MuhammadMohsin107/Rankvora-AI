@@ -4,12 +4,12 @@
 // scores when no audit existed, which read as a real measurement of the merchant's store. An
 // unaudited store now says so.
 
-import { Link } from 'react-router-dom';
-import { AlertCircle, RefreshCw, Radar } from 'lucide-react';
+import { AlertCircle, Radar } from 'lucide-react';
+import Button from '../../components/polaris/Button';
 
 export function PillarDashboardSkeleton({ title }: { title: string }) {
   return (
-    <div className="bg-surface-50">
+    <div>
       <div className="page-shell section-stack">
         {/* Sized to the compact live layout — a ~96px header band, 68px KPI tiles and the area
             grid — so the page does not visibly shrink the instant real data arrives. */}
@@ -36,18 +36,18 @@ export function PillarDashboardSkeleton({ title }: { title: string }) {
  */
 export function PillarDashboardEmpty({ title, description }: { title: string; description: string }) {
   return (
-    <div className="bg-surface-50">
+    <div>
       <div className="page-shell">
         <div className="card flex min-h-[260px] flex-col items-center justify-center border border-surface-200 p-6 text-center">
           <div className="mb-2.5 flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50">
             <Radar size={20} className="text-brand-600" />
           </div>
-          <h1 className="text-[15px] font-semibold text-surface-900">No {title} audit available</h1>
+          <h2 className="text-[15px] font-semibold text-surface-900">No {title} audit available</h2>
           <p className="mt-1 mb-3 max-w-md text-[12.5px] leading-[1.5] text-surface-500">{description}</p>
-          <Link to="/" className="btn-primary">
-            <Radar size={14} />
+          <Button variant="primary" to="/">
+            
             Run an audit to generate real results
-          </Link>
+          </Button>
           <p className="mt-3 max-w-md text-[11px] leading-[1.45] text-surface-400">
             Scores appear here only once an audit has measured your store. Nothing on this page is
             estimated or filled in.
@@ -60,20 +60,20 @@ export function PillarDashboardEmpty({ title, description }: { title: string; de
 
 export function PillarDashboardError({ title, onRetry }: { title: string; onRetry: () => void }) {
   return (
-    <div className="bg-surface-50">
+    <div>
       <div className="page-shell">
         <div className="card flex min-h-[240px] flex-col items-center justify-center border border-surface-200 p-6 text-center">
           <div className="mb-2.5 flex h-10 w-10 items-center justify-center rounded-lg bg-critical-50">
             <AlertCircle size={20} className="text-critical-500" />
           </div>
-          <h1 className="text-[15px] font-semibold text-surface-900">Unable to load {title}</h1>
+          <h2 className="text-[15px] font-semibold text-surface-900">Unable to load {title}</h2>
           <p className="mt-1 mb-3 max-w-md text-[12.5px] leading-[1.5] text-surface-500">
             Something went wrong fetching this analysis. Please try again.
           </p>
-          <button onClick={onRetry} className="btn-primary">
-            <RefreshCw size={14} />
+          <Button variant="primary" onClick={onRetry}>
+            
             Try again
-          </button>
+          </Button>
         </div>
       </div>
     </div>

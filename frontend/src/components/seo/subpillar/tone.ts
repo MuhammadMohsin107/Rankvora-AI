@@ -5,8 +5,18 @@
 // sparingly at high contrast.
 
 import type { Severity } from '../../../data/seo/subpillar.model';
+import type { BadgeTone } from '../../polaris/Badge';
 
 export type Tone = Severity | 'healthy';
+
+/** What a severity looks like as a Polaris badge. */
+export const severityBadgeTone: Record<Tone, BadgeTone> = {
+  critical: 'critical',
+  high: 'warning',
+  medium: 'info',
+  low: 'neutral',
+  healthy: 'success',
+};
 
 /** Full class strings so Tailwind sees them at build time. */
 export const toneStyles: Record<Tone, { badge: string; bar: string; dot: string; tile: string; text: string; rail: string }> = {

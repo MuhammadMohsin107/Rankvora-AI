@@ -2,7 +2,8 @@ import { ArrowUpRight, FileText, Search, Sparkles, Target, Zap } from 'lucide-re
 import { useNavigate } from 'react-router-dom';
 import type { PillarScore } from '../../data/dashboard/dashboard.types';
 import { pillarMeta } from '../../data/pillarMeta';
-import { SCORE_TARGET, cardClass, pillarColumns, pillarRoutes, statusTone } from './scoreTone';
+import Badge from '../polaris/Badge';
+import { SCORE_TARGET, cardClass, pillarColumns, pillarRoutes, statusBadgeTone, statusTone } from './scoreTone';
 
 interface Props {
   pillars: PillarScore[];
@@ -94,9 +95,7 @@ export default function PillarOverview({ pillars }: Props) {
                   // pillar that scored zero.
                   <span className="text-[24px] font-semibold leading-none tracking-tight text-surface-300 tabular-nums">—</span>
                 )}
-                <span className={`ml-auto inline-flex items-center rounded-full px-1.5 py-px text-[9.5px] font-semibold ${tone.badge}`}>
-                  {pillar.statusLabel}
-                </span>
+                <span className="ml-auto"><Badge tone={statusBadgeTone[pillar.status]}>{pillar.statusLabel}</Badge></span>
               </div>
 
               {/* Bullet bar with target marker. Unmeasured pillars show an empty track: there is

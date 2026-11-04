@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { scrollChaining } from '../../lib/scrollChaining';
-import { AlertCircle, Check, ChevronRight, ExternalLink, Loader2, Search } from 'lucide-react';
+import { Check, ChevronRight, ExternalLink, Loader2, Search } from 'lucide-react';
 import {
   disconnectGoogle,
   fetchGooglePerformance,
@@ -17,6 +17,7 @@ import { useReportDays } from '../../data/reportWindow';
 import { ApiError } from '../../lib/api';
 import { ReportWindowPicker } from '../workflows/ReportWindowPicker';
 import { Button, StatusBadge } from '../workflows/WorkflowPrimitives';
+import Banner from '../polaris/Banner';
 
 /**
  * ─── Google Search Console connector ─────────────────────────────────
@@ -307,20 +308,18 @@ export default function GoogleSearchConsoleCard({ onHealthChange, onDisconnected
       </div>
 
       {state === 'error' && (
-        <p role="alert" className="mt-2 flex items-start gap-1.5 rounded-md border border-critical-200 bg-critical-50 px-2.5 py-2 text-[11.5px] leading-[1.4] text-critical-800">
-          <AlertCircle size={13} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
-          <span>
-            {loadError}{' '}
-            <button type="button" onClick={() => void load()} className="cursor-pointer font-semibold underline underline-offset-2">Retry</button>
-          </span>
-        </p>
+        <div className="mt-2">
+          <Banner tone="critical">
+            <s-text>{loadError}</s-text>
+            <Button slot="secondary-actions" variant="secondary" onClick={() => void load()}>Retry</Button>
+          </Banner>
+        </div>
       )}
 
       {error && (
-        <p role="alert" className="mt-2 flex items-start gap-1.5 rounded-md border border-critical-200 bg-critical-50 px-2.5 py-2 text-[11.5px] leading-[1.4] text-critical-800">
-          <AlertCircle size={13} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
-          {error}
-        </p>
+        <div className="mt-2">
+          <Banner tone="critical"><s-text>{error}</s-text></Banner>
+        </div>
       )}
 
       {/* Google refused the last read — revoked access, or the property is gone. Surfaced because
@@ -373,13 +372,12 @@ export default function GoogleSearchConsoleCard({ onHealthChange, onDisconnected
           {sitesError ? (
             // The listing failed. Saying "no verified properties" here would invent Google's
             // answer out of a call that never returned one.
-            <p role="alert" className="mt-2 flex items-start gap-1.5 rounded-md border border-critical-200 bg-critical-50 px-2.5 py-2 text-[11.5px] leading-[1.4] text-critical-800">
-              <AlertCircle size={13} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
-              <span>
-                {sitesError}{' '}
-                <button type="button" onClick={() => void loadSites()} className="cursor-pointer font-semibold underline underline-offset-2">Retry</button>
-              </span>
-            </p>
+            <div className="mt-2">
+              <Banner tone="critical">
+                <s-text>{sitesError}</s-text>
+                <Button slot="secondary-actions" variant="secondary" onClick={() => void loadSites()}>Retry</Button>
+              </Banner>
+            </div>
           ) : !sitesLoaded ? (
             <p className="mt-2 flex items-center gap-1.5 text-[11.5px] text-surface-500">
               <Loader2 size={12} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
@@ -390,7 +388,7 @@ export default function GoogleSearchConsoleCard({ onHealthChange, onDisconnected
             <p className="mt-2 text-[11.5px] leading-[1.4] text-surface-500">
               This Google account has no verified Search Console properties. Verify your domain in
               Search Console first, then{' '}
-              <button type="button" onClick={() => void loadSites()} className="cursor-pointer font-semibold text-brand-600 underline underline-offset-2">check again</button>.
+              <Button variant="ghost" onClick={() => void loadSites()}>check again</Button>.
             </p>
           ) : (
             // Scrolls for the same reason the results below do: an agency account can have

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { scrollChaining } from '../../lib/scrollChaining';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, ArrowRight, ArrowUpRight, CheckCircle2, RefreshCw } from 'lucide-react';
+import { AlertCircle, ArrowRight, ArrowUpRight, CheckCircle2 } from 'lucide-react';
 import type { OverallScore, PriorityIssue, Severity } from '../../data/dashboard/dashboard.types';
 import { catalogKindOfMove } from '../../data/catalog.repository';
 import { CATALOG_KINDS, type CatalogKind } from '../../data/catalogKinds';
 import { SCORE_TARGET, countBySeverity, severityOrder, severityTone, statusTone } from '../dashboard/scoreTone';
+import Button from '../../components/polaris/Button';
 
 interface Props {
   /** The list this panel sits beside: a move about this kind filters that list; any other opens its page. */
@@ -85,7 +86,7 @@ export default function MovesPanel({ kind, state, issues, score, active, onSelec
         <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-critical-50 text-critical-600"><AlertCircle size={16} /></span>
           <p className="text-[12.5px] font-semibold text-surface-900">Winning moves could not be loaded</p>
-          <button type="button" onClick={onRetry} className="btn-primary btn-xs"><RefreshCw size={12} />Retry</button>
+          <Button variant="primary" onClick={onRetry}>Retry</Button>
         </div>
       ) : (
         <>

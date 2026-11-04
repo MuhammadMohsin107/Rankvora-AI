@@ -1,6 +1,7 @@
 import { AlertOctagon, CheckCircle2, FileSearch, ListChecks, type LucideIcon } from 'lucide-react';
 import type { SubPillarTotals } from '../../../data/seo/subpillar.model';
-import { card, eyebrow, scoreHex, statusFromScore, toneStyles } from './tone';
+import Badge from '../../polaris/Badge';
+import { card, eyebrow, scoreHex, severityBadgeTone, statusFromScore, toneStyles } from './tone';
 
 interface Props {
   totals: SubPillarTotals;
@@ -86,10 +87,7 @@ export default function ScoreCard({ totals, summary, healthChip }: Props) {
               {status}
             </h2>
             {healthChip && (
-              <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] font-semibold ${toneStyles[tone].badge}`}>
-                {tone === 'healthy' && <CheckCircle2 size={10} strokeWidth={2.4} aria-hidden="true" />}
-                {healthChip}
-              </span>
+              <Badge tone={severityBadgeTone[tone]}>{healthChip}</Badge>
             )}
           </div>
           <p className="mt-1 max-w-lg text-[12px] leading-[1.45] text-surface-600">{summary}</p>

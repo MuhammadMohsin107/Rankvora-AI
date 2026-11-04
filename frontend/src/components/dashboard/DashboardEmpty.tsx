@@ -1,6 +1,7 @@
 import { Check, Circle, Globe, Loader2, Radar } from 'lucide-react';
 import { useAuditRun } from '../../data/useAuditRun';
 import { stageStates } from '../../data/analysisStages';
+import Button from '../../components/polaris/Button';
 
 interface Props {
   /** The server's explanation when audits exist but describe a previously connected shop. */
@@ -88,10 +89,10 @@ export default function DashboardEmpty({ notice = null }: Props) {
         )}
 
         {!running && (
-          <button onClick={() => void run()} className="btn-primary">
-            <Radar size={16} />
+          <Button variant="primary" onClick={() => void run()}>
+            
             {notice ? 'Analyze this store' : 'Start first analysis'}
-          </button>
+          </Button>
         )}
 
         <p className="mt-2 inline-flex items-center gap-1.5 text-[11.5px] text-surface-400">

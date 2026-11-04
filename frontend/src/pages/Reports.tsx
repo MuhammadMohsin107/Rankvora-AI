@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { scrollChaining } from '../lib/scrollChaining';
-import { Link, useLocation, useSearchParams } from 'react-router-dom';
-import { AlertCircle, Download, FileText, Link2, LineChart, Loader2, Play, Share2, TrendingDown, TrendingUp } from 'lucide-react';
+import { useLocation, useSearchParams } from 'react-router-dom';
+import { FileText, LineChart, Loader2, TrendingDown, TrendingUp } from 'lucide-react';
 import {
   REPORT_COMPARISONS,
   REPORT_PERIODS,
@@ -21,7 +21,10 @@ import { pillarMeta, pillarOrder } from '../data/pillarMeta';
 import type { PillarKey } from '../data/dashboard/dashboard.types';
 import { useAuditRun } from '../data/useAuditRun';
 import { ApiError } from '../lib/api';
-import { Button, Drawer, MetricTile, ModuleHeader, SectionHeading } from '../components/workflows/WorkflowPrimitives';
+import AppPage from '../components/polaris/AppPage';
+import Banner from '../components/polaris/Banner';
+import { Button, Drawer, MetricTile, SectionHeading } from '../components/workflows/WorkflowPrimitives';
+import { SelectField } from '../components/polaris/fields';
 
 /** Card shell shared by every block on this page — one definition, so padding stays uniform. */
 const panel = 'rounded-lg border border-surface-200 bg-surface-0 shadow-[0_8px_24px_-20px_rgba(15,23,42,0.45)]';
@@ -111,17 +114,10 @@ function EmptyState({ title, body, action }: { title: string; body: string; acti
 }
 
 function Notice({ tone, children, onDismiss }: { tone: 'error' | 'info'; children: React.ReactNode; onDismiss?: () => void }) {
-  const wrap = tone === 'error'
-    ? 'border-critical-100 bg-critical-50 text-critical-800'
-    : 'border-info-100 bg-info-50 text-info-800';
   return (
-    <div className={`flex items-start gap-2.5 rounded-lg border px-2.5 py-2 ${wrap}`} role={tone === 'error' ? 'alert' : 'status'}>
-      <AlertCircle size={15} className="mt-px flex-shrink-0" aria-hidden="true" />
-      <p className="flex-1 text-[11.5px] leading-[1.4]">{children}</p>
-      {onDismiss && (
-        <button type="button" onClick={onDismiss} className="text-[11px] font-semibold underline underline-offset-2">Dismiss</button>
-      )}
-    </div>
+    <Banner tone={tone === 'error' ? 'critical' : 'info'} onDismiss={onDismiss}>
+      <s-text>{children}</s-text>
+    </Banner>
   );
 }
 
@@ -203,7 +199,7 @@ function ReportDetail({ auditId, onExport, exporting }: { auditId: number; onExp
       })}
 
       <Button variant="secondary" onClick={onExport} disabled={exporting}>
-        <Download size={14} />{exporting ? 'Preparing…' : 'Export this report'}
+        {exporting ? 'Preparing…' : 'Export this report'}
       </Button>
     </div>
   );
@@ -301,22 +297,28 @@ export default function Reports() {
     }
   };
 
+  // Every state sits in the same page frame, so the title bar keeps its "Reports" heading while the
+  // report loads, fails to load, or does not exist yet. "Create report" joins it once there is a report.
   if (loadState === 'loading') {
     return (
+      <AppPage heading="Reports">
       <div className="page-shell text-[12.5px] text-surface-500">
         <span className="inline-flex items-center gap-2"><Loader2 size={14} className="animate-spin" aria-hidden="true" />Loading reports…</span>
       </div>
+      </AppPage>
     );
   }
 
   if (loadState === 'error') {
     return (
+      <AppPage heading="Reports">
       <div className="page-shell section-stack">
-        <ModuleHeader eyebrow="Performance intelligence" title="Reports" description="Understand how your store performance is changing over time." />
+        <p className="page-subtitle">Understand how your store performance is changing over time.</p>
         <Notice tone="error">{loadError}</Notice>
         {/* Primary, like every other retry in the app — it is the only action on this screen. */}
         <div><Button onClick={load}>Try again</Button></div>
       </div>
+      </AppPage>
     );
   }
 
@@ -325,33 +327,36 @@ export default function Reports() {
   // kept: what is on screen must describe the store this workspace is actually reading.
   if (!state?.connected) {
     return (
+      <AppPage heading="Reports">
       <div className="page-shell section-stack">
-        <ModuleHeader eyebrow="Performance intelligence" title="Reports" description="Understand how your store performance is changing over time." />
+        <p className="page-subtitle">Understand how your store performance is changing over time.</p>
         <EmptyState
           title="No store connected"
           body="Connect your Shopify store to generate reports. Any audits you have already run are kept and will appear here again once a store is connected."
-          action={<Link to="/integrations" className="btn-primary"><Link2 size={14} />Connect a store</Link>}
+          action={<Button variant="primary" to="/integrations">Connect a store</Button>}
         />
       </div>
+      </AppPage>
     );
   }
 
   // ── Connected, never analyzed ────────────────────────────────────────
   if (!overview) {
     return (
+      <AppPage heading="Reports">
       <div className="page-shell section-stack">
-        <ModuleHeader eyebrow="Performance intelligence" title="Reports" description="Understand how your store performance is changing over time." />
+        <p className="page-subtitle">Understand how your store performance is changing over time.</p>
         <EmptyState
           title="No reports available yet"
           body={`Run an audit to generate your first report${state.shopDomain ? ` for ${state.shopDomain}` : ''}. Scores, pillar comparisons and the CSV export all come from that audit.`}
           action={(
-            <Button onClick={createReport} disabled={auditRun.running}>
-              {auditRun.running ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+            <Button loading={auditRun.running} onClick={createReport} disabled={auditRun.running}>
               {auditRun.running ? `Running audit… ${auditRun.progress}%` : 'Create report'}
             </Button>
           )}
         />
       </div>
+      </AppPage>
     );
   }
 
@@ -366,18 +371,19 @@ export default function Reports() {
   const overallDelta = showDelta(currentScore, previousScore);
 
   return (
+    // The title and "Create report" are in the page frame (AppPage), drawn by the Shopify admin's title
+    // bar. What is left is the content, on the admin's own background.
+    <AppPage
+      heading="Reports"
+      primaryAction={{
+        label: auditRun.running ? `Running… ${auditRun.progress}%` : 'Create report',
+        onClick: createReport,
+        loading: auditRun.running,
+        disabled: auditRun.running,
+      }}
+    >
     <div className="page-shell section-stack">
-      <ModuleHeader
-        eyebrow="Performance intelligence"
-        title="Reports"
-        description={`Latest report ${longDate(overview.reportDate)}${overview.isFixture ? ' · demo fixture, not a live audit' : ''}.`}
-        actions={(
-          <Button onClick={createReport} disabled={auditRun.running}>
-            {auditRun.running ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-            {auditRun.running ? `Running… ${auditRun.progress}%` : 'Create report'}
-          </Button>
-        )}
-      />
+      <p className="page-subtitle">{`Latest report ${longDate(overview.reportDate)}${overview.isFixture ? ' · demo fixture, not a live audit' : ''}.`}</p>
 
       {actionError && <Notice tone="error" onDismiss={() => setActionError(null)}>{actionError}</Notice>}
       {actionNotice && <Notice tone="info" onDismiss={() => setActionNotice(null)}>{actionNotice}</Notice>}
@@ -407,23 +413,8 @@ export default function Reports() {
           ))}
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <select
-            value={pillarFilter}
-            onChange={(event) => setPillarFilter(event.target.value)}
-            aria-label="Filter by pillar"
-            className="rounded-md border border-surface-200 bg-surface-0 px-2 py-1 text-[11px] font-semibold text-surface-700"
-          >
-            <option>All pillars</option>
-            {pillars.map((pillar) => <option key={pillar.key}>{pillar.label}</option>)}
-          </select>
-          <select
-            value={comparison}
-            onChange={(event) => setComparison(event.target.value as ReportComparison)}
-            aria-label="Compare against"
-            className="rounded-md border border-surface-200 bg-surface-0 px-2 py-1 text-[11px] font-semibold text-surface-700"
-          >
-            {REPORT_COMPARISONS.map((item) => <option key={item}>{item}</option>)}
-          </select>
+          <SelectField label="Filter by pillar" labelHidden value={pillarFilter} options={['All pillars', ...pillars.map((pillar) => pillar.label)]} onChange={setPillarFilter} />
+          <SelectField label="Compare against" labelHidden value={comparison} options={REPORT_COMPARISONS} onChange={setComparison} />
         </div>
       </section>
 
@@ -563,7 +554,7 @@ export default function Reports() {
                     </p>
                   </div>
                 </div>
-                <Button variant="ghost" onClick={() => setOpenReportId(report.id)}><Share2 size={13} />View</Button>
+                <Button variant="ghost" onClick={() => setOpenReportId(report.id)}>View</Button>
               </div>
             ))}
           </div>
@@ -582,7 +573,7 @@ export default function Reports() {
           </div>
           <div className="mt-2">
             <Button variant="primary" onClick={() => runExport()} disabled={exportingId !== null}>
-              <Download size={14} />{exportingId === 'current' ? 'Preparing…' : 'Export data'}
+              {exportingId === 'current' ? 'Preparing…' : 'Export data'}
             </Button>
           </div>
         </div>
@@ -613,5 +604,6 @@ export default function Reports() {
         )}
       </Drawer>
     </div>
+    </AppPage>
   );
 }

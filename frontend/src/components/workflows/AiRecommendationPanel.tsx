@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Sparkles, Loader2, RefreshCw } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { fetchAiRecommendation, fetchAiStatus, type AiRecommendation } from '../../data/findings.repository';
+import Button from '../../components/polaris/Button';
 
 interface Props {
   /** The finding's id as rendered by the UI. Only a numeric id is a real database row. */
@@ -106,20 +107,9 @@ export default function AiRecommendationPanel({ findingId }: Props) {
           the control is disabled and says why — a customer learns the capability exists and what
           it would take to use it, instead of the feature simply not being there. */}
       <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-        <button
-          type="button"
-          onClick={() => void generate(ai !== null)}
-          disabled={pending || !available || !statusKnown}
-          title={available ? undefined : 'AI drafting is not available on this server right now.'}
-          className="inline-flex items-center gap-1.5 rounded-md border border-brand-200 bg-surface-0 px-2 py-1 text-[11.5px] font-semibold text-brand-700 transition-colors hover:border-brand-300 hover:text-brand-800 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {pending
-            ? <Loader2 size={12} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
-            : ai
-              ? <RefreshCw size={12} aria-hidden="true" />
-              : <Sparkles size={12} aria-hidden="true" />}
+        <Button variant="secondary" onClick={() => void generate(ai !== null)} loading={pending} disabled={!available || !statusKnown}>
           {pending ? 'Generating…' : ai ? 'Regenerate with AI' : 'Improve with AI'}
-        </button>
+        </Button>
 
         {statusKnown && !available && (
           <span className="text-[10.5px] text-surface-500">

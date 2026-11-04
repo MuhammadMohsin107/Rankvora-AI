@@ -20,6 +20,15 @@
     -->
     <meta name="shopify-api-key" content="%VITE_SHOPIFY_API_KEY%" />
     <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+    <!--
+      Polaris web components 2.0 — Shopify's own UI kit (<s-page>, <s-button>, <s-banner>, …). One script
+      tag, loaded from Shopify's CDN right AFTER App Bridge (which must stay first), and nothing is
+      bundled: polaris-2.js always serves the newest stable 2.x release, so the app follows the admin's
+      design — including the Admin Next theme, which the 2.0 bundle carries and follows by itself.
+      Name polaris-2.0.js instead to freeze on exactly 2.0. Keep @shopify/polaris-types on ^2.0.0.
+      Load it once and only here: a second Polaris script on the page breaks the components.
+    -->
+    <script src="https://cdn.shopify.com/shopifycloud/polaris-2.js"></script>
     <script>
       // Stamps the theme BEFORE the first paint. Without this a dark-mode customer sees the app
       // render light and correct itself a frame later, on every single load — the white flash that
@@ -27,9 +36,9 @@
       // script would run after the browser has already painted.
       //
       // Deliberately duplicates three things from ThemeContext (the storage key, the attribute name
-      // and the dark default) because it cannot import from the bundle. All are commented there.
+      // and the light default) because it cannot import from the bundle. All are commented there.
       (function () {
-        var theme = 'dark';
+        var theme = 'light';
         // Inside the Shopify admin the app is always light, and reads nothing from storage. The same
         // test as src/lib/embedded.ts: framed, or opened with Shopify's embedded=1 flag.
         var embedded = /[?&]embedded=1(&|$)/.test(window.location.search);
@@ -40,12 +49,14 @@
         }
         if (embedded) {
           theme = 'light';
+          // Lets index.css give the page back to the admin: no inner scroll container, no own background.
+          document.documentElement.setAttribute('data-embedded', '');
         } else {
           try {
             var stored = localStorage.getItem('scorelo.theme');
             if (stored === 'dark' || stored === 'light' || stored === 'system') theme = stored;
           } catch (error) {
-            // Storage blocked (private window, embedded webview). The dark default still applies.
+            // Storage blocked (private window, embedded webview). The light default still applies.
           }
         }
         // 'system' leaves the attribute off, which hands control to the prefers-color-scheme block

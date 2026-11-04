@@ -1,5 +1,5 @@
-import { ExternalLink } from 'lucide-react';
 import AuthLayout from '../../layouts/AuthLayout';
+import Button from '../../components/polaris/Button';
 
 /**
  * ─── What a visitor sees on the bare site ────────────────────────────
@@ -29,10 +29,10 @@ export default function OpenFromShopify() {
         </li>
       </ol>
 
-      <a href="https://admin.shopify.com" className="btn-primary mt-6 inline-flex">
+      <Button variant="primary" href="https://admin.shopify.com" className="mt-6">
         Go to your Shopify admin
-        <ExternalLink size={14} aria-hidden="true" />
-      </a>
+        
+      </Button>
     </AuthLayout>
   );
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { AlertCircle, Check, Copy, Download, Loader2, Play, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import {
   addPromptQuery,
   deletePromptQuery,
@@ -16,6 +16,7 @@ import {
   type PromptQuery,
 } from '../../data/aiDiscovery.repository';
 import { Field, SettingsCard, TextInput } from './SettingsPrimitives';
+import Button from '../../components/polaris/Button';
 
 /**
  * ─── Settings · AI Discovery ─────────────────────────────────────────
@@ -69,15 +70,9 @@ function CopyButton({ value, label }: { value: string; label: string }) {
   };
 
   return (
-    <button
-      type="button"
-      onClick={copy}
-      className="inline-flex items-center gap-1 rounded border border-surface-200 px-2 py-1 text-[11px] font-semibold text-surface-700 hover:bg-surface-50"
-      aria-label={`Copy ${label}`}
-    >
-      {copied ? <Check size={12} /> : <Copy size={12} />}
+    <Button variant="secondary" onClick={copy} accessibilityLabel={`Copy ${label}`}>
       {copied ? 'Copied' : 'Copy'}
-    </button>
+    </Button>
   );
 }
 
@@ -101,14 +96,9 @@ function FilePreview({ file }: { file: GeneratedFile }) {
         </div>
         <div className="flex items-center gap-1.5">
           <CopyButton value={file.content} label={file.path} />
-          <button
-            type="button"
-            onClick={download}
-            className="inline-flex items-center gap-1 rounded border border-surface-200 px-2 py-1 text-[11px] font-semibold text-surface-700 hover:bg-surface-50"
-          >
-            <Download size={12} />
+          <Button variant="secondary" onClick={download}>
             Download
-          </button>
+          </Button>
         </div>
       </div>
       <textarea
@@ -178,23 +168,10 @@ function PromptQueryRow({
           <p className="text-[10.5px] text-surface-400">Looking for “{query.brandTerm}”</p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => onToggle(!query.active)}
-            className="rounded border border-surface-200 px-2 py-1 text-[11px] font-semibold text-surface-700 hover:bg-surface-50 disabled:opacity-50"
-          >
+          <Button variant="secondary" disabled={busy} onClick={() => onToggle(!query.active)}>
             {query.active ? 'Pause' : 'Resume'}
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onDelete}
-            aria-label={`Delete question: ${query.query}`}
-            className="rounded border border-surface-200 p-1 text-critical-600 hover:bg-critical-50 disabled:opacity-50"
-          >
-            <Trash2 size={12} />
-          </button>
+          </Button>
+          <Button variant="danger" disabled={busy} onClick={onDelete} accessibilityLabel={`Delete question: ${query.query}`} icon="delete" />
         </div>
       </div>
       {quoted && (
@@ -306,14 +283,9 @@ export default function AiDiscoverySection() {
               </p>
             </div>
 
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => mutate(async () => { setSettings({ ...settings, indexNow: await removeIndexNowKey() }); })}
-              className="text-[11.5px] font-semibold text-critical-600 hover:underline disabled:opacity-50"
-            >
+            <Button variant="danger" disabled={busy} onClick={() => mutate(async () => { setSettings({ ...settings, indexNow: await removeIndexNowKey() }); })}>
               Remove this key
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="space-y-2">
@@ -325,15 +297,9 @@ export default function AiDiscoverySection() {
                 whether it happens to carry a hint. */}
             <div className="grid gap-2 sm:grid-cols-[auto_auto_minmax(0,1fr)] sm:items-start">
               <OnTheInputLine>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => mutate(async () => { setSettings({ ...settings, indexNow: await saveIndexNowKey() }); })}
-                  className="inline-flex w-full items-center justify-center gap-1 rounded bg-brand-600 px-3 py-1.5 text-[11.5px] font-semibold text-white hover:bg-brand-700 disabled:opacity-50 sm:w-auto"
-                >
-                  {busy ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+                <Button loading={busy} variant="primary" disabled={busy} onClick={() => mutate(async () => { setSettings({ ...settings, indexNow: await saveIndexNowKey() }); })}>
                   Generate a key
-                </button>
+                </Button>
               </OnTheInputLine>
               <OnTheInputLine>
                 <span className="block py-1.5 text-center text-[11px] text-surface-500 sm:text-left">or</span>
@@ -341,17 +307,12 @@ export default function AiDiscoverySection() {
               <Field label="Use a key you already publish" htmlFor="manual-key">
                 <div className="flex gap-1.5">
                   <TextInput id="manual-key" value={manualKey} onChange={setManualKey} placeholder="32 hexadecimal characters" />
-                  <button
-                    type="button"
-                    disabled={busy || !manualKey.trim()}
-                    onClick={() => mutate(async () => {
+                  <Button variant="secondary" disabled={busy || !manualKey.trim()} onClick={() => mutate(async () => {
                       setSettings({ ...settings, indexNow: await saveIndexNowKey(manualKey.trim()) });
                       setManualKey('');
-                    })}
-                    className="shrink-0 rounded border border-surface-200 px-3 text-[11.5px] font-semibold text-surface-700 hover:bg-surface-50 disabled:opacity-50"
-                  >
+                    })}>
                     Save
-                  </button>
+                  </Button>
                 </div>
               </Field>
             </div>
@@ -387,20 +348,14 @@ export default function AiDiscoverySection() {
               <TextInput id="new-brand" value={newBrand} onChange={setNewBrand} placeholder="Optional" />
             </Field>
             <OnTheInputLine>
-              <button
-                type="button"
-                disabled={busy || !newQuery.trim() || promptTracking.queries.length >= promptTracking.maxQueries}
-                onClick={() => mutate(async () => {
+              <Button variant="primary" disabled={busy || !newQuery.trim() || promptTracking.queries.length >= promptTracking.maxQueries} onClick={() => mutate(async () => {
                   await addPromptQuery(newQuery.trim(), newBrand.trim() || undefined);
                   setNewQuery('');
                   setNewBrand('');
                   await load();
-                })}
-                className="inline-flex w-full shrink-0 items-center justify-center gap-1 rounded bg-brand-600 px-3 py-1.5 text-[11.5px] font-semibold text-white hover:bg-brand-700 disabled:opacity-50 sm:w-auto"
-              >
-                <Plus size={12} />
+                })}>
                 Track
-              </button>
+              </Button>
             </OnTheInputLine>
           </div>
 
@@ -437,10 +392,7 @@ export default function AiDiscoverySection() {
                 ))}
               </ul>
 
-              <button
-                type="button"
-                disabled={busy || !promptTracking.aiConfigured || promptTracking.queries.every((query) => !query.active)}
-                onClick={() => mutate(async () => {
+              <Button loading={busy} variant="secondary" disabled={busy || !promptTracking.aiConfigured || promptTracking.queries.every((query) => !query.active)} onClick={() => mutate(async () => {
                   setSweepNote(null);
                   const result = await runPromptSweep();
                   await load();
@@ -449,12 +401,9 @@ export default function AiDiscoverySection() {
                       ? `Asked ${result.checked}; ${result.mentioned} named your store. ${result.failures.length} could not be asked and were not recorded.`
                       : `Asked ${result.checked}; ${result.mentioned} named your store.`,
                   );
-                })}
-                className="inline-flex items-center gap-1 rounded border border-surface-200 px-2.5 py-1.5 text-[11.5px] font-semibold text-surface-700 hover:bg-surface-50 disabled:opacity-50"
-              >
-                {busy ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
+                })}>
                 Check all now
-              </button>
+              </Button>
               {sweepNote && <p className="text-[11px] text-surface-600">{sweepNote}</p>}
             </>
           )}
@@ -467,10 +416,7 @@ export default function AiDiscoverySection() {
         description="Built from your published catalog — no AI writes these, so nothing in them is invented. Rankvora AI cannot publish to your storefront root, so copy or download each file and publish it yourself. The audit then verifies by requesting the URL for real; it reads files only from your storefront’s own domain, so a file reached through a redirect is reported as not checked."
       >
         <div className="space-y-2">
-          <button
-            type="button"
-            disabled={generating}
-            onClick={async () => {
+          <Button loading={generating} variant="primary" disabled={generating} onClick={async () => {
               setGenerating(true);
               setError(null);
               try {
@@ -480,12 +426,9 @@ export default function AiDiscoverySection() {
               } finally {
                 setGenerating(false);
               }
-            }}
-            className="inline-flex items-center gap-1 rounded bg-brand-600 px-2.5 py-1.5 text-[11.5px] font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
-          >
-            {generating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+            }}>
             {files ? 'Regenerate from the current catalog' : 'Generate from my catalog'}
-          </button>
+          </Button>
 
           {generating && (
             <p className="text-[11px] text-surface-500">Reading your store live — this takes as long as an audit’s catalog read.</p>

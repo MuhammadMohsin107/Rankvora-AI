@@ -10,17 +10,11 @@ import { card } from './tone';
 export default function SubPillarSkeleton() {
   return (
     <div className="page-shell" aria-busy="true" aria-label="Loading analysis">
-      <div className="skeleton h-2.5 w-36" />
-
-      <div className="mt-2.5 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1.5">
-          <div className="skeleton h-6 w-48" />
-          <div className="skeleton h-3 w-80 max-w-full" />
-        </div>
-        <div className="flex gap-1.5">
-          <div className="skeleton h-8 w-32 rounded-md" />
-          <div className="skeleton h-8 w-24 rounded-md" />
-        </div>
+      {/* The row above the data: one line of context and when the audit last ran. The title and the
+          page's buttons are in the page frame (AppPage), so nothing here holds their place. */}
+      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="skeleton h-3 w-80 max-w-full" />
+        <div className="skeleton h-6 w-40 rounded-md" />
       </div>
 
       <div className="mt-3 grid grid-cols-12 gap-3">

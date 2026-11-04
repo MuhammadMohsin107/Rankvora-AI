@@ -38,7 +38,6 @@ export interface CatalogKindConfig {
   listPath: string;
   /** Matches what a finding counted ("11 of 12 products"), to tell a move about this kind. */
   nounPattern: RegExp;
-  overviewTitle: string;
   overviewSubtitle: string;
   /** The tab that shows every item: "All products". */
   allTab: string;
@@ -109,7 +108,6 @@ const KIND_CONFIGS: Record<CatalogKind, CatalogKindConfig> = {
     navLabel: 'Products',
     listPath: '/products',
     nounPattern: /product/i,
-    overviewTitle: 'Product issues overview',
     overviewSubtitle: 'Stay on top of your catalog’s health — review what each product is missing, then open it to fix.',
     allTab: 'All products',
     searchPlaceholder: 'Search products',
@@ -146,7 +144,6 @@ const KIND_CONFIGS: Record<CatalogKind, CatalogKindConfig> = {
     navLabel: 'Collections',
     listPath: '/collections',
     nounPattern: /collection/i,
-    overviewTitle: 'Collection issues overview',
     overviewSubtitle: 'Stay on top of your collections’ health — review what each one is missing, then open it to fix.',
     allTab: 'All collections',
     searchPlaceholder: 'Search collections',
@@ -178,7 +175,6 @@ const KIND_CONFIGS: Record<CatalogKind, CatalogKindConfig> = {
     navLabel: 'Blog articles',
     listPath: '/blog-articles',
     nounPattern: /article|post/i,
-    overviewTitle: 'Blog article issues overview',
     overviewSubtitle: 'Stay on top of your blog’s health — review what each article is missing or has let go stale, then open it to fix.',
     allTab: 'All articles',
     searchPlaceholder: 'Search articles',

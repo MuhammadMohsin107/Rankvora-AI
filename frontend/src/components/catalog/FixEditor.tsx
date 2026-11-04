@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Loader2, Save, Sparkles } from 'lucide-react';
 import { ApiError } from '../../lib/api';
 import { applyFixes, fetchAiFixStatus, planAiFixes } from '../../data/findings.repository';
 import { invalidateCatalogs } from '../../data/catalog.repository';
 import { followAuditRun } from '../../data/useAuditRun';
+import Button from '../../components/polaris/Button';
+import Banner from '../polaris/Banner';
+import { TextAreaField, TextField } from '../polaris/fields';
 
 /**
  * Fixes a field of one item without leaving Rankvora AI: the value is typed (or drafted) here and written
@@ -147,45 +149,50 @@ export default function FixEditor({ rowId, findingId, label, current, suggested,
 
   if (saved) {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-success-50 px-3 py-2 ring-1 ring-inset ring-success-100" role="status">
-        <p className="flex items-start gap-1.5 text-[12px] leading-[1.5] text-success-700">
-          <CheckCircle2 size={14} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
-          <span><span className="font-semibold">{label} saved to your store.</span>{saved.reaudit}</span>
-        </p>
-        <button type="button" className="btn-secondary btn-xs" onClick={() => { setSaved(null); setProposalId(null); }}>Edit again</button>
-      </div>
+      <Banner tone="success" heading={`${label} saved to your store.`}>
+        {saved.reaudit && <s-text>{saved.reaudit}</s-text>}
+        <Button slot="secondary-actions" variant="secondary" onClick={() => { setSaved(null); setProposalId(null); }}>Edit again</Button>
+      </Banner>
     );
   }
 
   const fieldId = `fix-${rowId}`;
-  const fieldClass = 'w-full rounded-lg border border-surface-200 bg-surface-0 px-3 py-2 text-[12.5px] leading-[1.5] text-surface-900 placeholder:text-surface-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200 disabled:opacity-60';
   const controls = (
     <div className="flex flex-wrap items-center gap-1.5">
-      <button type="button" className="btn-primary btn-xs" onClick={() => void save()} disabled={!canSave}>
-        {busy === 'saving' ? <Loader2 size={12} className="animate-spin" aria-hidden="true" /> : <Save size={12} aria-hidden="true" />}
+      <Button loading={busy === 'saving'} variant="primary" onClick={() => void save()} disabled={!canSave}>
         {busy === 'saving' ? 'Saving…' : 'Apply to your store'}
-      </button>
+      </Button>
       {showDraft && (
-        <button type="button" className="btn-secondary btn-xs" onClick={() => void draftValue()} disabled={!canDraft}>
-          {busy === 'drafting' ? <Loader2 size={12} className="animate-spin" aria-hidden="true" /> : <Sparkles size={12} aria-hidden="true" />}
+        <Button loading={busy === 'drafting'} variant="secondary" onClick={() => void draftValue()} disabled={!canDraft}>
           {busy === 'drafting' ? (draft === 'template' ? 'Filling…' : 'Drafting…') : draft === 'template' ? 'Fill from template' : 'Draft with AI'}
-        </button>
+        </Button>
       )}
     </div>
   );
 
   return (
     <div className="space-y-1.5">
-      {!compact && (
-        <div className="flex items-center justify-between gap-2">
-          <label htmlFor={fieldId} className="text-[12px] font-medium text-surface-700">{label}</label>
-          <span className="text-[11px] tabular-nums text-surface-500" aria-live="polite">{trimmed.length} characters</span>
-        </div>
-      )}
       {multiline ? (
-        <textarea id={fieldId} rows={3} value={value} onChange={(event) => { setValue(event.target.value); setDraftNote(null); }} disabled={busy === 'saving'} className={`${fieldClass} resize-y`} />
+        <TextAreaField
+          id={fieldId}
+          label={label}
+          labelHidden={compact}
+          rows={3}
+          value={value}
+          onChange={(next) => { setValue(next); setDraftNote(null); }}
+          disabled={busy === 'saving'}
+          details={compact ? undefined : `${trimmed.length} characters`}
+        />
       ) : (
-        <input id={fieldId} type="text" value={value} onChange={(event) => { setValue(event.target.value); setDraftNote(null); }} disabled={busy === 'saving'} aria-label={compact ? label : undefined} className={fieldClass} />
+        <TextField
+          id={fieldId}
+          label={label}
+          labelHidden={compact}
+          value={value}
+          onChange={(next) => { setValue(next); setDraftNote(null); }}
+          disabled={busy === 'saving'}
+          details={compact ? undefined : `${trimmed.length} characters`}
+        />
       )}
       {draftNote && (
         <p className="text-[12px] leading-[1.5] text-warning-700" role="status">

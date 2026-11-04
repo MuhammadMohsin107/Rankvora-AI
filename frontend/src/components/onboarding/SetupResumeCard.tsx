@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Check, Sparkles } from 'lucide-react';
+import { Check, Sparkles } from 'lucide-react';
 import { Button } from '../workflows/WorkflowPrimitives';
 import {
   STEP_META,
@@ -138,7 +138,6 @@ export default function SetupResumeCard() {
         <div className="flex-shrink-0">
           <Button onClick={() => void resume()} disabled={opening}>
             {opening ? 'Opening…' : done > 0 ? 'Resume setup' : 'Start setup'}
-            <ArrowRight size={13} aria-hidden="true" />
           </Button>
         </div>
       </div>

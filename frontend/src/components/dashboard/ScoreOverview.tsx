@@ -1,9 +1,10 @@
-import { ArrowDownRight, ArrowUpRight, Info, Minus } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
 import type { KeyMetric, OverallScore, PillarScore, ScoreTrendPoint } from '../../data/dashboard/dashboard.types';
 import { joinNames } from '../../config/modules';
 import { pillarMeta } from '../../data/pillarMeta';
 import MetricSummary from './MetricSummary';
 import { SCORE_TARGET, cardClass, statusTone } from './scoreTone';
+import Banner from '../polaris/Banner';
 
 interface Props {
   data: OverallScore;
@@ -177,10 +178,9 @@ export default function ScoreOverview({ data, metrics, trend, pillars, onSelectM
             {/* A score computed from part of the catalogue must say so next to the number,
                 not only inside a sub-pillar summary the merchant may never open. */}
             {data.coverageNote && (
-              <p className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-warning-50 px-2 py-0.5 text-left text-[11px] font-medium text-warning-700 ring-1 ring-inset ring-warning-100">
-                <Info size={13} strokeWidth={2.2} className="flex-shrink-0" aria-hidden="true" />
-                Partial scan — {data.coverageNote}
-              </p>
+              <div className="mt-2 text-left">
+                <Banner tone="warning" heading="Partial scan"><s-text>{data.coverageNote}</s-text></Banner>
+              </div>
             )}
 
             <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-surface-500 sm:justify-start">

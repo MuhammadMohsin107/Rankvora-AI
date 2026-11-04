@@ -201,6 +201,9 @@ export default function Onboarding() {
   // merchant would land halfway down the next step with its heading scrolled out of view.
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0 });
+    // Inside the Shopify admin the PAGE scrolls, not the container above (index.css releases html, body and
+    // #root from a fixed height there), so the container has nothing to scroll and the window must go to the top.
+    window.scrollTo({ top: 0 });
   }, [step]);
 
   // Being stopped is no use if the field is off-screen. Declared after the scroll-to-top above so
@@ -581,9 +584,15 @@ export default function Onboarding() {
 /**
  * The page frame: logo, an optional progress rail, and the step card.
  *
- * `h-full`, not `min-h-full`: html, body and #root are fixed to the viewport with overflow hidden,
- * so this div must be exactly viewport-high to become the scroll container. With `min-h-full` it
- * grew to fit the card and the bottom of a long step was clipped with no way to scroll to it.
+ * `h-full`, not `min-h-full`: outside the Shopify admin html, body and #root are fixed to the viewport
+ * with overflow hidden, so this div must be exactly viewport-high to become the scroll container. With
+ * `min-h-full` it grew to fit the card and the bottom of a long step was clipped with no way to scroll
+ * to it.
+ *
+ * `min-h-screen` is for INSIDE the admin, where the page itself scrolls and #root has no fixed height
+ * (index.css, data-embedded): `h-full` then resolves to the card's own height and the backdrop would stop
+ * partway down the window. A full viewport minimum keeps it full-bleed, and a longer step simply makes
+ * the page scroll.
  *
  * Without a rail (loading, errors, not connected) the card is centred at a reading width.
  */
@@ -605,7 +614,7 @@ function Frame({
   return (
     <div
       ref={scrollRef}
-      className="h-full overflow-y-auto overscroll-contain bg-surface-50"
+      className="h-full min-h-screen overflow-y-auto overscroll-contain bg-surface-50"
       /**
        * Three layers, front to back.
        *

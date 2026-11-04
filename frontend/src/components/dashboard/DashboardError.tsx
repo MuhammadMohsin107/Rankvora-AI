@@ -1,4 +1,5 @@
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import Button from '../../components/polaris/Button';
 
 interface Props {
   message?: string;
@@ -19,10 +20,10 @@ export default function DashboardError({ message, onRetry }: Props) {
           {message || 'Something went wrong while fetching your dashboard data. Please try again.'}
         </p>
         {onRetry && (
-          <button onClick={onRetry} className="btn-primary">
-            <RefreshCw size={16} />
+          <Button variant="primary" onClick={onRetry}>
+            
             Try Again
-          </button>
+          </Button>
         )}
       </div>
     </div>

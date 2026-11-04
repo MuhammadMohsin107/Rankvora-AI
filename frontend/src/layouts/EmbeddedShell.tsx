@@ -20,7 +20,8 @@ import { pillarList, pillarRoutes } from '../data/pillarMeta';
  * the ones Sidebar.tsx lists, built from the same sources, so the two cannot drift apart.
  *
  * Shopify's own scrolling replaces the app's: the page scrolls as the iframe's document, instead of
- * inside an inner container that exists to keep a fixed sidebar in place.
+ * inside an inner container that exists to keep a fixed sidebar in place. index.css releases html, body
+ * and #root from the fixed height the standalone shell gives them, for exactly this case.
  */
 interface NavLinkItem {
   to: string;
@@ -59,7 +60,8 @@ export default function EmbeddedShell({ children }: { children: ReactNode }) {
           analysis is going and there is nothing to report. */}
       <AnalysisBanner />
 
-      <main className="min-h-screen bg-surface-50">{children}</main>
+      {/* No background of its own: the admin's shows through (see data-embedded in index.css). */}
+      <main className="min-h-screen">{children}</main>
     </>
   );
 }

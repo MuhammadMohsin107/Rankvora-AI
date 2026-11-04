@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { reportClientError } from '../lib/reportClientError';
+import Button from '../components/polaris/Button';
 
 interface Props {
   children: ReactNode;
@@ -64,14 +65,10 @@ export default class ErrorBoundary extends Component<Props, State> {
           </p>
 
           <div className="mt-3 flex justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="btn-primary btn-xs"
-            >
+            <Button variant="primary" onClick={() => window.location.reload()}>
               Reload the page
-            </button>
-            <a href="/" className="btn-secondary btn-xs">Back to dashboard</a>
+            </Button>
+            <Button variant="secondary" href="/">Back to dashboard</Button>
           </div>
         </div>
       </div>

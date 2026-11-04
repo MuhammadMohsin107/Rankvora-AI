@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertCircle, CheckCircle2, KeyRound, Loader2, RefreshCw, Sparkles, UploadCloud } from 'lucide-react';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 import { ApiError } from '../../lib/api';
 import {
   AI_KEY_ERROR_CODES,
@@ -12,6 +12,9 @@ import {
 } from '../../data/productImages.repository';
 import AddedImageResult from './AddedImageResult';
 import { formatBytes } from './imageFile';
+import Button from '../../components/polaris/Button';
+import Banner from '../polaris/Banner';
+import { TextAreaField, TextField } from '../polaris/fields';
 
 /** Drawings kept on screen at once. Each is a megabyte or two of the browser's memory. */
 const MAX_DRAFTS = 4;
@@ -104,18 +107,12 @@ export default function GenerateTab({ product, ai, canWrite, onBusyChange, onAdd
   // The server's own answer to "can it draw at all". Nothing is offered that would only fail.
   if (!ai.configured) {
     return (
-      <div className="rounded-xl border border-warning-200 bg-warning-50 px-4 py-4" role="alert">
-        <div className="flex items-start gap-2.5">
-          <KeyRound size={18} className="mt-0.5 flex-shrink-0 text-warning-700" aria-hidden="true" />
-          <div className="min-w-0 text-[12.5px] leading-[1.5] text-warning-900">
-            <p className="font-semibold">AI image generation needs an updated AI key</p>
-            <p className="mt-0.5">
-              No AI key that can generate images is set up on this server yet, so no picture can be drawn. Uploading a photo from your computer still works.
-            </p>
-            {ai.reason && <p className="mt-1.5 text-[11.5px] text-warning-800">{ai.reason}</p>}
-          </div>
-        </div>
-      </div>
+      <Banner tone="warning" heading="AI image generation needs an updated AI key">
+        <s-text>
+          No AI key that can generate images is set up on this server yet, so no picture can be drawn. Uploading a photo from your computer still works.
+        </s-text>
+        {ai.reason && <s-text>{ai.reason}</s-text>}
+      </Banner>
     );
   }
 
@@ -139,22 +136,16 @@ export default function GenerateTab({ product, ai, canWrite, onBusyChange, onAdd
         )}
       </section>
 
-      <div>
-        <label htmlFor="ai-direction" className="text-[12px] font-medium text-surface-700">
-          Your direction <span className="font-normal text-surface-400">(optional)</span>
-        </label>
-        <textarea
-          id="ai-direction"
-          value={direction}
-          onChange={(event) => setDirection(event.target.value)}
-          maxLength={MAX_DIRECTION}
-          rows={2}
-          disabled={busy}
-          placeholder="For example: on a light oak counter, soft morning light"
-          className="mt-1 w-full resize-none rounded-lg border border-surface-200 bg-surface-0 px-3 py-2 text-[12.5px] text-surface-900 placeholder:text-surface-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-surface-50"
-        />
-        <p className="mt-0.5 text-right text-[10.5px] tabular-nums text-surface-400">{direction.length}/{MAX_DIRECTION}</p>
-      </div>
+      <TextAreaField
+        id="ai-direction"
+        label="Your direction (optional)"
+        rows={2}
+        value={direction}
+        onChange={(next) => setDirection(next.slice(0, MAX_DIRECTION))}
+        disabled={busy}
+        placeholder="For example: on a light oak counter, soft morning light"
+        details={`${direction.length}/${MAX_DIRECTION}`}
+      />
 
       {generating && (
         <div className="flex aspect-square max-h-72 w-full flex-col items-center justify-center rounded-xl border border-surface-200 bg-surface-50 text-center" role="status" aria-live="polite">
@@ -196,54 +187,29 @@ export default function GenerateTab({ product, ai, canWrite, onBusyChange, onAdd
             </ul>
           )}
 
-          <p className="rounded-md bg-info-50 px-2.5 py-1.5 text-[11.5px] leading-[1.5] text-info-800 ring-1 ring-inset ring-info-100">
-            This is an AI drawing of what the words describe, not a photo of your product. Check that it matches what you sell before adding it to the store.
-          </p>
+          <Banner tone="info">
+            <s-text>This is an AI drawing of what the words describe, not a photo of your product. Check that it matches what you sell before adding it to the store.</s-text>
+          </Banner>
 
-          <div>
-            <label htmlFor="ai-alt" className="text-[12px] font-medium text-surface-700">Alt text</label>
-            <input
-              id="ai-alt"
-              value={alt}
-              onChange={(event) => setAlt(event.target.value)}
-              maxLength={512}
-              disabled={busy}
-              className="mt-1 w-full rounded-lg border border-surface-200 bg-surface-0 px-3 py-2 text-[12.5px] text-surface-900 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-surface-50"
-            />
-          </div>
+          <TextField id="ai-alt" label="Alt text" value={alt} onChange={(next) => setAlt(next.slice(0, 512))} disabled={busy} />
         </div>
       )}
 
       {failure && (
-        <div
-          className={`rounded-md px-2.5 py-2 text-[12px] ring-1 ring-inset ${keyProblem ? 'bg-warning-50 text-warning-900 ring-warning-200' : 'bg-critical-50 text-critical-700 ring-critical-100'}`}
-          role="alert"
-        >
-          <p className="flex items-start gap-1.5">
-            {keyProblem
-              ? <KeyRound size={14} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
-              : <AlertCircle size={14} className="mt-0.5 flex-shrink-0" aria-hidden="true" />}
-            <span>
-              {keyProblem && <strong className="font-semibold">Update the AI key. </strong>}
-              {failure.message}
-            </span>
-          </p>
-        </div>
+        <Banner tone={keyProblem ? 'warning' : 'critical'} heading={keyProblem ? 'Update the AI key' : undefined}>
+          <s-text>{failure.message}</s-text>
+        </Banner>
       )}
 
       <div className="flex flex-wrap gap-2">
         {selected && (
-          <button type="button" onClick={() => void apply()} disabled={busy || !canWrite || alt.trim() === ''} className="btn-primary flex-1">
-            {applying ? <Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <UploadCloud size={15} aria-hidden="true" />}
+          <Button loading={applying} variant="primary" onClick={() => void apply()} disabled={busy || !canWrite || alt.trim() === ''} className="flex-1">
             {applying ? 'Adding to your store…' : 'Add this image to the product in Shopify'}
-          </button>
+          </Button>
         )}
-        <button type="button" onClick={() => void generate()} disabled={busy} className={selected ? 'btn-secondary' : 'btn-primary flex-1'}>
-          {generating
-            ? <Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
-            : selected ? <RefreshCw size={15} aria-hidden="true" /> : <Sparkles size={15} aria-hidden="true" />}
+        <Button variant={selected ? 'secondary' : 'primary'} onClick={() => void generate()} disabled={busy} loading={generating} className={selected ? undefined : 'flex-1'}>
           {generating ? 'Drawing…' : selected ? 'Regenerate' : 'Generate image with AI'}
-        </button>
+        </Button>
       </div>
       {selected && !canWrite && <p className="text-[11.5px] text-surface-500">Adding images is switched off for this store — see the notice above.</p>}
       {drafts.length > 0 && drafts.length >= MAX_DRAFTS && (

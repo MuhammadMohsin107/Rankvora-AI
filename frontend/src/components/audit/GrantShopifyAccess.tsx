@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { AlertCircle, KeyRound, Loader2 } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { beginShopifyInstall, fetchShopifyStatus } from '../../data/shopify.repository';
 import { ApiError } from '../../lib/api';
+import Button from '../../components/polaris/Button';
 
 /**
  * Sends the merchant through Shopify's own approval screen for the store already connected, so
@@ -42,10 +43,9 @@ export default function GrantShopifyAccess({ scope }: { scope: string }) {
       <p className="text-[11.5px] text-surface-500">
         Needs the Shopify permission <span className="font-mono text-surface-700">{scope}</span>.
       </p>
-      <button type="button" onClick={() => void grant()} disabled={busy} className="btn-secondary">
-        {busy ? <Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <KeyRound size={15} aria-hidden="true" />}
+      <Button loading={busy} variant="secondary" onClick={() => void grant()} disabled={busy}>
         {busy ? 'Opening Shopify…' : 'Grant access in Shopify'}
-      </button>
+      </Button>
       {error && (
         <p className="flex items-center gap-1.5 text-[12px] text-critical-700" role="alert">
           <AlertCircle size={14} aria-hidden="true" />

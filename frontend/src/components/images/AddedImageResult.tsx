@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertCircle, CheckCircle2, Loader2, Plus } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { fetchMediaStatus, type AttachResult, type MediaOutcome } from '../../data/productImages.repository';
+import Button from '../../components/polaris/Button';
 
 /** How long to keep asking Shopify whether an image has finished processing. */
 const SETTLE_MS = 90_000;
@@ -104,10 +105,10 @@ export default function AddedImageResult({ result, productTitle, source, onAddAn
         </figure>
       )}
 
-      <button type="button" onClick={onAddAnother} className="btn-secondary btn-xs">
-        <Plus size={12} aria-hidden="true" />
+      <Button variant="secondary" onClick={onAddAnother}>
+        
         {failed ? 'Try another image' : 'Add another image'}
-      </button>
+      </Button>
     </div>
   );
 }

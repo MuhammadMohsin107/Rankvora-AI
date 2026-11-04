@@ -1,22 +1,14 @@
 import { useCallback, useEffect, useMemo, useState, type HTMLAttributes } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import {
-  AlertCircle,
-  Building2,
-  CreditCard,
-  Link2,
-  RefreshCw,
-  Sparkles,
-  UserRound,
-  X,
-  type LucideIcon,
-} from 'lucide-react';
+import { AlertCircle, Building2, CreditCard, Link2, Sparkles, UserRound, type LucideIcon } from 'lucide-react';
 import { planInfo, type SettingsState } from '../data/settings.config';
 import { fetchSettings, persistSettings, withStore } from '../data/settings.repository';
 import WorkspaceStoreCard from '../components/settings/WorkspaceStoreCard';
 import { fetchConnectorHealth, fetchIntegrations, overlayConnectorHealth, type IntegrationRecord } from '../data/integrations.repository';
 import { ApiError } from '../lib/api';
-import { Button, ModuleHeader, StatusBadge } from '../components/workflows/WorkflowPrimitives';
+import AppPage from '../components/polaris/AppPage';
+import Banner from '../components/polaris/Banner';
+import { Button, StatusBadge } from '../components/workflows/WorkflowPrimitives';
 import ProfileSection from '../components/settings/ProfileSection';
 import AiDiscoverySection from '../components/settings/AiDiscoverySection';
 import GuidedSetupCard from '../components/onboarding/GuidedSetupCard';
@@ -63,16 +55,17 @@ const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim(
 const isDomain = (value: string) => /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(value.trim());
 
 /**
- * The frame of every Settings state: the usual padded page on a light grey backdrop that runs edge
- * to edge, so the white cards stand out on it.
+ * The frame of every Settings state: the page frame (the "Settings" title in the Shopify admin's title
+ * bar, which every state keeps) around the usual padded content. The backdrop is the admin's own grey,
+ * so the white cards stand out on it without the page painting one of its own.
  */
 function SettingsPage({ className = '', children, ...rest }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className="min-h-full bg-surface-100">
+    <AppPage heading="Settings">
       <div className={`page-shell ${className}`} {...rest}>
         {children}
       </div>
-    </div>
+    </AppPage>
   );
 }
 
@@ -179,11 +172,10 @@ export default function Settings() {
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-critical-50 text-critical-600">
               <AlertCircle size={18} />
             </span>
-            <h1 className="mt-2.5 text-[15px] font-bold text-surface-950">Unable to load settings</h1>
+            <h2 className="mt-2.5 text-[15px] font-bold text-surface-950">Unable to load settings</h2>
             <p className="mt-1.5 text-[12.5px] text-surface-500">Your saved preferences were not changed.</p>
             <div className="mt-2">
               <Button onClick={load}>
-                <RefreshCw size={15} />
                 Retry
               </Button>
             </div>
@@ -196,11 +188,7 @@ export default function Settings() {
 
   return (
     <SettingsPage className="section-stack">
-      <ModuleHeader
-        eyebrow="Configuration"
-        title="Settings"
-        description="Manage your account, the store Rankvora AI analyzes, and how the platform behaves."
-      />
+      <p className="page-subtitle">Manage your account, the store Rankvora AI analyzes, and how the platform behaves.</p>
 
       <div className="grid gap-2.5 lg:grid-cols-[212px_minmax(0,1fr)] lg:items-start">
         {/* ── Navigation ────────────────────────────────────────── */}
@@ -284,23 +272,10 @@ export default function Settings() {
           <h2 className="sr-only">{activeMeta.title}</h2>
 
           {saveError && (
-            <div
-              role="alert"
-              className="mb-2 flex items-start gap-2.5 rounded-lg border border-critical-200 bg-critical-50 px-2.5 py-2"
-            >
-              <AlertCircle size={15} className="mt-0.5 flex-shrink-0 text-critical-600" aria-hidden="true" />
-              <div className="min-w-0 flex-1">
-                <p className="text-[12.5px] font-semibold text-critical-800">Changes were not saved</p>
-                <p className="mt-0.5 text-[11.5px] leading-[1.4] text-critical-700">{saveError}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSaveError(null)}
-                aria-label="Dismiss"
-                className="rounded p-1 text-critical-500 transition-colors hover:bg-critical-100 hover:text-critical-800"
-              >
-                <X size={13} />
-              </button>
+            <div className="mb-2">
+              <Banner key={saveError} tone="critical" heading="Changes were not saved" onDismiss={() => setSaveError(null)}>
+                <s-text>{saveError}</s-text>
+              </Banner>
             </div>
           )}
 
@@ -497,10 +472,7 @@ function SettingsSkeleton() {
     <SettingsPage className="section-stack" aria-busy="true" aria-label="Loading settings">
       {/* Mirrors the loaded layout exactly — same track width, same paddings — so the page does
           not jump when the real content replaces it. */}
-      <div className="space-y-1.5 border-b border-surface-200 pb-2">
-        <div className="skeleton h-5 w-40" />
-        <div className="skeleton h-4 w-96 max-w-full" />
-      </div>
+      <div className="skeleton h-4 w-96 max-w-full" />
       <div className="grid gap-2.5 lg:grid-cols-[212px_minmax(0,1fr)]">
         <div className="space-y-1.5">
           {Array.from({ length: 8 }).map((_, index) => (

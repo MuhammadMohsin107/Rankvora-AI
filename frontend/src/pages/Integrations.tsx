@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { AlertCircle, Check, CheckCircle2, Cloud, Database, Info, Link2, RefreshCw, ShieldCheck, Unplug } from 'lucide-react';
+import { AlertCircle, Check, Cloud, Database, Link2, ShieldCheck } from 'lucide-react';
 import {
   fetchConnectorHealth,
   fetchIntegrations,
@@ -23,27 +23,26 @@ import {
   syncShopifyStore,
   type ShopifyStatus,
 } from '../data/shopify.repository';
-import { Button, Drawer, MetricTile, ModuleHeader, SectionHeading, StatusBadge } from '../components/workflows/WorkflowPrimitives';
+import AppPage from '../components/polaris/AppPage';
+import Banner from '../components/polaris/Banner';
+import { Button, Drawer, MetricTile, SectionHeading, StatusBadge } from '../components/workflows/WorkflowPrimitives';
 import GoogleSearchConsoleCard from '../components/integrations/GoogleSearchConsoleCard';
 import GoogleAnalyticsCard from '../components/integrations/GoogleAnalyticsCard';
 import PageSpeedCard from '../components/integrations/PageSpeedCard';
 import { describeGoogleOutcome } from '../data/google.repository';
+import { TextField } from '../components/polaris/fields';
 
 type IntegrationStatus = IntegrationRecord['status'];
 
 const statusTone: Record<IntegrationStatus, 'success' | 'warning' | 'neutral'> = { Connected: 'success', 'Needs Attention': 'warning', 'Not Connected': 'neutral' };
 const iconMap: Record<string, typeof Cloud> = { Store: Database, Analytics: Cloud, Performance: ShieldCheck, 'AI / Discovery': Link2 };
 
-interface Banner {
+interface PageNotice {
   tone: 'success' | 'error' | 'info';
   message: string;
 }
 
-const bannerStyles: Record<Banner['tone'], { wrap: string; icon: typeof Info }> = {
-  success: { wrap: 'border-success-100 bg-success-50 text-success-800', icon: CheckCircle2 },
-  error: { wrap: 'border-critical-100 bg-critical-50 text-critical-800', icon: AlertCircle },
-  info: { wrap: 'border-info-100 bg-info-50 text-info-800', icon: Info },
-};
+const bannerTone: Record<PageNotice['tone'], 'success' | 'critical' | 'info'> = { success: 'success', error: 'critical', info: 'info' };
 
 export default function Integrations() {
   // The catalogue as the API returned it. What renders is `records`, below, with each connector's
@@ -54,7 +53,7 @@ export default function Integrations() {
   const [loadState, setLoadState] = useState<'loading' | 'success' | 'error'>('loading');
   const [selected, setSelected] = useState<IntegrationRecord | null>(null);
   const [isAdding, setIsAdding] = useState(false);
-  const [banner, setBanner] = useState<Banner | null>(null);
+  const [banner, setBanner] = useState<PageNotice | null>(null);
   const [busy, setBusy] = useState<'connecting' | 'syncing' | 'disconnecting' | null>(null);
   const [shopInput, setShopInput] = useState('');
   const [shopInputError, setShopInputError] = useState<string | null>(null);
@@ -185,22 +184,22 @@ export default function Integrations() {
     }
   };
 
+  // Every state sits in the same page frame, so the title bar keeps its "Integrations" heading while the
+  // list loads or fails to load.
   if (loadState === 'loading') {
-    return <div className="page-shell text-[12.5px] text-surface-500">Loading integrations…</div>;
+    return <AppPage heading="Integrations"><div className="page-shell text-[12.5px] text-surface-500">Loading integrations…</div></AppPage>;
   }
 
   if (loadState === 'error') {
-    return <div className="page-shell text-[12.5px] text-critical-600">Failed to load integrations. Please try again.</div>;
+    return <AppPage heading="Integrations"><div className="page-shell text-[12.5px] text-critical-600">Failed to load integrations. Please try again.</div></AppPage>;
   }
 
   return (
+    // The title and "Add integration" are in the page frame (AppPage), drawn by the Shopify admin's title
+    // bar. What is left is the content, on the admin's own background.
+    <AppPage heading="Integrations" primaryAction={{ label: 'Add integration', onClick: () => setIsAdding(true) }}>
     <div className="page-shell section-stack">
-      <ModuleHeader
-        eyebrow="Data connections"
-        title="Integrations"
-        description="Connect your data sources to give Rankvora AI the information it needs to analyze your store."
-        actions={<Button onClick={() => setIsAdding(true)}><Link2 size={15} />Add integration</Button>}
-      />
+      <p className="page-subtitle">Connect your data sources to give Rankvora AI the information it needs to analyze your store.</p>
 
       {banner && <BannerNotice banner={banner} onDismiss={() => setBanner(null)} />}
 
@@ -441,24 +440,23 @@ export default function Integrations() {
           </p>
           <div className="flex flex-wrap gap-2">
             <Button variant="danger" onClick={runDisconnect} disabled={busy === 'disconnecting'}>
-              <Unplug size={15} />{busy === 'disconnecting' ? 'Disconnecting…' : 'Yes, disconnect'}
+              {busy === 'disconnecting' ? 'Disconnecting…' : 'Yes, disconnect'}
             </Button>
             <Button variant="secondary" onClick={() => setConfirmingDisconnect(false)}>Cancel</Button>
           </div>
         </div>
       </Drawer>
     </div>
+    </AppPage>
   );
 }
 
-function BannerNotice({ banner, onDismiss }: { banner: Banner; onDismiss: () => void }) {
-  const { wrap, icon: Icon } = bannerStyles[banner.tone];
+function BannerNotice({ banner, onDismiss }: { banner: PageNotice; onDismiss: () => void }) {
+  // Keyed by the message, so a new message is a new banner and never a closed one re-labelled.
   return (
-    <div className={`flex items-start gap-2.5 rounded-lg border px-2.5 py-2 ${wrap}`} role="status">
-      <Icon size={15} className="mt-px shrink-0" />
-      <p className="flex-1 text-[12px] leading-[1.4]">{banner.message}</p>
-      <button type="button" onClick={onDismiss} className="text-[11px] font-semibold underline underline-offset-2">Dismiss</button>
-    </div>
+    <Banner key={banner.message} tone={bannerTone[banner.tone]} onDismiss={onDismiss}>
+      <s-text>{banner.message}</s-text>
+    </Banner>
   );
 }
 
@@ -523,27 +521,27 @@ function ShopifyPanel({ status, busy, shopInput, shopInputError, onShopInputChan
             Rankvora AI connects to this store by itself whenever you open it from your Shopify admin. If it shows as not connected, reload to try again.
           </p>
           <div className="mt-2">
-            <Button onClick={() => window.location.reload()}><RefreshCw size={15} />Reload</Button>
+            <Button onClick={() => window.location.reload()}>Reload</Button>
           </div>
         </div>
       ) : status.status === 'not_connected' ? (
         <div className="mt-2 max-w-lg">
-          <label htmlFor="shop-domain" className="text-[10px] font-bold uppercase tracking-[0.14em] text-surface-500">Your Shopify store address</label>
-          <div className="mt-1.5 flex flex-wrap gap-2">
-            <input
-              id="shop-domain"
-              value={shopInput}
-              onChange={(event) => onShopInputChange(event.target.value)}
-              onKeyDown={(event) => { if (event.key === 'Enter') onConnect(); }}
-              placeholder="my-store.myshopify.com"
-              disabled={!status.configured || busy === 'connecting'}
-              className="h-8 min-w-[16rem] flex-1 rounded-md border border-surface-200 px-2.5 text-[12px] text-surface-900 placeholder:text-surface-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:bg-surface-50"
-            />
+          <div className="mt-1.5 flex flex-wrap items-end gap-2" onKeyDown={(event) => { if (event.key === 'Enter') onConnect(); }}>
+            <div className="min-w-[16rem] flex-1">
+              <TextField
+                id="shop-domain"
+                label="Your Shopify store address"
+                value={shopInput}
+                onChange={onShopInputChange}
+                placeholder="my-store.myshopify.com"
+                error={shopInputError ?? undefined}
+                disabled={!status.configured || busy === 'connecting'}
+              />
+            </div>
             <Button onClick={onConnect} disabled={!status.configured || busy === 'connecting'}>
-              <Link2 size={15} />{busy === 'connecting' ? 'Opening Shopify…' : 'Connect Shopify'}
+              {busy === 'connecting' ? 'Opening Shopify…' : 'Connect Shopify'}
             </Button>
           </div>
-          {shopInputError && <p className="mt-1.5 text-[11px] text-critical-600">{shopInputError}</p>}
           {/* The address only tells Shopify which admin to open. Approval happens in Shopify's own
               UI, and only its signed callback creates a connection here. */}
           <p className="mt-1.5 text-[11px] leading-[1.4] text-surface-500">
@@ -594,14 +592,14 @@ function ShopifyPanel({ status, busy, shopInput, shopInputError, onShopInputChan
 
           <div className="flex flex-wrap gap-2">
             <Button onClick={onSync} disabled={busy === 'syncing' || status.status === 'reauthorization_required'}>
-              <RefreshCw size={15} className={busy === 'syncing' ? 'animate-spin' : ''} />{busy === 'syncing' ? 'Syncing…' : 'Sync now'}
+              {busy === 'syncing' ? 'Syncing…' : 'Sync now'}
             </Button>
             {status.storeUrl && (
-              <a href={status.storeUrl} target="_blank" rel="noreferrer noopener" className="btn-secondary"><Link2 size={15} />View store</a>
+              <Button variant="secondary" href={status.storeUrl} newTab>View store</Button>
             )}
             {/* Not inside the Shopify admin: there the store is removed by uninstalling the app from
                 Shopify, and a Disconnect here would only be undone the next time the app opens. */}
-            {!isEmbedded() && <Button variant="danger" onClick={onRequestDisconnect}><Unplug size={15} />Disconnect</Button>}
+            {!isEmbedded() && <Button variant="danger" onClick={onRequestDisconnect}>Disconnect</Button>}
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AlertOctagon, AlertTriangle, CheckCircle2, FolderOpen, ImageOff, Newspaper, Package, type LucideIcon } from 'lucide-react';
 import type { CatalogCheckResult, CatalogItem } from '../../data/catalog.repository';
+import Badge from '../polaris/Badge';
 import { CATALOG_KINDS, type CatalogKind } from '../../data/catalogKinds';
 
 /**
@@ -52,30 +53,21 @@ export function Thumbnail({ src, name, size = 'sm', kind = 'product' }: { src: s
   );
 }
 
-const pill = 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset';
-
-/** "4 Critical Issues · 4 Warnings · 3 Passing" — the counts as coloured pills, zeros left out. */
+/** "4 Critical Issues · 4 Warnings · 3 Passing" — the counts as Polaris badges, zeros left out. */
 export function IssueBadges({ item }: { item: Pick<CatalogItem, 'critical' | 'warnings' | 'passing'> }) {
   return (
     <span className="flex flex-wrap items-center gap-1">
       {item.critical > 0 && (
-        <span className={`${pill} bg-critical-50 text-critical-700 ring-critical-100`}>
-          <AlertOctagon size={12} aria-hidden="true" />
+        <Badge tone="critical">
           {item.critical} Critical {item.critical === 1 ? 'Issue' : 'Issues'}
-        </span>
+        </Badge>
       )}
       {item.warnings > 0 && (
-        <span className={`${pill} bg-warning-50 text-warning-700 ring-warning-100`}>
-          <AlertTriangle size={12} aria-hidden="true" />
+        <Badge tone="warning">
           {item.warnings} {item.warnings === 1 ? 'Warning' : 'Warnings'}
-        </span>
+        </Badge>
       )}
-      {item.passing > 0 && (
-        <span className={`${pill} bg-success-50 text-success-700 ring-success-100`}>
-          <CheckCircle2 size={12} aria-hidden="true" />
-          {item.passing} Passing
-        </span>
-      )}
+      {item.passing > 0 && <Badge tone="success">{item.passing} Passing</Badge>}
     </span>
   );
 }

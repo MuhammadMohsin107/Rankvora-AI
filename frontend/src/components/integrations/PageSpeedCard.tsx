@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, Check, ExternalLink, Gauge, Loader2, Smartphone, Monitor } from 'lucide-react';
+import { Check, ExternalLink, Gauge, Loader2, Smartphone, Monitor } from 'lucide-react';
 import {
   describePageSpeedFailure,
   fetchPageSpeedStatus,
@@ -13,6 +13,7 @@ import {
 } from '../../data/pagespeed.repository';
 import { pagespeedHealth } from '../../data/pagespeedHealth';
 import { Button, StatusBadge } from '../workflows/WorkflowPrimitives';
+import Banner from '../polaris/Banner';
 
 /**
  * ─── PageSpeed Insights connector ────────────────────────────────────
@@ -269,20 +270,18 @@ export default function PageSpeedCard({ onHealthChange }: PageSpeedCardProps = {
       </div>
 
       {state === 'error' && (
-        <p role="alert" className="mt-2 flex items-start gap-1.5 rounded-md border border-critical-200 bg-critical-50 px-2.5 py-2 text-[11.5px] leading-[1.4] text-critical-800">
-          <AlertCircle size={13} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
-          <span>
-            {loadError}{' '}
-            <button type="button" onClick={() => void load()} className="cursor-pointer font-semibold underline underline-offset-2">Retry</button>
-          </span>
-        </p>
+        <div className="mt-2">
+          <Banner tone="critical">
+            <s-text>{loadError}</s-text>
+            <Button slot="secondary-actions" variant="secondary" onClick={() => void load()}>Retry</Button>
+          </Banner>
+        </div>
       )}
 
       {error && (
-        <p role="alert" className="mt-2 flex items-start gap-1.5 rounded-md border border-critical-200 bg-critical-50 px-2.5 py-2 text-[11.5px] leading-[1.4] text-critical-800">
-          <AlertCircle size={13} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
-          {error}
-        </p>
+        <div className="mt-2">
+          <Banner tone="critical"><s-text>{error}</s-text></Banner>
+        </div>
       )}
 
       {/* The recorded reason the last run failed. Shown even when an older measurement is still
@@ -349,10 +348,8 @@ export default function PageSpeedCard({ onHealthChange }: PageSpeedCardProps = {
           )}
 
           <div className="mt-2.5 flex flex-wrap items-center gap-2 border-t border-surface-100 pt-2">
-            <Button onClick={() => void handleRun()} disabled={running}>
-              {running
-                ? <><Loader2 size={15} className="animate-spin motion-reduce:animate-none" />Measuring…</>
-                : status.reports.length === 0 ? 'Run first measurement' : 'Measure again'}
+            <Button onClick={() => void handleRun()} loading={running}>
+              {running ? 'Measuring…' : status.reports.length === 0 ? 'Run first measurement' : 'Measure again'}
             </Button>
             {running && (
               // Said before the wait, not discovered during it. Google is loading the storefront

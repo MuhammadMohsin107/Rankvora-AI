@@ -1,5 +1,5 @@
-import { Loader2, Radar } from 'lucide-react';
 import { useAuditCompletion, useAuditRun } from '../../data/useAuditRun';
+import Button from '../../components/polaris/Button';
 
 interface Props {
   /**
@@ -32,19 +32,9 @@ export default function RunAuditButton({ onComplete, label = 'Run an audit' }: P
 
   return (
     <div className="mt-6 flex flex-col items-center gap-1.5">
-      <button onClick={() => void run()} disabled={running} className="btn-primary disabled:opacity-70">
-        {running ? (
-          <>
-            <Loader2 size={15} className="animate-spin motion-reduce:animate-none" />
-            Analyzing your store… {progress}%
-          </>
-        ) : (
-          <>
-            <Radar size={15} />
-            {label}
-          </>
-        )}
-      </button>
+      <Button variant="primary" onClick={() => void run()} loading={running}>
+        {running ? `Analyzing your store… ${progress}%` : label}
+      </Button>
     </div>
   );
 }

@@ -14,8 +14,10 @@
  * Three states, because the viewer has three:
  *   :root                                    the complete light palette (unchanged baseline)
  *   @media (prefers-color-scheme: dark)      the OS preference, when the customer chose "System"
- *   :root[data-theme="dark"]                 dark — the default for anyone who has not chosen, or
- *                                            an explicit choice; beats the OS either way
+ *   :root[data-theme="dark"]                 dark — an explicit choice; beats the OS either way
+ *
+ * Light is what anyone who has not chosen gets (ThemeContext.tsx, mirrored in index.html), and what the
+ * app always is inside the Shopify admin.
  *
  * The media query is guarded with :not([data-theme="light"]) so choosing light on a dark OS wins.
  * Never declare a colour ONLY inside the media block — a value that exists in one state and not
@@ -502,6 +504,24 @@
     overflow: hidden;
   }
 
+  /* INSIDE THE SHOPIFY ADMIN (index.html stamps data-embedded before the first paint) the app is the
+   * iframe's own document, and it scrolls like any page. The three rules above pin html, body and
+   * #root to the window height with overflow hidden because the standalone shell scrolls an inner
+   * <main> instead; carried into the admin they cut off everything below the first screen, with no
+   * wheel and no scrollbar to reach it. The background is the admin's too: transparent, so the page
+   * follows the admin's own surface (Admin Next included) rather than painting a grey of its own. */
+  html[data-embedded],
+  html[data-embedded] body,
+  html[data-embedded] #root {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  html[data-embedded] body {
+    background: transparent;
+  }
+
   button,
   input,
   select,
@@ -563,6 +583,14 @@
    * vertical space above every title and capped content at 1280px on monitors twice that wide. */
   .page-shell {
     @apply mx-auto w-full max-w-[1600px] px-4 pb-8 pt-4 md:px-6;
+  }
+
+  /* Inside a Polaris <s-page> (components/polaris/AppPage.tsx) the page frame already supplies the width
+   * and the side space, so a page body that still wraps itself in .page-shell would be indented twice. */
+  s-page .page-shell {
+    max-width: none;
+    margin-inline: 0;
+    padding-inline: 0;
   }
 
   /* Title · supporting line · actions, on one row from `sm` up. */

@@ -1,6 +1,7 @@
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { describeOpenFailure } from '../../data/auth.repository';
+import Button from '../../components/polaris/Button';
 
 /**
  * What the merchant sees when the app could not open inside their Shopify admin.
@@ -19,10 +20,10 @@ export default function EmbeddedUnavailable() {
         <AlertCircle size={22} className="mx-auto text-critical-600" aria-hidden="true" />
         <h1 className="mt-2 text-[15px] font-semibold text-surface-900">Rankvora AI could not open</h1>
         <p className="mt-1.5 text-[12.5px] leading-[1.5] text-surface-600">{describeOpenFailure(openFailure)}</p>
-        <button type="button" onClick={() => window.location.reload()} className="btn-secondary btn-xs mt-3">
-          <RefreshCw size={12} aria-hidden="true" />
+        <Button variant="secondary" onClick={() => window.location.reload()} className="mt-3">
+          
           Try again
-        </button>
+        </Button>
       </div>
     </div>
   );

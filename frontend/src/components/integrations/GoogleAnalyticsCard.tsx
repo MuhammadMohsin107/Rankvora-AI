@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { scrollChaining } from '../../lib/scrollChaining';
-import { AlertCircle, BarChart3, ChevronRight, Loader2 } from 'lucide-react';
+import { BarChart3, ChevronRight, Loader2 } from 'lucide-react';
 import {
   fetchAnalyticsPerformance,
   fetchAnalyticsProperties,
@@ -16,6 +16,7 @@ import { useReportDays } from '../../data/reportWindow';
 import { ApiError } from '../../lib/api';
 import { ReportWindowPicker } from '../workflows/ReportWindowPicker';
 import { Button, StatusBadge } from '../workflows/WorkflowPrimitives';
+import Banner from '../polaris/Banner';
 
 /**
  * ─── Google Analytics 4 connector ────────────────────────────────────
@@ -258,20 +259,18 @@ export default function GoogleAnalyticsCard({ onHealthChange }: GoogleAnalyticsC
       </div>
 
       {state === 'error' && (
-        <p role="alert" className="mt-2 flex items-start gap-1.5 rounded-md border border-critical-200 bg-critical-50 px-2.5 py-2 text-[11.5px] leading-[1.4] text-critical-800">
-          <AlertCircle size={13} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
-          <span>
-            {loadError}{' '}
-            <button type="button" onClick={() => void load()} className="cursor-pointer font-semibold underline underline-offset-2">Retry</button>
-          </span>
-        </p>
+        <div className="mt-2">
+          <Banner tone="critical">
+            <s-text>{loadError}</s-text>
+            <Button slot="secondary-actions" variant="secondary" onClick={() => void load()}>Retry</Button>
+          </Banner>
+        </div>
       )}
 
       {error && (
-        <p role="alert" className="mt-2 flex items-start gap-1.5 rounded-md border border-critical-200 bg-critical-50 px-2.5 py-2 text-[11.5px] leading-[1.4] text-critical-800">
-          <AlertCircle size={13} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
-          {error}
-        </p>
+        <div className="mt-2">
+          <Banner tone="critical"><s-text>{error}</s-text></Banner>
+        </div>
       )}
 
       {/* ── Not configured: an operator problem, not a merchant one ─── */}
@@ -332,13 +331,12 @@ export default function GoogleAnalyticsCard({ onHealthChange }: GoogleAnalyticsC
           {propertiesError ? (
             // The listing failed. Saying "can read no GA4 properties" here would invent Google's
             // answer out of a call that never returned one.
-            <p role="alert" className="mt-2 flex items-start gap-1.5 rounded-md border border-critical-200 bg-critical-50 px-2.5 py-2 text-[11.5px] leading-[1.4] text-critical-800">
-              <AlertCircle size={13} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
-              <span>
-                {propertiesError}{' '}
-                <button type="button" onClick={() => void loadProperties()} className="cursor-pointer font-semibold underline underline-offset-2">Retry</button>
-              </span>
-            </p>
+            <div className="mt-2">
+              <Banner tone="critical">
+                <s-text>{propertiesError}</s-text>
+                <Button slot="secondary-actions" variant="secondary" onClick={() => void loadProperties()}>Retry</Button>
+              </Banner>
+            </div>
           ) : !propertiesLoaded ? (
             <p className="mt-2 flex items-center gap-1.5 text-[11.5px] text-surface-500">
               <Loader2 size={12} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
@@ -349,7 +347,7 @@ export default function GoogleAnalyticsCard({ onHealthChange }: GoogleAnalyticsC
             <p className="mt-2 text-[11.5px] leading-[1.4] text-surface-500">
               This Google account can read no GA4 properties. Create one in Google Analytics, or ask
               the property owner for at least Viewer access, then{' '}
-              <button type="button" onClick={() => void loadProperties()} className="cursor-pointer font-semibold text-brand-600 underline underline-offset-2">check again</button>.
+              <Button variant="ghost" onClick={() => void loadProperties()}>check again</Button>.
             </p>
           ) : (
             // Scrolls: the note above this list says an agency account routinely has dozens, and

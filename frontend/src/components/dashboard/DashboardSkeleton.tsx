@@ -3,22 +3,19 @@ import { cardClass, hairline, pillarColumns } from './scoreTone';
 
 /**
  * Skeleton loading state for the dashboard.
- * Mirrors the live layout (header → hero + trend → pillar cards → issues + actions) using the same
+ * Mirrors the live layout (store row → hero + trend → pillar cards → issues + actions) using the same
  * card shell, gaps and heights, so nothing jumps when data arrives.
  */
 export default function DashboardSkeleton() {
   return (
     <div className="page-shell space-y-3 pt-3" aria-busy="true" aria-label="Loading dashboard">
-      {/* Header */}
+      {/* The row above the data: the page's purpose line and the store's facts. The title and the
+          Re-analyze button are in the page frame (AppPage), so there is nothing to hold their place. */}
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="skeleton h-5 w-28" />
-          <div className="skeleton hidden h-3 w-64 md:block" />
-        </div>
+        <div className="skeleton h-3 w-64" />
         <div className="flex flex-wrap gap-1.5">
           <div className="skeleton h-8 w-60 rounded-lg" />
           <div className="skeleton h-8 w-32 rounded-lg" />
-          <div className="skeleton h-8 w-20 rounded-lg" />
         </div>
       </div>
 

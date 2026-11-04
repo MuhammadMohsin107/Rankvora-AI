@@ -1,29 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import { scrollChaining } from '../lib/scrollChaining';
 import { Link, useParams } from 'react-router-dom';
-import {
-  AlertCircle,
-  ArrowLeft,
-  ArrowRight,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  Clock3,
-  ImagePlus,
-  Info,
-  RefreshCw,
-} from 'lucide-react';
+import { AlertCircle, ArrowRight, CheckCircle2, ChevronDown, ChevronUp, Clock3, Info } from 'lucide-react';
 import { fetchCatalog, type Catalog, type CatalogCheckResult, type CatalogItem } from '../data/catalog.repository';
 import { CATALOG_KINDS, FIXABLE_CHECKS, subPillarOfCheck, type CatalogKind } from '../data/catalogKinds';
 import { isSubPillarFixable } from '../data/audits.capabilities';
 import { isNotAuditedYet } from '../data/seo/subpillar.repository';
 import { formatLastUpdated } from '../data/dashboard/dashboard.repository';
+import AppPage from '../components/polaris/AppPage';
+import Badge from '../components/polaris/Badge';
+import Banner from '../components/polaris/Banner';
 import PillarTag from '../components/dashboard/PillarTag';
 import { IssueBadges, Thumbnail, formatCatalogDate, verdictStyle } from '../components/catalog/CatalogBits';
 import FixEditor from '../components/catalog/FixEditor';
 import MissingImagesPanel from '../components/images/MissingImagesPanel';
 import { useAuditCompletion } from '../data/useAuditRun';
 import { cardClass } from '../components/dashboard/scoreTone';
+import Button from '../components/polaris/Button';
 
 const uniq = (values: (string | null | undefined)[]) =>
   [...new Set(values.filter((value): value is string => typeof value === 'string' && value.trim() !== '').map((value) => value.trim()))];
@@ -175,20 +168,20 @@ function MediaTable({ item, name, canFix, savedAlts, onSaved, onAddImage, imageA
             <CheckCircle2 size={15} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
             An image was added to this product in Shopify. This page shows the last analysis, and updates when the one now running finishes.
           </p>
-          <button type="button" onClick={onAddImage} className="btn-secondary btn-xs flex-shrink-0">
-            <ImagePlus size={12} aria-hidden="true" />
+          <Button variant="secondary" onClick={onAddImage} className="flex-shrink-0">
+            
             Add another image
-          </button>
+          </Button>
         </div>
       );
     }
     return item.imageCount === 0 ? (
       <div className="flex flex-col items-start gap-2 rounded-lg border border-dashed border-warning-300 bg-warning-50/60 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[12.5px] text-surface-800">This product has no images. Shoppers cannot see what they would be buying.</p>
-        <button type="button" onClick={onAddImage} className="btn-primary btn-xs flex-shrink-0">
-          <ImagePlus size={12} aria-hidden="true" />
+        <Button variant="primary" onClick={onAddImage} className="flex-shrink-0">
+          
           Add an image
-        </button>
+        </Button>
       </div>
     ) : (
       <p className="text-[12px] text-surface-500">The image-alt-text check did not record this product’s images in its sample for this audit.</p>
@@ -335,23 +328,22 @@ export default function CatalogDetail({ kind }: { kind: CatalogKind }) {
     requestAnimationFrame(() => document.getElementById(`section-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
 
-  const back = (
-    <Link to={config.listPath} className="inline-flex items-center gap-1 text-[12px] font-medium text-surface-500 hover:text-surface-900">
-      <ArrowLeft size={13} aria-hidden="true" />
-      {config.navLabel}
-    </Link>
-  );
+  // The page frame's back link (the arrow before the title, in the admin's title bar), and the title it
+  // shows until the item has loaded and has a name of its own: "Product", "Collection", "Article".
+  const back = { label: config.navLabel, to: config.listPath };
+  const kindTitle = `${config.noun.charAt(0).toUpperCase()}${config.noun.slice(1)}`;
 
   if (state === 'loading') {
     return (
+      <AppPage heading={kindTitle} back={back}>
       <div className="page-shell space-y-3 pt-3" aria-busy="true" aria-label={`Loading ${config.noun}`}>
-        <div className="skeleton h-3 w-20" />
         <div className="flex items-center gap-3"><div className="skeleton h-16 w-16 rounded-xl" /><div className="skeleton h-6 w-80" /></div>
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="skeleton h-48 rounded-2xl" />)}</div>
           <div className="space-y-3"><div className="skeleton h-40 rounded-2xl" /><div className="skeleton h-72 rounded-2xl" /></div>
         </div>
       </div>
+      </AppPage>
     );
   }
 
@@ -363,15 +355,16 @@ export default function CatalogDetail({ kind }: { kind: CatalogKind }) {
         ? `${errorMessage ?? 'The latest audit could not be read.'} Your results are unaffected.`
         : config.notFoundBody;
     return (
+      <AppPage heading={kindTitle} back={back}>
       <div className="page-shell pt-3">
-        {back}
         <div className={`${cardClass} mx-auto mt-6 flex max-w-lg flex-col items-center p-6 text-center`}>
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-100 text-surface-500"><Info size={18} /></span>
-          <h1 className="mt-2.5 text-[15px] font-semibold text-surface-900">{title}</h1>
+          <h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">{title}</h2>
           <p className="mt-1 text-[12.5px] leading-[1.5] text-surface-500">{body}</p>
-          {state === 'error' && <button type="button" onClick={() => void load(true)} className="btn-primary mt-3"><RefreshCw size={14} />Retry</button>}
+          {state === 'error' && <Button variant="primary" onClick={() => void load(true)} className="mt-3">Retry</Button>}
         </div>
       </div>
+      </AppPage>
     );
   }
 
@@ -388,9 +381,9 @@ export default function CatalogDetail({ kind }: { kind: CatalogKind }) {
   const needsAttention = (checks: CatalogCheckResult[]) => {
     const failing = failingIn(checks);
     return failing > 0
-      ? <span className="rounded-full bg-warning-50 px-2 py-px text-[10.5px] font-semibold text-warning-700 ring-1 ring-inset ring-warning-100">{failing} need attention</span>
+      ? <Badge tone="warning">{failing} need attention</Badge>
       : checks.length > 0
-        ? <span className="rounded-full bg-success-50 px-2 py-px text-[10.5px] font-semibold text-success-700 ring-1 ring-inset ring-success-100">All passing</span>
+        ? <Badge tone="success">All passing</Badge>
         : null;
   };
 
@@ -438,10 +431,7 @@ export default function CatalogDetail({ kind }: { kind: CatalogKind }) {
       if (kind !== 'product' || !(item.productType || item.vendor)) return null;
       return (
         <SectionCard key={section.id} {...sectionProps(section.id)} title={section.title}>
-          <p className="flex items-center gap-1.5 rounded-md bg-info-50 px-2.5 py-1.5 text-[11.5px] text-info-700 ring-1 ring-inset ring-info-100">
-            <Info size={13} aria-hidden="true" />
-            View only — read from your store as it is. Rankvora AI does not change these.
-          </p>
+          <Banner tone="info"><s-text>View only — read from your store as it is. Rankvora AI does not change these.</s-text></Banner>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <p className="mb-1 text-[12px] font-medium text-surface-700">Type</p>
@@ -497,15 +487,15 @@ export default function CatalogDetail({ kind }: { kind: CatalogKind }) {
   };
 
   return (
+    // The item's name is the page frame's title (the Shopify admin's title bar), with the back arrow to
+    // its list. What is left is the content, on the admin's own background.
+    <AppPage heading={name} back={back}>
     <div className="page-shell mx-auto max-w-[1180px] space-y-3 pt-3">
-      {back}
-
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <Thumbnail src={item.imageSrc} name={name} size="lg" kind={kind} />
           <div className="min-w-0">
-            <h1 className="text-[20px] font-semibold leading-tight tracking-[-0.02em] text-surface-950">{name}</h1>
-            <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px] text-surface-500">
+            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px] text-surface-500">
               {path && <span className="truncate font-mono">{path}</span>}
             </p>
             <div className="mt-1.5"><IssueBadges item={item} /></div>
@@ -602,5 +592,6 @@ export default function CatalogDetail({ kind }: { kind: CatalogKind }) {
         />
       )}
     </div>
+    </AppPage>
   );
 }

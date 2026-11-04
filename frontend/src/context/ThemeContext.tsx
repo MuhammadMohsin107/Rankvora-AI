@@ -8,9 +8,10 @@ import { isEmbedded } from '../lib/embedded';
  * following it when the OS changes at sunset. Collapsing it into a light/dark boolean on first load
  * would silently freeze whatever the OS happened to be saying at that moment.
  *
- * DARK IS THE DEFAULT. Someone who has never chosen — a new user, a fresh browser, the sign-in and
- * onboarding pages they see first — gets dark regardless of their OS. Light and System remain one
- * click away in Settings and the header toggle.
+ * LIGHT IS THE DEFAULT. Someone who has never chosen — a new user, a fresh browser, the sign-in and
+ * onboarding pages they see first — gets light regardless of their OS. It is also what the app looks like
+ * inside the Shopify admin, which is always light, so a developer running it locally sees what merchants
+ * see. Dark and System remain one click away in Settings and the header toggle.
  *
  * ONLY A CHOICE IS STORED. The default is never written to storage, so a visitor who has not picked
  * a theme is always on whatever the current default is, and storage only ever holds something the
@@ -27,7 +28,7 @@ export type ResolvedTheme = 'light' | 'dark';
 const STORAGE_KEY = 'scorelo.theme';
 
 /** What someone who has never chosen sees. Mirrored in index.html's inline bootstrap. */
-const DEFAULT_PREFERENCE: ThemePreference = 'dark';
+const DEFAULT_PREFERENCE: ThemePreference = 'light';
 
 interface ThemeContextValue {
   /** What the customer chose. 'system' means "whatever the OS says, now and later". */

@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { ArrowRight, ImagePlus, Lightbulb, X } from 'lucide-react';
+import { Lightbulb, X } from 'lucide-react';
 import { affectedPhrase, investigationEvidence, type EvidenceRow, type SubPillarFinding } from '../../../data/seo/subpillar.model';
 import AiRecommendationPanel from '../../workflows/AiRecommendationPanel';
 import InvestigationFix, { useFixCapability } from './InvestigationFix';
 import SeverityBadge from './SeverityBadge';
 import { eyebrow, toneStyles } from './tone';
+import Button from '../../../components/polaris/Button';
 
 interface Props {
   finding: SubPillarFinding | null;
@@ -268,19 +269,18 @@ export default function InvestigationDrawer({ finding, evidence, selectedRows = 
         {/* Footer */}
         <div className="space-y-2 border-t border-surface-200 px-4 py-2.5">
           {onAddImages && finding.issueType === 'Missing Media' && (
-            <button type="button" onClick={onAddImages} className="btn-primary w-full">
-              <ImagePlus size={14} aria-hidden="true" />
+            <Button variant="primary" onClick={onAddImages} fullWidth>
+              
               Add images to these products
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
+          <Button
+            variant={onAddImages && finding.issueType === 'Missing Media' ? 'secondary' : 'primary'}
             onClick={() => onReviewAffected(finding)}
-            className={onAddImages && finding.issueType === 'Missing Media' ? 'btn-secondary w-full' : 'btn-primary w-full'}
+            fullWidth
           >
             Review affected items
-            <ArrowRight size={14} />
-          </button>
+          </Button>
         </div>
       </div>
     </div>

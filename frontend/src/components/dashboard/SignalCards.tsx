@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowDown, ArrowUp, RefreshCw } from 'lucide-react';
 import { isPillarVisible } from '../../config/modules';
 import { formatLastUpdated, routeFor } from '../../data/dashboard/dashboard.repository';
 import type { PillarKey } from '../../data/dashboard/dashboard.types';
@@ -16,7 +15,9 @@ import {
   type VitalRating,
 } from '../../data/dashboard/signals.repository';
 import { pillarMeta } from '../../data/pillarMeta';
-import { cardClass, statusTone } from './scoreTone';
+import Badge, { type BadgeTone } from '../polaris/Badge';
+import Button from '../polaris/Button';
+import { cardClass } from './scoreTone';
 
 interface Props {
   /** Changes whenever the store is analysed again, so the drafts count follows the new audit. */
@@ -25,8 +26,6 @@ interface Props {
 
 type State = { phase: 'loading' } | { phase: 'ready'; signals: DashboardSignals } | { phase: 'error' };
 
-const neutralBadge = 'bg-surface-100 text-surface-600 ring-1 ring-inset ring-surface-200';
-const badgeBase = 'inline-flex flex-shrink-0 items-center gap-0.5 rounded-full px-1.5 py-px text-[9.5px] font-semibold tabular-nums';
 
 /**
  * The four outcome cards under the pillars: what Google sent, how fast real visitors got the page,
@@ -58,13 +57,9 @@ export default function SignalCards({ refreshKey }: Props) {
     return (
       <section aria-label="Search, speed, AI answers and drafts" className={`${cardClass} flex flex-wrap items-center justify-between gap-2 px-3 py-2.5`}>
         <p className="text-[12px] text-surface-600">These figures could not be loaded right now.</p>
-        <button
-          type="button"
-          onClick={() => { setState({ phase: 'loading' }); setAttempt((value) => value + 1); }}
-          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11.5px] font-medium text-brand-700 hover:bg-brand-50"
-        >
-          <RefreshCw size={12} aria-hidden="true" /> Try again
-        </button>
+        <Button variant="ghost" onClick={() => { setState({ phase: 'loading' }); setAttempt((value) => value + 1); }}>
+          Try again
+        </Button>
       </section>
     );
   }
@@ -139,14 +134,14 @@ function actionFor(card: 'search' | 'speed' | 'ai', reason: SignalReason): { lab
 }
 
 function ChangeChip({ delta, text }: { delta: number; text: string }) {
-  if (delta === 0) return <span className={`${badgeBase} ${neutralBadge}`}>No change</span>;
+  if (delta === 0) return <Badge tone="neutral">No change</Badge>;
   const up = delta > 0;
-  const tone = up ? statusTone.excellent.badge : statusTone.critical.badge;
   return (
-    <span className={`${badgeBase} ${tone}`} aria-label={`${up ? 'Up' : 'Down'} ${text} since the previous period`}>
-      {up ? <ArrowUp size={10} strokeWidth={2.5} aria-hidden="true" /> : <ArrowDown size={10} strokeWidth={2.5} aria-hidden="true" />}
+    <Badge tone={up ? 'success' : 'critical'} icon={up ? 'arrow-up' : 'arrow-down'}>
+      <span className="sr-only">{up ? 'Up' : 'Down'} </span>
       {text}
-    </span>
+      <span className="sr-only"> since the previous period</span>
+    </Badge>
   );
 }
 
@@ -171,10 +166,10 @@ function SearchTrafficCard({ signal }: { signal: Signal<SearchTrafficSignal> }) 
 
 // ─── Mobile LCP ──────────────────────────────────────────────────────
 
-const ratingBadge: Record<VitalRating, { text: string; tone: string }> = {
-  good: { text: 'Good', tone: statusTone.excellent.badge },
-  'needs-improvement': { text: 'Needs work', tone: statusTone['needs-work'].badge },
-  poor: { text: 'Poor', tone: statusTone.critical.badge },
+const ratingBadge: Record<VitalRating, { text: string; tone: BadgeTone }> = {
+  good: { text: 'Good', tone: 'success' },
+  'needs-improvement': { text: 'Needs work', tone: 'warning' },
+  poor: { text: 'Poor', tone: 'critical' },
 };
 
 function MobileSpeedCard({ signal }: { signal: Signal<MobileSpeedSignal> }) {
@@ -188,7 +183,7 @@ function MobileSpeedCard({ signal }: { signal: Signal<MobileSpeedSignal> }) {
     <SignalShell
       label={label}
       title={`Measured ${formatLastUpdated(measuredAt)}`}
-      badge={<span className={`${badgeBase} ${badge.tone}`}>{badge.text}</span>}
+      badge={<Badge tone={badge.tone}>{badge.text}</Badge>}
       value={<><Figure>{(lcpMs / 1000).toFixed(1)}</Figure><Unit>s</Unit></>}
       caption={
         source === 'lab'
@@ -213,7 +208,7 @@ function AiMentionCard({ signal }: { signal: Signal<AiMentionSignal> }) {
       title={provisional ? `Fewer than ${minSamples} answers sampled — treat this as an early read` : undefined}
       badge={
         provisional
-          ? <span className={`${badgeBase} ${neutralBadge}`}>Early read</span>
+          ? <Badge tone="neutral">Early read</Badge>
           : changePoints !== null
             ? <ChangeChip delta={changePoints} text={`${Math.abs(changePoints)} pp`} />
             : undefined
@@ -245,14 +240,13 @@ function ApprovalsCard({ signal }: { signal: Signal<ApprovalSignal> }) {
       label={label}
       badge={
         reviewRoute ? (
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={() => navigate(reviewRoute)}
-            aria-label={`Review ${total} ${total === 1 ? 'draft' : 'drafts'} awaiting your approval`}
-            className={`${badgeBase} cursor-pointer bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-100 transition-colors hover:bg-brand-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500`}
+            accessibilityLabel={`Review ${total} ${total === 1 ? 'draft' : 'drafts'} awaiting your approval`}
           >
             Review
-          </button>
+          </Button>
         ) : undefined
       }
       value={<Figure>{total.toLocaleString('en-US')}</Figure>}

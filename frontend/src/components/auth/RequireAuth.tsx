@@ -17,7 +17,9 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
 
   if (status === 'loading') {
     return (
-      <div className="flex h-full items-center justify-center bg-surface-50" role="status" aria-live="polite">
+      // min-h-screen, and no background of its own: inside the Shopify admin #root has no fixed height and the
+      // page is transparent, so this has to fill the window itself and let the admin's surface show through.
+      <div className="flex h-full min-h-screen items-center justify-center" role="status" aria-live="polite">
         <span className="sr-only">Loading your session…</span>
         <span aria-hidden="true" className="h-6 w-6 animate-spin rounded-full border-2 border-surface-200 border-t-brand-600 motion-reduce:animate-none" />
       </div>

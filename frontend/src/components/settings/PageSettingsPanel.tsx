@@ -1,4 +1,4 @@
-import { Check, ShieldCheck, X } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import {
   Field,
   SelectInput,
@@ -11,6 +11,8 @@ import type {
   PageSettingValue,
   PageSettingsDefinition,
 } from '../../data/pageSettings.registry';
+import Button from '../../components/polaris/Button';
+import { TextAreaField } from '../polaris/fields';
 
 interface PageSettingsPanelProps {
   open: boolean;
@@ -34,9 +36,10 @@ interface PageSettingsPanelProps {
 }
 
 function renderField(field: PageSettingField, value: PageSettingValue, onChange: (value: PageSettingValue) => void) {
-  const sharedLabelText = (
-    <div className="mb-1 flex items-center justify-between gap-2">
-      <span className="text-[12.5px] font-semibold text-surface-800">{field.label}</span>
+  // Where this setting's value comes from. The field's own label is drawn by Polaris, so this row only
+  // carries the source, above the field it describes.
+  const sourceChip = (
+    <div className="mb-1 flex justify-end">
       <span className="rounded border border-surface-200 bg-surface-50 px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-[0.1em] text-surface-500">
         {field.source}
       </span>
@@ -86,36 +89,34 @@ function renderField(field: PageSettingField, value: PageSettingValue, onChange:
   if (field.type === 'textarea') {
     return (
       <div key={field.key} className="py-2">
-        {sharedLabelText}
-        <textarea
+        {sourceChip}
+        <TextAreaField
           id={field.key}
+          label={field.label}
+          rows={3}
           value={inputValue}
-          maxLength={field.maxLength}
           placeholder={field.placeholder}
-          onChange={(event) => onChange(event.target.value)}
-          className="mt-1 min-h-[72px] w-full rounded-md border border-surface-200 bg-surface-0 px-2.5 py-1.5 text-[12.5px] text-surface-900 outline-none transition-colors placeholder:text-surface-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+          // A text area has no length limit of its own to lean on here, so the limit is held by cutting
+          // anything past it; the count is shown with the field's description.
+          onChange={(next) => onChange(typeof field.maxLength === 'number' ? next.slice(0, field.maxLength) : next)}
+          details={[field.description, typeof field.maxLength === 'number' ? `${inputValue.length}/${field.maxLength}` : null].filter(Boolean).join(' · ')}
         />
-        <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-surface-500">
-          <span>{field.description}</span>
-          {typeof field.maxLength === 'number' && (
-            <span className="tabular-nums">{inputValue.length}/{field.maxLength}</span>
-          )}
-        </div>
       </div>
     );
   }
 
   return (
     <div key={field.key} className="py-2">
-      {sharedLabelText}
-      <TextInput
-        id={field.key}
-        type={field.type === 'url' ? 'url' : 'text'}
-        value={inputValue}
-        placeholder={field.placeholder}
-        onChange={(next) => onChange(next)}
-      />
-      <p className="mt-1 text-[11.5px] leading-[1.45] text-surface-500">{field.description}</p>
+      {sourceChip}
+      <Field label={field.label} htmlFor={field.key} hint={field.description}>
+        <TextInput
+          id={field.key}
+          type={field.type === 'url' ? 'url' : 'text'}
+          value={inputValue}
+          placeholder={field.placeholder}
+          onChange={(next) => onChange(next)}
+        />
+      </Field>
     </div>
   );
 }
@@ -150,9 +151,7 @@ export default function PageSettingsPanel({
             <h2 id="page-settings-title" className="mt-0.5 text-[15px] font-semibold text-surface-950">{definition.title}</h2>
             <p className="mt-0.5 text-[11.5px] leading-[1.45] text-surface-500">{definition.description}</p>
           </div>
-          <button type="button" onClick={onClose} className="btn-ghost h-7 w-7 min-h-0 p-0" aria-label="Close page settings">
-            <X size={15} />
-          </button>
+          <Button variant="ghost" icon="x" onClick={onClose} accessibilityLabel="Close page settings" />
         </header>
 
         <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
@@ -171,17 +170,17 @@ export default function PageSettingsPanel({
         </div>
 
         <footer className="flex items-center justify-between gap-2 border-t border-surface-200 bg-surface-50 px-4 py-2.5">
-          <button type="button" onClick={onReset} className="btn-ghost btn-xs text-surface-600">
+          <Button variant="ghost" onClick={onReset}>
             Reset defaults
-          </button>
+          </Button>
           <div className="flex items-center gap-1.5">
-            <button type="button" onClick={onClose} className="btn-secondary btn-xs">
+            <Button variant="secondary" onClick={onClose}>
               Cancel
-            </button>
-            <button type="button" onClick={onSave} className="btn-primary btn-xs">
-              <Check size={12} />
+            </Button>
+            <Button variant="primary" onClick={onSave}>
+              
               Save settings
-            </button>
+            </Button>
           </div>
         </footer>
       </aside>

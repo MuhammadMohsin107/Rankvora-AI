@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, Check, Info, Loader2, Save } from 'lucide-react';
+import { AlertCircle, Check, Info, Loader2 } from 'lucide-react';
 import {
   ALT_TEXT_CONTENT_TYPES,
   AUTO_FORMATS,
@@ -20,6 +20,8 @@ import {
 } from '../../data/seo/altText.repository';
 import { ApiError } from '../../lib/api';
 import { card, cardHeader, cardTitle, eyebrow } from './subpillar/tone';
+import Button from '../../components/polaris/Button';
+import Banner from '../polaris/Banner';
 
 /**
  * ─── Alt-text template builder ───────────────────────────────────────
@@ -337,18 +339,14 @@ export default function AltTextTemplateBuilder() {
                   Template saved
                 </span>
               )}
-              <button type="button" onClick={save} disabled={!canSave} className="btn-primary btn-xs">
-                {saving ? <Loader2 size={12} className="animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Save size={12} aria-hidden="true" />}
+              <Button loading={saving} variant="primary" onClick={save} disabled={!canSave}>
                 {saving ? 'Saving…' : 'Save template'}
-              </button>
+              </Button>
             </div>
           </div>
 
           {saveError && (
-            <p role="alert" className="mt-2 flex items-start gap-1 rounded-md border border-critical-100 bg-critical-50 px-2 py-1.5 text-[11.5px] text-critical-700">
-              <AlertCircle size={12} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
-              {saveError}
-            </p>
+            <div className="mt-2"><Banner tone="critical"><s-text>{saveError}</s-text></Banner></div>
           )}
         </div>
       </section>

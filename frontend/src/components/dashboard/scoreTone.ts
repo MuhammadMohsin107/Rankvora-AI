@@ -1,5 +1,6 @@
 import { AlertCircle, AlertTriangle, Info, Target, type LucideIcon } from 'lucide-react';
 import type { ScoreStatus, Severity } from '../../data/dashboard/dashboard.types';
+import type { BadgeTone } from '../polaris/Badge';
 
 /** Score thresholds shared across the dashboard. */
 export const SCORE_TARGET = 90; // "Excellent" threshold, shown as a target marker on bars
@@ -10,6 +11,15 @@ export function statusFromScore(score: number): ScoreStatus {
   if (score >= 50) return 'needs-work';
   return 'critical';
 }
+
+/** What a score's status looks like as a Polaris badge. An unmeasured pillar is neutral on purpose. */
+export const statusBadgeTone: Record<ScoreStatus, BadgeTone> = {
+  excellent: 'success',
+  good: 'info',
+  'needs-work': 'warning',
+  critical: 'critical',
+  'not-measured': 'neutral',
+};
 
 export interface Tone {
   /** Small pill/badge styling. */

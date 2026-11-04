@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { AlertCircle, ArrowLeft, BellOff, ChevronRight, Loader2, Trash2, X } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { BellOff, ChevronRight, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import AppPage from '../components/polaris/AppPage';
+import Banner from '../components/polaris/Banner';
 import {
   NOTIFICATION_LIST_MAX,
   clearReadNotifications,
@@ -16,6 +18,7 @@ import {
   useNotifications,
   type NotificationRecord,
 } from '../data/notifications';
+import Button from '../components/polaris/Button';
 
 export default function Notifications() {
   const navigate = useNavigate();
@@ -49,48 +52,31 @@ export default function Notifications() {
   };
 
   return (
-    <div className="min-h-full bg-surface-50">
-      <div className="mx-auto max-w-3xl px-3.5 py-2.5 md:px-4">
-        <div className="flex flex-wrap items-center justify-between gap-2.5">
-          <div>
-            <Link to="/" className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-brand-600 hover:text-brand-700"><ArrowLeft size={14} /> Back to dashboard</Link>
-            {/* Matches .page-title (17/18px) — this heading was the last 20px page title left. */}
-            <h1 className="mt-1.5 page-title">Notifications</h1>
-            <p className="page-subtitle">
-              {unreadCount} unread{total > items.length && ` · showing the latest ${items.length} of ${total}`}
-            </p>
-          </div>
-          {/* Read notifications leave the bell on their own; this page keeps them so a merchant
-              can look back at what happened. "Clear read" is how they go for good — an explicit
-              act, never a side effect of glancing at one. */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => void markAllNotificationsRead()}
-              disabled={unreadCount === 0}
-              className="btn-secondary btn-xs"
-            >
-              Mark all as read
-            </button>
-            <button
-              type="button"
-              onClick={() => void clearReadNotifications()}
-              disabled={readCount === 0}
-              className="btn-ghost btn-xs text-surface-600"
-            >
-              <Trash2 size={12} aria-hidden="true" />
-              Clear read ({readCount})
-            </button>
-          </div>
-        </div>
+    // The title, the way back to the dashboard and the two list actions are in the page frame (AppPage),
+    // drawn by the Shopify admin's title bar. A list this narrow reads best at Polaris's reading width.
+    <AppPage
+      heading="Notifications"
+      inlineSize="base"
+      back={{ label: 'Dashboard', to: '/' }}
+      secondaryActions={[
+        { label: 'Mark all as read', onClick: () => void markAllNotificationsRead(), disabled: unreadCount === 0 },
+        // Read notifications leave the bell on their own; this page keeps them so a merchant can look
+        // back at what happened. "Clear read" is how they go for good — an explicit act, never a side
+        // effect of glancing at one.
+        { label: `Clear read (${readCount})`, onClick: () => void clearReadNotifications(), disabled: readCount === 0 },
+      ]}
+    >
+      <div>
+        <p className="page-subtitle">
+          {unreadCount} unread{total > items.length && ` · showing the latest ${items.length} of ${total}`}
+        </p>
 
         {/* A rolled-back write says so. Previously both handlers applied the change optimistically
             and console.error'd the failure, so a rejected request left a row looking read while
             the database still had it unread. */}
         {error && (
-          <div role="alert" className="mt-2 flex items-start gap-2 rounded-lg border border-critical-100 bg-critical-50 px-2.5 py-2">
-            <AlertCircle size={14} className="mt-px flex-shrink-0 text-critical-600" aria-hidden="true" />
-            <p className="text-[11.5px] leading-[1.4] text-critical-700">{error}</p>
+          <div className="mt-2">
+            <Banner tone="critical"><s-text>{error}</s-text></Banner>
           </div>
         )}
 
@@ -109,7 +95,7 @@ export default function Notifications() {
           {status === 'error' && items.length === 0 && (
             <div className="px-3 py-8 text-center">
               <p className="text-[12.5px] font-medium text-surface-700">Your notifications could not be loaded.</p>
-              <button type="button" onClick={() => void loadNotifications()} className="btn-secondary btn-xs mt-2">Try again</button>
+              <Button variant="secondary" onClick={() => void loadNotifications()} className="mt-2">Try again</Button>
             </div>
           )}
 
@@ -150,14 +136,7 @@ export default function Notifications() {
                 {!notification.isRead && <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-brand-500" aria-label="Unread" />}
                 {/* Says the row leads somewhere. Decorative — the whole title is the control. */}
                 <ChevronRight size={13} className="mt-1.5 flex-shrink-0 text-surface-300" aria-hidden="true" />
-                <button
-                  type="button"
-                  onClick={() => void dismissNotification(notification.id)}
-                  aria-label={`Remove "${notification.title}"`}
-                  className="mt-px flex-shrink-0 rounded p-1 text-surface-300 transition-colors hover:bg-surface-100 hover:text-critical-600"
-                >
-                  <X size={13} />
-                </button>
+                <Button variant="ghost" onClick={() => void dismissNotification(notification.id)} accessibilityLabel={`Remove "${notification.title}"`} icon="x" />
               </div>
             );
           })}
@@ -167,9 +146,9 @@ export default function Notifications() {
           {items.length > 0 && olderRemaining > 0 && (
             <div className="border-t border-surface-100 px-3 py-2 text-center">
               {canShowOlder ? (
-                <button type="button" onClick={showOlder} disabled={loadingOlder} className="btn-ghost btn-xs text-brand-600">
+                <Button variant="ghost" onClick={showOlder} disabled={loadingOlder}>
                   {loadingOlder ? 'Loading…' : `Show older (${olderRemaining} more)`}
-                </button>
+                </Button>
               ) : (
                 <p className="text-[11px] text-surface-500">
                   Showing the latest {items.length}. Clear read notifications to see older ones.
@@ -179,6 +158,6 @@ export default function Notifications() {
           )}
         </section>
       </div>
-    </div>
+    </AppPage>
   );
 }
