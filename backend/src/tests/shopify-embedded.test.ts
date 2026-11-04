@@ -369,6 +369,30 @@ describe('POST /api/auth/shopify/embedded', () => {
     assert.equal(response.status, 502);
     assert.equal(((await response.json()) as { code: string }).code, 'SHOPIFY_TOKEN_EXCHANGE_FAILED');
   });
+
+  it('reports a shop that answers with a web page (a closed store) as Shopify’s failure, not a server error', async () => {
+    const shop = `exchange-html-${process.pid}.myshopify.com`;
+    globalThis.fetch = (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+      const url = new URL(typeof input === 'string' || input instanceof URL ? input : input.url);
+      if (url.hostname === '127.0.0.1') return realFetch(input, init);
+      return new Response('<html><body>Sorry, this shop is currently unavailable.</body></html>', { status: 200, headers: { 'Content-Type': 'text/html' } });
+    }) as typeof fetch;
+    const response = await post('/api/auth/shopify/embedded', idTokenFor(shop));
+    assert.equal(response.status, 502);
+    assert.equal(((await response.json()) as { code: string }).code, 'SHOPIFY_TOKEN_EXCHANGE_FAILED');
+  });
+
+  it('reports a shop that cannot be reached at all the same way', async () => {
+    const shop = `exchange-down-${process.pid}.myshopify.com`;
+    globalThis.fetch = (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+      const url = new URL(typeof input === 'string' || input instanceof URL ? input : input.url);
+      if (url.hostname === '127.0.0.1') return realFetch(input, init);
+      throw new TypeError('fetch failed');
+    }) as typeof fetch;
+    const response = await post('/api/auth/shopify/embedded', idTokenFor(shop));
+    assert.equal(response.status, 502);
+    assert.equal(((await response.json()) as { code: string }).code, 'SHOPIFY_TOKEN_EXCHANGE_FAILED');
+  });
 });
 
 // ─── When a stored connection can be used as it is ───────────────────

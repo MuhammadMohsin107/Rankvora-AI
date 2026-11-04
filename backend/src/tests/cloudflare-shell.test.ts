@@ -10,6 +10,7 @@ import path from 'node:path';
 import { describe, it } from 'node:test';
 
 const { frameAncestors, isApiPath, serveWebsite, shopFromUrl } = await import('../cloudflare/shell.js');
+const { findPlaceholders } = await import('../scripts/wrangler-guard.js');
 
 const SHOP = 'shell-test.myshopify.com';
 
@@ -146,14 +147,18 @@ describe('the Wrangler helper', () => {
   const wrangler = (...args: string[]) =>
     spawnSync(process.execPath, ['--import', 'tsx', 'src/scripts/wrangler.ts', ...args], { cwd: backend, encoding: 'utf8' });
 
-  it('refuses to run against an environment that still has placeholders, and names them', () => {
-    const result = wrangler('whoami', '--env', 'production');
-    assert.equal(result.status, 1);
-    assert.match(result.stderr, /not filled in yet/);
-    for (const name of ['REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID', 'REPLACE_WITH_YOUR_DOMAIN', 'REPLACE_WITH_D1_DATABASE_ID']) {
-      assert.ok(result.stderr.includes(name), `${name} is named`);
-    }
-    assert.doesNotMatch(result.stdout, /Cloudflare account:/, 'it stops before choosing an account');
+  it('finds every placeholder an unfinished environment still holds, once each', () => {
+    const unfinished = { account_id: 'REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID', vars: { BACKEND_URL: 'https://REPLACE_WITH_YOUR_DOMAIN', FRONTEND_URL: 'https://REPLACE_WITH_YOUR_DOMAIN' } };
+    assert.deepEqual(findPlaceholders(unfinished), ['REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID', 'REPLACE_WITH_YOUR_DOMAIN']);
+    assert.deepEqual(findPlaceholders(undefined), []);
+  });
+
+  it('finds none in the staging and production environments, so their commands may run', async () => {
+    const { default: fs } = await import('node:fs');
+    const ts = (await import('typescript')).default;
+    const parsed = ts.parseConfigFileTextToJson('wrangler.jsonc', fs.readFileSync(path.join(backend, 'wrangler.jsonc'), 'utf8'));
+    const environments = (parsed.config as { env: Record<string, unknown> }).env;
+    for (const name of ['staging', 'production']) assert.deepEqual(findPlaceholders(environments[name]), [], name);
   });
 
   it('refuses an environment that does not exist', () => {

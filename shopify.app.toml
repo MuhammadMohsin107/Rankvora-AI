@@ -5,15 +5,15 @@
 # held. The running backend never reads it — it takes its credentials and URLs from the Worker's
 # variables and secrets (backend/wrangler.jsonc).
 #
-# ─── BEFORE `shopify app deploy` ─────────────────────────────────────────────
-# Replace every REPLACE_WITH_YOUR_DOMAIN with the public domain the Worker is deployed to — the same
-# host as the "production" route and BACKEND_URL in backend/wrangler.jsonc. It is a placeholder rather
-# than a guess so that a deploy fails instead of announcing the wrong address to Shopify. The domain
-# must not contain "shopify" or "example": the App Store review rejects it.
+# ─── The public address ──────────────────────────────────────────────────────
+# Every URL below is https://rankvora-ai.cp-chahmad.workers.dev — the "production" Worker in
+# backend/wrangler.jsonc, whose BACKEND_URL must stay the same host. To move to a custom domain,
+# change it here AND there, deploy the Worker, then run `shopify app deploy`. The host must not
+# contain "shopify" or "example": the App Store review rejects it.
 
 client_id = "b2acb4d003ea76bd429b9fa7d77f2761"
 name = "Rankvora AI"
-application_url = "https://REPLACE_WITH_YOUR_DOMAIN"
+application_url = "https://rankvora-ai.cp-chahmad.workers.dev"
 
 # Runs inside the Shopify admin's iframe. The site then proves who is calling with the ID token App
 # Bridge adds to every request (backend/src/lib/shopify-id-token.ts) — no cookie, no stored session.
@@ -34,7 +34,7 @@ scopes = "read_products,read_content,read_themes,read_metaobjects,read_legal_pol
 [auth]
 # Used by the redirect flows only — connecting Search Console from the app does not touch this, but the
 # fallback "connect a store" path does. Must equal new URL('/api/shopify/callback', BACKEND_URL).
-redirect_urls = [ "https://REPLACE_WITH_YOUR_DOMAIN/api/shopify/callback" ]
+redirect_urls = [ "https://rankvora-ai.cp-chahmad.workers.dev/api/shopify/callback" ]
 
 [webhooks]
 # Pinned to SHOPIFY_API_VERSION in backend/src/audit-engine/store-data/shopify-client.ts. Keep in
@@ -55,6 +55,6 @@ api_version = "2026-07"
   # The three mandatory privacy endpoints every App Store app must provide. Rankvora AI reads no
   # customer or order data, so the first two acknowledge; shop/redact removes the shop's connection.
   [webhooks.privacy_compliance]
-  customer_data_request_url = "https://REPLACE_WITH_YOUR_DOMAIN/api/shopify/webhooks/customers-data-request"
-  customer_deletion_url = "https://REPLACE_WITH_YOUR_DOMAIN/api/shopify/webhooks/customers-redact"
-  shop_deletion_url = "https://REPLACE_WITH_YOUR_DOMAIN/api/shopify/webhooks/shop-redact"
+  customer_data_request_url = "https://rankvora-ai.cp-chahmad.workers.dev/api/shopify/webhooks/customers-data-request"
+  customer_deletion_url = "https://rankvora-ai.cp-chahmad.workers.dev/api/shopify/webhooks/customers-redact"
+  shop_deletion_url = "https://rankvora-ai.cp-chahmad.workers.dev/api/shopify/webhooks/shop-redact"

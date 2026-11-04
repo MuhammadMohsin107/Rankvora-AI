@@ -165,23 +165,38 @@ export function verifyCallbackHmac(query: Record<string, unknown>): boolean {
 /** Shared shape for both grants against POST /admin/oauth/access_token. Shopify documents this
  * endpoint as form-encoded; the response is JSON either way. */
 async function postTokenRequest(shop: string, body: Record<string, string>, failureCode: string): Promise<TokenResponse> {
-  const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
-    body: new URLSearchParams(body).toString(),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`https://${shop}/admin/oauth/access_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+      body: new URLSearchParams(body).toString(),
+      // A Worker request that waits on a shop that never answers is held until Cloudflare cuts it off.
+      signal: AbortSignal.timeout(20_000),
+    });
+  } catch {
+    // The shop could not be reached at all (closed, frozen, DNS, timeout). Not a server fault.
+    throw new ApiError(502, 'Shopify could not be reached for the OAuth token request', failureCode);
+  }
 
   // Never include the response body in the error: on some failures Shopify echoes back request
   // parameters, and this request carries the client secret.
   if (!response.ok) throw new ApiError(502, 'Shopify rejected the OAuth token request', failureCode);
 
-  const parsed = (await response.json()) as {
+  let parsed: {
     access_token?: string;
     scope?: string;
     expires_in?: number;
     refresh_token?: string;
     refresh_token_expires_in?: number;
   };
+  try {
+    parsed = (await response.json()) as typeof parsed;
+  } catch {
+    // A shop that has closed answers with a web page, not JSON, and with a success status once
+    // redirects are followed. That is Shopify's answer being unusable, not this server failing.
+    throw new ApiError(502, 'Shopify returned an unreadable response to the OAuth token request', failureCode);
+  }
 
   if (!parsed.access_token) throw new ApiError(502, 'Shopify returned no access token', failureCode);
 

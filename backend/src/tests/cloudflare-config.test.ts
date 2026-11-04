@@ -152,8 +152,12 @@ describe('wrangler.jsonc', () => {
     }
   });
 
-  it('production is the public app: production mode, one origin, and the same domain in its route and its URLs', () => {
-    const production = config.env.production as WorkerConfig & { account_id: string; routes?: Array<{ pattern: string; custom_domain?: boolean }> };
+  it('production is the public app: production mode, one origin, and the same host in the Worker and in shopify.app.toml', () => {
+    const production = config.env.production as WorkerConfig & {
+      account_id: string;
+      workers_dev?: boolean;
+      routes?: Array<{ pattern: string; custom_domain?: boolean }>;
+    };
     assert.ok(production, 'env.production exists');
     for (const name of ['TOKEN_ENCRYPTION_KEY', 'SHOPIFY_API_KEY', 'SHOPIFY_API_SECRET']) {
       assert.ok(production.secrets?.required?.includes(name), name);
@@ -161,14 +165,32 @@ describe('wrangler.jsonc', () => {
     assert.equal(production.vars?.NODE_ENV, 'production', 'NODE_ENV=development would allow MOCK_AUTH');
     assert.equal(production.vars?.FRONTEND_URL, production.vars?.BACKEND_URL, 'the site and the API share one origin');
 
-    // Shopify's app URL, redirect URLs and webhooks all point at BACKEND_URL, and the Worker answers
-    // on the route. If they name different hosts the app is announced at an address nothing serves.
+    // Shopify's app URL, redirect URLs and webhooks all point at BACKEND_URL, and the Worker must answer
+    // there. It answers either on its workers.dev address or on a custom-domain route — never on both,
+    // and never somewhere else than the origin it announces.
     const origin = new URL(production.vars!.BACKEND_URL!);
     assert.equal(origin.protocol, 'https:');
-    assert.equal(production.routes?.length, 1);
-    assert.equal(production.routes![0]!.custom_domain, true, 'a custom domain, not a path on workers.dev');
-    assert.equal(production.routes![0]!.pattern.toLowerCase(), origin.hostname);
-    assert.equal((production as { workers_dev?: boolean }).workers_dev, false, 'the public app is not also served from workers.dev');
+    if (production.routes?.length) {
+      assert.equal(production.routes.length, 1);
+      assert.equal(production.routes[0]!.custom_domain, true, 'a custom domain, not a path on another host');
+      assert.equal(production.routes[0]!.pattern.toLowerCase(), origin.hostname);
+      assert.equal(production.workers_dev, false, 'a Worker on a custom domain is not also served from workers.dev');
+    } else {
+      assert.equal(production.workers_dev, true, 'with no route the Worker is reachable only through workers.dev');
+      assert.match(origin.hostname, new RegExp(`^${production.name}\\.[a-z0-9-]+\\.workers\\.dev$`), 'the workers.dev address is <worker name>.<account subdomain>.workers.dev');
+    }
+    // Shopify rejects an app URL that mentions itself or the example domain.
+    assert.doesNotMatch(origin.hostname, /shopify|example/i);
+  });
+
+  it('shopify.app.toml announces the same address the production Worker answers on', () => {
+    const toml = fs.readFileSync(path.resolve(backend, '../shopify.app.toml'), 'utf8');
+    const production = config.env.production as WorkerConfig;
+    const origin = new URL(production.vars!.BACKEND_URL!).origin;
+    const urls = [...toml.matchAll(/"(https?:\/\/[^"]+)"/g)].map((match) => match[1]!);
+    assert.ok(urls.length >= 5, 'application_url, the redirect URL and the three privacy URLs');
+    for (const url of urls) assert.equal(new URL(url).origin, origin, `${url} is not on ${origin}`);
+    assert.doesNotMatch(toml, /REPLACE_WITH_/);
   });
 
   it('local development cannot be deployed by mistake', () => {

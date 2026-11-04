@@ -12,6 +12,7 @@
     "start:prod": "node dist/server.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
+    "db:seed:local": "tsx src/scripts/seed-local.ts",
     "test": "tsx --import ./src/tests/helpers/test-env.ts --test src/tests/*.test.ts",
     "typecheck": "tsc --noEmit",
     "verify:shopify": "tsx src/scripts/verify-shopify.ts",

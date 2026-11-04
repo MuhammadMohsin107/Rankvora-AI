@@ -15,8 +15,9 @@
 //                   database, so deploying the top level is refused rather than creating a stray
 //                   Worker.
 //   env.staging     scorelo-staging.tlxapps.com — `wrangler deploy --env staging`.
-//   env.production  the public app, on whichever account and domain it is deployed to. Its
-//                   account, domain and database are placeholders until they are filled in.
+//   env.production  the public app: Worker "rankvora-ai" on the company account, at
+//                   rankvora-ai.cp-chahmad.workers.dev. Its database id is a placeholder until the
+//                   database is created.
 //
 // SECRETS NEVER GO IN THIS FILE. They are set once per environment with
 // `wrangler secret put NAME --env staging`, and deploy refuses to run while a required one is
@@ -91,7 +92,10 @@
     "BACKEND_URL": "http://localhost:8787",
     "FRONTEND_URL": "http://localhost:8787"
   },
-  "secrets": { "required": ["JWT_ACCESS_SECRET"] },
+  // Wrangler hands a Worker ONLY the .dev.vars entries named here, so every secret the app reads must be
+  // listed or `wrangler dev` silently runs without it (Shopify sign-in and webhooks then fail with
+  // "invalid signature" and nothing says why). Put all four in backend/.dev.vars.
+  "secrets": { "required": ["JWT_ACCESS_SECRET", "TOKEN_ENCRYPTION_KEY", "SHOPIFY_API_KEY", "SHOPIFY_API_SECRET"] },
   "d1_databases": [
     {
       "binding": "DB",
@@ -156,32 +160,38 @@
       "durable_objects": { "bindings": [{ "name": "RATE_LIMITER", "class_name": "RateLimiter" }] }
     },
 
-    // ── The public app: the real domain, on whichever Cloudflare account it is deployed to ──
+    // ── The public app: Worker "rankvora-ai", on the company account, at its workers.dev address ──
     //
-    // NOT DEPLOYABLE UNTIL EVERY "REPLACE_WITH_…" BELOW IS FILLED IN. Each is a value only the person
-    // deploying knows, and each is a placeholder rather than a guess so that a deploy fails loudly
-    // instead of reaching the wrong account or announcing the wrong address to Shopify.
-    // `npm run cf:*:production` (src/scripts/wrangler.ts) refuses to run while any is left.
+    //   account_id    the company account (dashboard → Workers & Pages → Account ID). Pinned like staging.
+    //   workers_dev   the public address is https://rankvora-ai.cp-chahmad.workers.dev — Cloudflare's own
+    //                 HTTPS address for this Worker, so no domain is needed to go live. Shopify's app URL,
+    //                 its redirect URLs and its webhooks (shopify.app.toml) all point at it.
+    //   BACKEND_URL / FRONTEND_URL   that same https origin.
+    //   database_id   printed by `wrangler d1 create rankvora-production` (README → Deploying the public
+    //                 app). It stays a placeholder until that database exists, and every
+    //                 `npm run cf:*:production` command refuses to run while it does.
     //
-    //   account_id    the Cloudflare account to deploy to (dashboard → Workers & Pages → Account ID)
-    //   routes        the public domain; it must already be a zone on that account
-    //   BACKEND_URL / FRONTEND_URL   the same https origin as the route — Shopify's app URL, its
-    //                 redirect URLs and its webhooks (shopify.app.toml) all point at it
-    //   database_id   printed by `wrangler d1 create rankvora-production` (README → Deploying)
+    // MOVING TO A CUSTOM DOMAIN LATER: set workers_dev to false, add
+    //   "routes": [{ "pattern": "<domain>", "custom_domain": true }]
+    // (the domain must be a zone on this account and must not contain "shopify" or "example"), change
+    // BACKEND_URL / FRONTEND_URL and every URL in shopify.app.toml to it, then deploy both.
     //
-    // Needs the Workers PAID plan: an audit runs far past the Free plan's 10 ms of CPU, and the
-    // "limits" setting above is refused on Free.
+    // FREE PLAN (the account is on Free today): there is deliberately no "limits" setting here, because
+    // Cloudflare refuses it on Free (see the FREE MODE note above). Under Free's 10 ms of CPU and 50
+    // database queries per request or Workflow step the website, the health check and start-up work, but
+    // analyses and a new store's first sign-in do not. On Workers Paid, add
+    //   "limits": { "cpu_ms": 300000 }
+    // to this environment and redeploy.
     "production": {
-      "name": "rankvora",
-      "account_id": "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID",
-      "workers_dev": false,
+      "name": "rankvora-ai",
+      "account_id": "4a36991256542f145b006329cb04abd3",
+      "workers_dev": true,
       "preview_urls": false,
-      "routes": [{ "pattern": "REPLACE_WITH_YOUR_DOMAIN", "custom_domain": true }],
 
       "vars": {
         "NODE_ENV": "production",
-        "BACKEND_URL": "https://REPLACE_WITH_YOUR_DOMAIN",
-        "FRONTEND_URL": "https://REPLACE_WITH_YOUR_DOMAIN"
+        "BACKEND_URL": "https://rankvora-ai.cp-chahmad.workers.dev",
+        "FRONTEND_URL": "https://rankvora-ai.cp-chahmad.workers.dev"
       },
 
       "secrets": {
@@ -197,11 +207,11 @@
         {
           "binding": "DB",
           "database_name": "rankvora-production",
-          "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+          "database_id": "a65c8e78-5340-40b7-a087-5c3334271a6c",
           "migrations_dir": "drizzle-d1"
         }
       ],
-      "workflows": [{ "name": "rankvora-production-audit", "binding": "AUDIT_WORKFLOW", "class_name": "AuditWorkflow" }],
+      "workflows": [{ "name": "rankvora-ai-production-audit", "binding": "AUDIT_WORKFLOW", "class_name": "AuditWorkflow" }],
       "durable_objects": { "bindings": [{ "name": "RATE_LIMITER", "class_name": "RateLimiter" }] }
     }
   }

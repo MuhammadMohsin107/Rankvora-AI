@@ -60,6 +60,7 @@ Create `backend/.env` (start from `backend/.env.example`). The minimum:
 NODE_ENV=development
 PORT=5000
 DATABASE_PATH=./local.db
+MOCK_AUTH=true          # signs every request in as user 1 (development only)
 JWT_ACCESS_SECRET=<a long random string>
 ```
 
@@ -71,6 +72,7 @@ Shopify also needs `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `BACKEND_URL` and
 cd backend
 npm ci
 npm run db:migrate      # creates/updates the SQLite file at DATABASE_PATH
+npm run db:seed:local   # development only: the one account and empty workspace MOCK_AUTH signs in as
 npm run dev             # API on http://localhost:5000
 
 cd ../frontend
@@ -81,8 +83,9 @@ npm run dev             # website on http://localhost:5173, /api proxied to the 
 ### The Cloudflare way: the real Worker, locally
 
 Runs exactly what Cloudflare runs — static website, API, local D1, the audit Workflow, the rate-limit
-Durable Object — on `http://localhost:8787`. Put `JWT_ACCESS_SECRET` in `backend/.dev.vars`
-(same format as `.env`; git ignores it), then:
+Durable Object — on `http://localhost:8787`. Put `JWT_ACCESS_SECRET`, `TOKEN_ENCRYPTION_KEY`,
+`SHOPIFY_API_KEY` and `SHOPIFY_API_SECRET` in `backend/.dev.vars` (same format as `.env`; git ignores it —
+Wrangler passes the Worker only the secrets `wrangler.jsonc` lists), then:
 
 ```bash
 cd backend
@@ -191,28 +194,33 @@ npm run cf:logs:staging     # live logs
 
 The website must be built with `VITE_API_BASE_URL` unset, so it calls the same-origin `/api`.
 
-## Deploying the public app (any Cloudflare account)
+## Deploying the public app (Worker `rankvora-ai`)
 
-The `production` environment in `backend/wrangler.jsonc` is the public, embedded app. It is written for
-whichever Cloudflare account and domain it is deployed to, so three values are placeholders until you fill
-them in. Every `cf:*:production` command refuses to run while any remains, and names it. It needs the
-Workers **Paid** plan (an audit runs far past the Free plan's 10 ms of CPU).
+The `production` environment in `backend/wrangler.jsonc` is the public, embedded app: the Worker
+`rankvora-ai` on the company Cloudflare account, served at `https://rankvora-ai.cp-chahmad.workers.dev`
+(Cloudflare's own HTTPS address, so no domain is needed to go live). Every URL in `shopify.app.toml`
+points at that address, and a test fails if the two ever disagree.
 
-**1. Fill in the placeholders** (search for `REPLACE_WITH_`):
+**The account is on the Workers Free plan.** The website, the health check and start-up work, but an
+audit and a new store's first sign-in need more than Free's 10 ms of CPU and 50 database queries per
+request or Workflow step, so they fail until the account is on **Workers Paid**. When it is, add
+`"limits": { "cpu_ms": 300000 }` to `env.production` and redeploy.
 
-| Placeholder | In | Value |
-| --- | --- | --- |
-| `REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID` | `wrangler.jsonc` | Cloudflare dashboard → Workers & Pages → Account ID |
-| `REPLACE_WITH_YOUR_DOMAIN` | `wrangler.jsonc` (the route, `BACKEND_URL`, `FRONTEND_URL`) and every URL in `shopify.app.toml` | the public domain — a zone on that account; it must not contain "shopify" or "example" |
-| `REPLACE_WITH_D1_DATABASE_ID` | `wrangler.jsonc` | printed by step 2 |
+Moving to a custom domain later: set `workers_dev` to `false`, add a `routes` entry for the domain (a zone
+on this account; it must not contain "shopify" or "example"), change `BACKEND_URL`, `FRONTEND_URL` and every
+URL in `shopify.app.toml`, deploy the Worker, then run `shopify app deploy`.
 
-**2. Create the database, once.** `CLOUDFLARE_ACCOUNT_ID` makes Wrangler use that account and no other
+**1. Nothing to fill in.** `wrangler.jsonc` holds the account, the address and the database id
+(created 2026-11-04 in Asia-Pacific). A new environment would start with `REPLACE_WITH_…` placeholders, and
+every `cf:*` command refuses to run while one is left.
+
+**2. The database (already created).** `CLOUDFLARE_ACCOUNT_ID` makes Wrangler use that account and no other
 (in PowerShell: `$env:CLOUDFLARE_ACCOUNT_ID = "<id>"`):
 
 ```bash
 cd backend
 npx wrangler login
-CLOUDFLARE_ACCOUNT_ID=<account id> npx wrangler d1 create rankvora-production   # prints database_id
+CLOUDFLARE_ACCOUNT_ID=4a36991256542f145b006329cb04abd3 npx wrangler d1 create rankvora-production   # prints database_id
 ```
 
 **3. Set the secrets** — new random values for this account, not the staging ones:

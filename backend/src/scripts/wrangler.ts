@@ -15,6 +15,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
+import { findPlaceholders } from './wrangler-guard.js';
 
 const args = process.argv.slice(2);
 const backend = path.resolve(import.meta.dirname, '../..');
@@ -36,9 +37,9 @@ if (envName && !environment) {
 }
 
 // An environment that has not been pointed at a real account, domain and database yet carries
-// REPLACE_WITH_… placeholders (wrangler.jsonc, env.production). Running anything against it would
+// REPLACE_WITH_… placeholders (none today; a new environment is added this way). Running anything against it would
 // reach whatever those words happen to resolve to, so it stops here and says what is missing.
-const placeholders = [...new Set(JSON.stringify(environment ?? {}).match(/REPLACE_WITH_[A-Z0-9_]+/g) ?? [])];
+const placeholders = findPlaceholders(environment);
 if (placeholders.length > 0) {
   console.error(`wrangler.jsonc environment "${envName}" is not filled in yet. Replace: ${placeholders.join(', ')}`);
   process.exit(1);
