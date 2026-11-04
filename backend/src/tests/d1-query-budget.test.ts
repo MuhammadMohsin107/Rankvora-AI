@@ -18,12 +18,11 @@ await import('./helpers/database.js');
 const { eq } = await import('drizzle-orm');
 const { db } = await import('../db/client.js');
 const { insertReturning } = await import('../db/returning.js');
-const { aiFixProposals, audits, findings, googleConnections, jobs, shopifyConnections, stores, userSessions, users } = await import('../db/schema.js');
+const { aiFixProposals, audits, findings, googleConnections, jobs, shopifyConnections, stores, users } = await import('../db/schema.js');
 const { env } = await import('../config/env.js');
 const { encryptToken } = await import('../lib/crypto.js');
 const { getDashboardSignals } = await import('../services/dashboard-signals.service.js');
 const { decideFixProposals } = await import('../services/ai-fix.service.js');
-const { revokeAllSessions } = await import('../services/session.service.js');
 const { failInterruptedJobs, failStuckJobs, useAuditRunStarter } = await import('../services/job.service.js');
 const { runDueAutoAnalyses } = await import('../services/auto-analysis.service.js');
 const { runWeeklySummaries } = await import('../services/weekly-summary.service.js');
@@ -70,17 +69,6 @@ async function connectedStore(overrides: Partial<typeof stores.$inferInsert> = {
 }
 
 describe('requests that touch many rows', () => {
-  it('signing out of 150 sessions is one statement', async () => {
-    const { user } = await owner();
-    const expiresAt = new Date(Date.now() + 86_400_000);
-    for (let index = 0; index < 150; index += 1) await db.insert(userSessions).values({ userId: user.id, tokenHash: `budget-${counter}-${index}`, expiresAt });
-
-    const queries = await count(() => revokeAllSessions(user.id));
-
-    note('sign out of 150 sessions', queries);
-    assert.equal(queries, 1);
-  });
-
   it('closing stuck and interrupted jobs is one statement each, however many there are', async () => {
     const old = new Date(Date.now() - 3 * 60 * 60 * 1000);
     for (let index = 0; index < 120; index += 1) {

@@ -6,10 +6,8 @@ import { callbackQuerySchema } from '../schemas/shopify.schema.js';
 import { buildInstallUrl, disconnectShopify, handleShopifyCallback } from '../services/shopify-oauth.service.js';
 import { getShopifyStatus, syncShopifyStore } from '../services/shopify-sync.service.js';
 import { getCurrentStoreId } from '../services/store.service.js';
-import { handleShopifyLoginCallback } from '../services/shopify-login.service.js';
-import { isShopifyLoginState } from '../lib/jwt.js';
+import { adminAppUrl } from '../services/shopify-embedded.service.js';
 import { describeError, logValue } from '../lib/logger.js';
-import { shopifyReportedReason, signInFailureReason } from '../lib/signInFailure.js';
 import {
   handleAppScopesUpdate,
   handleAppUninstalled,
@@ -42,85 +40,70 @@ export async function getInstall(req: Request, res: Response) {
   res.json({ data: { url: buildInstallUrl(userId, storeId, shop) } });
 }
 
-/** Where the merchant's browser lands after the OAuth round trip, with an outcome the
- * Integrations page reads. `reason` is a stable code, never a raw error message. */
-function frontendReturn(outcome: 'connected' | 'failed' | 'cancelled', reason?: string): string {
-  const url = new URL('/integrations', env.frontendUrl);
+/** A shop domain taken from the callback's query, kept only when it has the shape of a real one. */
+function plainShop(raw: unknown): string | null {
+  return typeof raw === 'string' && /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(raw) ? raw : null;
+}
+
+/** A reason Shopify itself reported on the redirect (`?error=`), kept only when it is a plain token —
+ * it is written into a URL the merchant's browser keeps. */
+function reportedReason(raw: unknown): string {
+  const value = typeof raw === 'string' ? raw : '';
+  return /^[A-Za-z0-9_.-]{1,64}$/.test(value) ? value : 'failed';
+}
+
+/**
+ * Where the merchant's browser lands after the OAuth round trip, with an outcome the Integrations
+ * page reads. `reason` is a stable code, never a raw error message.
+ *
+ * The merchant left the Shopify admin to reach Shopify's permission screen, so they come back to the
+ * app INSIDE their admin (the bare site has no session and nothing to show outside the admin's
+ * iframe). With no shop to name, it returns to the site as it always did.
+ */
+function frontendReturn(outcome: 'connected' | 'failed' | 'cancelled', reason?: string, shop?: string | null): string {
+  const url = shop && env.shopifyApiKey ? new URL(adminAppUrl(shop, '/integrations')) : new URL('/integrations', env.frontendUrl);
   url.searchParams.set('shopify', outcome);
   if (reason) url.searchParams.set('reason', reason);
   return url.toString();
 }
 
 /**
- * Where a SIGN-IN lands. Failures carry a reason code in the query; success carries the grant in
- * the fragment, which browsers never send to a server or put in a Referer header.
+ * Shopify redirects the merchant's BROWSER here after they approve — or decline — the permissions
+ * Rankvora AI asks for when connecting a store from Integrations or granting access it was missing. Every
+ * outcome has to end in a page rather than a JSON error; failures redirect back to Integrations with a
+ * code the UI turns into merchant-readable wording, and nothing is marked connected unless
+ * handleShopifyCallback succeeded.
  *
- * A failure also carries the request's id as `ref`. The page shows it beside the message, so "it
- * failed" from a merchant can be matched to the exact line in the API log.
- */
-function loginReturn(
-  outcome: { grant: string } | { failure: 'failed' | 'cancelled'; reason: string; requestId?: string },
-): string {
-  const url = new URL('/login', env.frontendUrl);
-  if ('grant' in outcome) {
-    url.hash = `shopify_grant=${encodeURIComponent(outcome.grant)}`;
-  } else {
-    url.searchParams.set('shopify', outcome.failure);
-    url.searchParams.set('reason', outcome.reason);
-    if (outcome.requestId) url.searchParams.set('ref', outcome.requestId);
-  }
-  return url.toString();
-}
-
-/**
- * Shopify redirects the merchant's BROWSER here, so every outcome has to end in a page rather
- * than a JSON error body. Failures redirect back to Integrations with a code the UI turns into
- * merchant-readable wording; nothing is marked connected unless handleShopifyCallback succeeded.
- *
- * Connecting a store and signing in with Shopify share this one registered redirect URI. The
- * signed state says which flow a request belongs to, and each flow returns to its own page.
+ * This is NOT how a merchant signs in: inside the Shopify admin the shop is identified by its ID token
+ * (middleware/authenticate.ts), and the callback only attaches a store to a session that already exists
+ * — through the signed `state` made when the merchant pressed Connect.
  */
 export async function getCallback(req: Request, res: Response) {
-  const signingIn = typeof req.query.state === 'string' && isShopifyLoginState(req.query.state);
+  const shop = plainShop(req.query.shop);
 
   // The merchant declined the permission screen. Not an error — say so plainly.
   if (typeof req.query.error === 'string') {
     const cancelled = req.query.error === 'access_denied';
-    console.log(`[scorelo-api] shopify: ${signingIn ? 'sign-in' : 'installation'} ${cancelled ? 'cancelled by merchant' : 'rejected'} (${logValue(req.query.error)}) rid=${req.requestId ?? '-'}`);
-    if (signingIn) {
-      return res.redirect(loginReturn({ failure: cancelled ? 'cancelled' : 'failed', reason: shopifyReportedReason(req.query.error), requestId: req.requestId }));
-    }
-    return res.redirect(frontendReturn(cancelled ? 'cancelled' : 'failed', String(req.query.error)));
+    console.log(`[scorelo-api] shopify: installation ${cancelled ? 'cancelled by merchant' : 'rejected'} (${logValue(req.query.error)}) rid=${req.requestId ?? '-'}`);
+    return res.redirect(frontendReturn(cancelled ? 'cancelled' : 'failed', reportedReason(req.query.error), shop));
   }
 
   const parsed = callbackQuerySchema.safeParse(req.query);
   if (!parsed.success) {
     console.warn(`[scorelo-api] shopify: callback rejected — malformed query rid=${req.requestId ?? '-'}`);
-    if (signingIn) return res.redirect(loginReturn({ failure: 'failed', reason: 'invalid_callback', requestId: req.requestId }));
-    return res.redirect(frontendReturn('failed', 'invalid_callback'));
-  }
-
-  if (signingIn) {
-    try {
-      const grant = await handleShopifyLoginCallback(req.query as Record<string, unknown>);
-      return res.redirect(loginReturn({ grant }));
-    } catch (error) {
-      const reason = signInFailureReason(error);
-      console.warn(`[scorelo-api] shopify: sign-in failed — ${reason} rid=${req.requestId ?? '-'} (${describeError(error)})`);
-      return res.redirect(loginReturn({ failure: 'failed', reason, requestId: req.requestId }));
-    }
+    return res.redirect(frontendReturn('failed', 'invalid_callback', shop));
   }
 
   try {
     await handleShopifyCallback(req.query as Record<string, unknown>);
-    return res.redirect(frontendReturn('connected'));
+    return res.redirect(frontendReturn('connected', undefined, parsed.data.shop));
   } catch (error) {
     const reason = error instanceof ApiError ? error.code ?? 'connect_failed' : 'connect_failed';
     // The underlying error, not only the code. Anything that is not an ApiError — a database
     // failure, Shopify not answering — was logged as the bare word "connect_failed", which said an
     // install had failed and nothing about why.
     console.warn(`[scorelo-api] shopify: installation failed — ${reason} (${describeError(error)})`);
-    return res.redirect(frontendReturn('failed', reason));
+    return res.redirect(frontendReturn('failed', reason, shop));
   }
 }
 

@@ -21,7 +21,7 @@ export interface RequestMetadata {
   userAgent: string | null;
 }
 
-/** Matches user_sessions.user_agent / security_events.user_agent. */
+/** Matches security_events.user_agent. */
 const USER_AGENT_MAX = 512;
 /** Matches the ip_address columns — long enough for a full IPv6 address. */
 const IP_MAX = 45;

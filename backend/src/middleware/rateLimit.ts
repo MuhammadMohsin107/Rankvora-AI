@@ -4,9 +4,8 @@ import { ApiError } from './error.js';
 
 /**
  * ─── Fixed-window rate limiter ───────────────────────────────────────
- * Small, dependency-free. It guards the few routes an anonymous caller can reach — the Shopify
- * sign-in start/complete calls and the embedded app's open call — which can each end in a request
- * to Shopify.
+ * Small, dependency-free. It guards the one route an anonymous caller can reach — the embedded
+ * app's open call — which can end in a request to Shopify.
  *
  * WHAT THIS IS FOR: raising the cost of hammering those endpoints. It is not a DDoS defence — that
  * belongs at the edge.
@@ -22,7 +21,7 @@ import { ApiError } from './error.js';
  *                             their allowance just by landing on different copies.
  *
  * Every limiter has a NAME so the shared store can keep two limiters' counts apart: the same IP has
- * one allowance for sending sign-in codes and another for verifying them.
+ * its own allowance for each route a limiter guards.
  */
 
 interface Bucket {
@@ -104,8 +103,8 @@ export function rateLimit(options: RateLimitOptions) {
     if (!sharedStore) return decide(countInMemory(key, now));
 
     // Shared store unreachable: let the request through and say so loudly. Refusing would lock
-    // every merchant out of signing in for as long as the store is down; Shopify's own
-    // sign-in still has to succeed before any session starts.
+    // every merchant out of opening the app for as long as the store is down; the Shopify ID token
+    // still has to check out before anything is opened.
     sharedStore.hit(options.name, key, options.windowMs).then(decide, (error: unknown) => {
       console.error(`[scorelo-ratelimit] ${options.name}: shared store unavailable, request allowed — ${describeError(error)}`);
       next();

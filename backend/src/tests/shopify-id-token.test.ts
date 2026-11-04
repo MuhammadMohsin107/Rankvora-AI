@@ -10,10 +10,12 @@ import { describe, it } from 'node:test';
 import jwt from 'jsonwebtoken';
 
 const { env } = await import('../config/env.js');
-const { signAccessToken } = await import('../lib/jwt.js');
 const { ShopifyIdTokenError, looksLikeShopifyIdToken, verifyShopifyIdToken } = await import('../lib/shopify-id-token.js');
 
 const SHOP = 'id-token-test.myshopify.com';
+
+/** A token shaped like the session tokens this app used to issue — a numeric subject, no `dest`. */
+const ownToken = () => jwt.sign({ sub: 7, type: 'access' }, env.jwtAccessSecret, { expiresIn: '15m' });
 
 /** A token as Shopify issues it, with any field overridable. */
 function shopifyToken(overrides: Record<string, unknown> = {}, secret = env.shopifyApiSecret!, options: jwt.SignOptions = {}) {
@@ -95,8 +97,8 @@ describe('verifyShopifyIdToken', () => {
     for (const junk of ['', 'abc', 'a.b.c', 'Bearer x']) assert.throws(() => verifyShopifyIdToken(junk), ShopifyIdTokenError);
   });
 
-  it('refuses this app’s own access token — the two are not interchangeable', () => {
-    assert.throws(() => verifyShopifyIdToken(signAccessToken(7)), ShopifyIdTokenError);
+  it('refuses a token signed with this app’s own secret — the two are not interchangeable', () => {
+    assert.throws(() => verifyShopifyIdToken(ownToken()), ShopifyIdTokenError);
   });
 });
 
@@ -107,8 +109,8 @@ describe('looksLikeShopifyIdToken', () => {
     assert.equal(looksLikeShopifyIdToken(shopifyToken({}, 'forged')), true);
   });
 
-  it('does not mistake this app’s own access token for one', () => {
-    assert.equal(looksLikeShopifyIdToken(signAccessToken(7)), false);
+  it('does not mistake a token of this app’s own shape for one', () => {
+    assert.equal(looksLikeShopifyIdToken(ownToken()), false);
   });
 
   it('does not mistake garbage for one', () => {

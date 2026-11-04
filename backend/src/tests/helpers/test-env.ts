@@ -29,7 +29,6 @@ const TEST_ENVIRONMENT: Record<string, string> = {
 
   // Long enough to be valid secrets; worthless anywhere else.
   JWT_ACCESS_SECRET: 'test-access-secret-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-  JWT_REFRESH_SECRET: 'test-refresh-secret-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
   TOKEN_ENCRYPTION_KEY: '0'.repeat(64),
 
   // A Shopify app that does not exist. The sign-in tests sign their own requests with this secret.

@@ -61,11 +61,10 @@ NODE_ENV=development
 PORT=5000
 DATABASE_PATH=./local.db
 JWT_ACCESS_SECRET=<a long random string>
-JWT_REFRESH_SECRET=<a different long random string>
 ```
 
 Generate secrets with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`.
-Shopify sign-in also needs `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `BACKEND_URL` and
+Shopify also needs `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `BACKEND_URL` and
 `TOKEN_ENCRYPTION_KEY` (see `.env.example`).
 
 ```bash
@@ -82,7 +81,7 @@ npm run dev             # website on http://localhost:5173, /api proxied to the 
 ### The Cloudflare way: the real Worker, locally
 
 Runs exactly what Cloudflare runs — static website, API, local D1, the audit Workflow, the rate-limit
-Durable Object — on `http://localhost:8787`. Put the two JWT secrets in `backend/.dev.vars`
+Durable Object — on `http://localhost:8787`. Put `JWT_ACCESS_SECRET` in `backend/.dev.vars`
 (same format as `.env`; git ignores it), then:
 
 ```bash
@@ -168,7 +167,6 @@ npx wrangler login
 # The staging database exists already (created 2026-10-28 in Western Europe; its id is in wrangler.jsonc).
 npm run cf:migrate:staging                                              # creates the tables
 npx tsx src/scripts/wrangler.ts secret put JWT_ACCESS_SECRET --env staging
-npx tsx src/scripts/wrangler.ts secret put JWT_REFRESH_SECRET --env staging
 npx tsx src/scripts/wrangler.ts secret put TOKEN_ENCRYPTION_KEY --env staging   # the SAME key as the old server
 npx tsx src/scripts/wrangler.ts secret put SHOPIFY_API_KEY --env staging
 npx tsx src/scripts/wrangler.ts secret put SHOPIFY_API_SECRET --env staging
@@ -220,10 +218,9 @@ CLOUDFLARE_ACCOUNT_ID=<account id> npx wrangler d1 create rankvora-production   
 **3. Set the secrets** — new random values for this account, not the staging ones:
 
 ```bash
-node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"   # for each JWT secret
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"   # for JWT_ACCESS_SECRET
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"   # for TOKEN_ENCRYPTION_KEY
 npx tsx src/scripts/wrangler.ts secret put JWT_ACCESS_SECRET --env production
-npx tsx src/scripts/wrangler.ts secret put JWT_REFRESH_SECRET --env production
 npx tsx src/scripts/wrangler.ts secret put TOKEN_ENCRYPTION_KEY --env production
 npx tsx src/scripts/wrangler.ts secret put SHOPIFY_API_KEY --env production      # the app's client id
 npx tsx src/scripts/wrangler.ts secret put SHOPIFY_API_SECRET --env production   # its client secret

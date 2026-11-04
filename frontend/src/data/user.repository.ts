@@ -30,12 +30,6 @@ export function updateCachedUser(user: UserRow): void {
   listeners.forEach((listener) => listener(user));
 }
 
-/** Drops the cached identity on sign-in/sign-out. Without this the next customer to use the
- * same browser tab would briefly see the previous customer's name and email. */
-export function resetCachedUser(): void {
-  cached = null;
-}
-
 export function initialsFor(fullName: string): string {
   return fullName
     .split(' ')

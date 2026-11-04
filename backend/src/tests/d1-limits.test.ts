@@ -14,12 +14,11 @@ const { and, eq, inArray, isNull, sql } = await import('drizzle-orm');
 const { db } = await import('../db/client.js');
 const { insertReturning } = await import('../db/returning.js');
 const { D1_ID_LIST_SIZE, D1_MAX_BOUND_PARAMETERS, chunkForD1 } = await import('../db/limits.js');
-const { aiFixProposals, audits, findings, jobs, notifications, stores, userSessions, users } = await import('../db/schema.js');
+const { aiFixProposals, audits, findings, jobs, notifications, stores, users } = await import('../db/schema.js');
 const { ApiError } = await import('../middleware/error.js');
 const { findingListQuerySchema } = await import('../schemas/finding.schema.js');
 const { bulkUpdateFindingStatus, listFindings, updateFindingStatus } = await import('../services/finding.service.js');
 const { failInterruptedJobs, failStuckJobs } = await import('../services/job.service.js');
-const { revokeAllSessions } = await import('../services/session.service.js');
 const { notifyAuditOutcome } = await import('../services/notification.service.js');
 const { clearAiRecommendations } = await import('../services/ai-recommendation.service.js');
 const { loadStoreProposals } = await import('../services/fix-apply.service.js');
@@ -218,7 +217,7 @@ describe('bookkeeping that used to list every id', () => {
   });
 });
 
-describe('closing out jobs and sessions in bulk', () => {
+describe('closing out jobs in bulk', () => {
   async function activeJobs(count: number, status: 'queued' | 'running', startedAt: Date | null) {
     const ids: number[] = [];
     for (let index = 0; index < count; index += 1) {
@@ -256,18 +255,4 @@ describe('closing out jobs and sessions in bulk', () => {
     assert.equal((await db.select().from(jobs).where(inArray(jobs.status, ['queued', 'running']))).length, 0);
   });
 
-  it('signs a user out of 150 sessions at once, and no one else’s', async () => {
-    const { user } = await owner();
-    const other = await owner();
-    const expiresAt = new Date(Date.now() + 86_400_000);
-    for (let index = 0; index < 150; index += 1) await db.insert(userSessions).values({ userId: user.id, tokenHash: `limits-a-${counter}-${index}`, expiresAt });
-    await db.insert(userSessions).values({ userId: user.id, tokenHash: `limits-revoked-${counter}`, expiresAt, revokedAt: new Date() });
-    await db.insert(userSessions).values({ userId: other.user.id, tokenHash: `limits-b-${counter}`, expiresAt });
-
-    const revoked = await revokeAllSessions(user.id);
-
-    assert.equal(revoked, 150, 'the session that was already revoked is not counted');
-    assert.equal((await db.select().from(userSessions).where(and(eq(userSessions.userId, user.id), isNull(userSessions.revokedAt)))).length, 0);
-    assert.equal((await db.select().from(userSessions).where(and(eq(userSessions.userId, other.user.id), isNull(userSessions.revokedAt)))).length, 1);
-  });
 });

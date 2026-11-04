@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bell, ChevronDown, LogOut, Menu, Moon, Search, Sun } from 'lucide-react';
+import { Bell, ChevronDown, Menu, Moon, Search, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Breadcrumbs from './Breadcrumbs';
 import HeaderSearch from './HeaderSearch';
@@ -13,7 +13,6 @@ import {
   type NotificationRecord,
 } from '../data/notifications';
 import { fetchCurrentUser, initialsFor, subscribeCurrentUser } from '../data/user.repository';
-import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import type { UserRow } from '../data/api.types';
 
@@ -31,7 +30,6 @@ interface HeaderProps {
  */
 export default function Header({ onMenuClick }: HeaderProps) {
   const navigate = useNavigate();
-  const { logout } = useAuth();
   const { theme, toggle } = useTheme();
   const headerRef = useRef<HTMLElement>(null);
   const [user, setUser] = useState<UserRow | null>(null);
@@ -242,17 +240,6 @@ export default function Header({ onMenuClick }: HeaderProps) {
               <div className="p-1">
                 <button type="button" onClick={() => { navigate('/settings/profile'); setOpenMenu(null); }} className="w-full rounded-md px-2.5 py-1.5 text-left text-[12.5px] font-medium text-surface-700 hover:bg-surface-100" role="menuitem">Profile</button>
                 <button type="button" onClick={() => { navigate('/settings/workspace'); setOpenMenu(null); }} className="w-full rounded-md px-2.5 py-1.5 text-left text-[12.5px] font-medium text-surface-700 hover:bg-surface-100" role="menuitem">Workspace</button>
-              </div>
-              <div className="border-t border-surface-200 p-1">
-                <button
-                  type="button"
-                  onClick={async () => { setOpenMenu(null); await logout(); navigate('/login', { replace: true }); }}
-                  className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[12.5px] font-medium text-critical-600 hover:bg-critical-50"
-                  role="menuitem"
-                >
-                  <LogOut size={14} strokeWidth={2} aria-hidden="true" />
-                  Sign out
-                </button>
               </div>
             </div>
           )}

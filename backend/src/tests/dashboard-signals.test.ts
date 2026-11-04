@@ -11,11 +11,12 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, it } from 'node:test';
+import jwt from 'jsonwebtoken';
 import './helpers/database.js';
 import { env } from '../config/env.js';
 import { db } from '../db/client.js';
 import { insertReturning } from '../db/returning.js';
-import { aiFixProposals, audits, findings, googleConnections, stores, users } from '../db/schema.js';
+import { aiFixProposals, audits, findings, googleConnections, shopifyConnections, stores, users } from '../db/schema.js';
 import { encryptToken } from '../lib/crypto.js';
 import { ApiError } from '../middleware/error.js';
 import {
@@ -416,12 +417,20 @@ describe('GET /api/dashboard/signals over HTTP', () => {
   });
 
   it('answers a signed-in merchant with their own four cards, and no one else’s', async () => {
-    const { user, store } = await owner();
+    const { store } = await owner();
     const { store: someoneElses } = await owner();
     const audit = await insertReturning(audits, { storeId: store.id, overallScore: 50 });
     await proposal(store.id, (await finding(audit.id, 'title-tags')).id, 'proposed');
-    const { signAccessToken } = await import('../lib/jwt.js');
-    const headers = { Authorization: `Bearer ${signAccessToken(user.id)}` };
+    // The caller proves itself the way the app does: a Shopify ID token naming the store's shop.
+    const shop = `signals-${process.pid}-${store.id}.myshopify.com`;
+    await db.insert(shopifyConnections).values({ storeId: store.id, shopDomain: shop, accessTokenEncrypted: 'x', scope: 'x' });
+    const now = Math.floor(Date.now() / 1000);
+    const idToken = jwt.sign(
+      { iss: `https://${shop}/admin`, dest: `https://${shop}`, aud: env.shopifyApiKey, sub: '1', exp: now + 60, nbf: now - 5, iat: now - 5, jti: 'signals' },
+      env.shopifyApiSecret!,
+      { algorithm: 'HS256' },
+    );
+    const headers = { Authorization: `Bearer ${idToken}` };
 
     await withServer(async (base) => {
       const response = await realFetch(`${base}/api/dashboard/signals?storeId=${store.id}`, { headers });

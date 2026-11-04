@@ -72,51 +72,8 @@ export const users = sqliteTable('users', {
   reduceMotion: integer('reduce_motion', { mode: 'boolean' }).notNull().default(false),
 });
 
-// ─── user_sessions ───────────────────────────────────────────────────
-// One row per signed-in device, for the redirect sign-in (start → Shopify → grant → session). The
-// app inside the Shopify admin does not use it: there every request proves itself with a Shopify ID
-// token and nothing is stored.
-//
-// WHY A TABLE: a single value on `users` would be overwritten by every login, so signing in anywhere
-// would silently end the session everywhere else. A row per session is what makes "these are your
-// devices", "sign this one out" and "sign out everywhere else" expressible at all.
-//
-// SECURITY: token_hash is SHA-256 of the refresh token — correct here because a JWT is high-entropy,
-// so there is nothing for a slow hash to protect and lookup must stay an indexed point-read. The raw
-// token is never stored, never logged.
-//
-// ip_address and user_agent are recorded ONLY when the request actually carries them, and are NULL
-// otherwise. There is no device column and no location column: both would be guesses.
-export const userSessions = sqliteTable(
-  'user_sessions',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    userId: integer('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    /** SHA-256 hex of the refresh token. Unique so a lookup is an indexed point-read. */
-    tokenHash: text('token_hash', { length: 64 }).notNull(),
-    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now),
-    /** Stamped on every successful refresh — what "last active" on the Security page means. */
-    lastUsedAt: integer('last_used_at', { mode: 'timestamp_ms' }).notNull().default(now),
-    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
-    /** Non-null == revoked, and revoked is forever. Rows are kept rather than deleted so a
-     * revocation stays visible in the customer's own security history. */
-    revokedAt: integer('revoked_at', { mode: 'timestamp_ms' }),
-    /** Real client IP when the request carries one. 45 chars fits an IPv6 address. NULL when
-     * genuinely unavailable — never a placeholder. */
-    ipAddress: text('ip_address', { length: 45 }),
-    /** Real User-Agent header, truncated. NULL when the request sent none. */
-    userAgent: text('user_agent', { length: 512 }),
-  },
-  (table) => [
-    uniqueIndex('user_sessions_token_hash_idx').on(table.tokenHash),
-    index('user_sessions_user_idx').on(table.userId, table.revokedAt),
-  ],
-);
-
 // ─── security_events ─────────────────────────────────────────────────
-// An append-only record of security-relevant actions, shown to the customer on Settings → Security.
+// An append-only record of security-relevant actions: today, the first time a shop opens the app.
 //
 // EVERY ROW COMES FROM A REAL BACKEND ACTION. Nothing seeds this table, nothing backfills it, and
 // an account that has done nothing shows an empty history rather than an invented one.
@@ -143,8 +100,9 @@ export const securityEvents = sqliteTable(
     index('security_events_user_created_idx').on(table.userId, table.createdAt),
     check(
       'security_events_type_valid',
-      // The list still names three events no code records any more — password_changed,
-      // password_reset and email_verified, from when the app had email sign-in. It is NOT shortened:
+      // The list still names events no code records any more — logout, password_changed,
+      // password_reset, email_verified and the session ones, from when the app had its own sign-in
+      // and sessions. It is NOT shortened:
       // rows copied from the old database may hold them, and SQLite can only change a CHECK by
       // rebuilding the table, which would have to refuse or delete those rows. Nothing writes them
       // (SecurityEventType in security-event.service.ts is the live vocabulary).

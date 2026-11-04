@@ -41,7 +41,7 @@ if [ -f backend/.env ]; then
   grep -q '^NODE_ENV=production' backend/.env && pass "NODE_ENV=production" || fail "NODE_ENV must be production"
   # mockAuthEnabled authenticates EVERY caller as user 1 — never acceptable in production.
   grep -q '^MOCK_AUTH=false' backend/.env && pass "MOCK_AUTH=false" || fail "MOCK_AUTH must be false"
-  for key in JWT_ACCESS_SECRET JWT_REFRESH_SECRET TOKEN_ENCRYPTION_KEY; do
+  for key in JWT_ACCESS_SECRET TOKEN_ENCRYPTION_KEY; do
     [ -n "$(grep "^${key}=" backend/.env | cut -d= -f2-)" ] && pass "$key set" || fail "$key is empty"
   done
   grep -qE '^(BACKEND_URL|FRONTEND_URL)=https?://(localhost|127\.)' backend/.env \
@@ -100,17 +100,18 @@ case "$PUB" in
   *)                          fail "unexpected response: ${PUB:-<empty>}" ;;
 esac
 
-# Sign-in is Shopify only. The Shopify start endpoint must answer (400/422: it validated the empty
-# body), and the old email sign-in and two-factor routes must be gone (404).
-CODE=$(curl -s -o /dev/null -m 20 -w '%{http_code}' -X POST "$PUBLIC_URL/api/auth/shopify/start" \
+# Sign-in is Shopify only and it is one route: the embedded app's entry. Called with no ID token it
+# must answer 401 (it looked for a token and found none), and every older route — email sign-in,
+# two-factor, the redirect sign-in, refresh and logout — must be gone (404).
+CODE=$(curl -s -o /dev/null -m 20 -w '%{http_code}' -X POST "$PUBLIC_URL/api/auth/shopify/embedded" \
   -H 'Content-Type: application/json' -d '{}' 2>/dev/null)
 case "$CODE" in
-  400|422) pass "Shopify sign-in endpoint reachable (HTTP $CODE — validation rejected the empty body, as expected)" ;;
-  405)     fail "Shopify sign-in returns 405 — old server.cjs without the /api proxy is still deployed" ;;
-  404)     fail "Shopify sign-in returns 404 — an older API is deployed" ;;
-  *)       fail "Shopify sign-in returned HTTP $CODE" ;;
+  401)     pass "Shopify entry endpoint reachable (HTTP 401 — no ID token, as expected)" ;;
+  405)     fail "Shopify entry endpoint returns 405 — old server.cjs without the /api proxy is still deployed" ;;
+  404)     fail "Shopify entry endpoint returns 404 — an older API is deployed" ;;
+  *)       fail "Shopify entry endpoint returned HTTP $CODE" ;;
 esac
-for OLD in /api/auth/signup /api/auth/login /api/auth/login/2fa; do
+for OLD in /api/auth/signup /api/auth/login /api/auth/login/2fa /api/auth/shopify/start /api/auth/shopify/launch /api/auth/shopify/complete /api/auth/refresh /api/auth/logout; do
   OLDCODE=$(curl -s -o /dev/null -m 20 -w '%{http_code}' -X POST "$PUBLIC_URL$OLD" -H 'Content-Type: application/json' -d '{}' 2>/dev/null)
   [ "$OLDCODE" = "404" ] && pass "$OLD is gone (HTTP 404)" || fail "$OLD answers HTTP $OLDCODE — it should be gone (an older API is deployed)"
 done

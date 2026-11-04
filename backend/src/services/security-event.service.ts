@@ -22,15 +22,10 @@ import { describeError } from '../lib/logger.js';
  * The complete vocabulary of events this code records. Adding a member here without adding it to
  * the table's CHECK constraint would fail at insert time rather than silently widening.
  *
- * The constraint also still lists three events nothing records any more (see the note on
+ * The constraint also still lists events nothing records any more (see the note on
  * security_events in db/schema.ts), so rows copied from the old database are not refused.
  */
-export type SecurityEventType =
-  | 'login_success'
-  | 'login_failed'
-  | 'logout'
-  | 'session_revoked'
-  | 'sessions_revoked';
+export type SecurityEventType = 'login_success';
 
 /**
  * Non-secret context. The value type deliberately excludes strings that could carry a credential

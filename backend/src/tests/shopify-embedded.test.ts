@@ -27,7 +27,6 @@ const { closeDatabase, db } = await import('../db/client.js');
 const { insertReturning } = await import('../db/returning.js');
 const { integrations, shopifyConnections, stores, users } = await import('../db/schema.js');
 const { encryptToken, decryptToken } = await import('../lib/crypto.js');
-const { signAccessToken } = await import('../lib/jwt.js');
 const { authenticate } = await import('../middleware/authenticate.js');
 const { errorHandler } = await import('../middleware/error.js');
 const { authRouter } = await import('../routes/auth.js');
@@ -240,10 +239,13 @@ describe('authenticate with a Shopify ID token', () => {
     assert.notEqual(mine.owner.id, theirs.owner.id);
   });
 
-  it('still accepts this app’s own access token (the standalone sign-in and local development)', async () => {
+  it('accepts nothing but a Shopify ID token: the app issues no token of its own, and never honours one', async () => {
     const { owner } = await installedShop();
-    const response = await get('/whoami', signAccessToken(owner.id));
-    assert.deepEqual(await response.json(), { userId: owner.id });
+    // A token shaped like the session tokens the app used to issue, signed with the app's own secret.
+    const own = jwt.sign({ sub: owner.id, type: 'access' }, env.jwtAccessSecret, { expiresIn: '15m' });
+    const response = await get('/whoami', own);
+    assert.equal(response.status, 401);
+    assert.equal(response.headers.get(RETRY_HEADER), null, 'a new token from the same place would change nothing');
   });
 
   it('refuses a request with no token at all', async () => {

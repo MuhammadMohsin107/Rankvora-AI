@@ -32,12 +32,11 @@ import { isPillarVisible } from './config/modules';
 
 
 /**
- * What /login and /signup are now.
+ * What /login is now: where a visitor lands who is not inside the Shopify admin.
  *
  * Rankvora AI runs inside the Shopify admin, where Shopify says which store is opening it, so there
- * is no sign-in to offer. Inside the admin these addresses lead straight to the app; on the bare site
- * they say how to reach it. They are still routes, rather than gone, because an old email or a
- * bookmark can still carry them — and an already-signed-in visitor is sent on, as before.
+ * is no sign-in to offer. Inside the admin this address leads straight to the app; on the bare site it
+ * says how to reach it. (An already-open session is sent on to the dashboard.)
  */
 function SignedOutEntry() {
   const { status } = useAuth();
@@ -57,7 +56,6 @@ export default function App() {
           {/* No sign-in page: the shop that opens the app is identified by Shopify itself (see
               SignedOutEntry). These render outside AppShell — no sidebar or header around them. */}
           <Route path="/login" element={<SignedOutEntry />} />
-          <Route path="/signup" element={<SignedOutEntry />} />
           {/* Guided setup renders outside AppShell: a merchant answering these five questions has
               no populated dashboard to navigate to yet, and a sidebar of empty pillars competes
               with the only task on screen. Still behind RequireAuth — it reads their store. */}

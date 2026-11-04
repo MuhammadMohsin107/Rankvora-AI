@@ -1,9 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { UserRow } from '../data/api.types';
 import * as authRepository from '../data/auth.repository';
-import { resetCachedUser, updateCachedUser } from '../data/user.repository';
-import { resetNotifications } from '../data/notifications';
-import { SESSION_ENDED_EVENT } from '../lib/api';
+import { updateCachedUser } from '../data/user.repository';
 import { isEmbedded } from '../lib/embedded';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
@@ -12,131 +10,61 @@ interface AuthContextValue {
   status: AuthStatus;
   user: UserRow | null;
   /**
-   * The server's reason code when it ended the last session on its own (expired, or no installed
-   * Shopify store), so the sign-in page can say why. Null after a normal sign-out.
+   * The server's reason code when the app could not open inside the Shopify admin, so the screen
+   * that stands where a sign-in page would be can say why. Null when nothing went wrong.
    */
-  sessionEndedReason: string | null;
-  clearSessionEndedReason: () => void;
-  /** Finishes a Shopify sign-in from the grant it returned with, and starts the session. */
-  completeShopifySignIn: (grant: string) => Promise<void>;
-  logout: () => Promise<void>;
+  openFailure: string | null;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/**
+ * Who is using the app. There is no sign-in to run and nothing to sign out of: inside the Shopify
+ * admin the shop that opened the app is proved by Shopify's ID token (data/auth.repository.ts), and
+ * outside it — local development with MOCK_AUTH — the API answers for a mock user.
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [user, setUser] = useState<UserRow | null>(null);
-  const [sessionEndedReason, setSessionEndedReason] = useState<string | null>(null);
+  const [openFailure, setOpenFailure] = useState<string | null>(null);
 
-  /**
-   * Bumped whenever the session changes hands: a sign-in, a sign-out, or the server ending it. The
-   * check on mount applies its answer only if nothing changed while it was out. Without this, a
-   * Shopify sign-in that finished first was overwritten by the slower check, which still had the
-   * old session's answer.
-   */
-  const sessionVersion = useRef(0);
-
-  // Resolve the session once on mount. `status` stays 'loading' until this settles so the
-  // router never flashes the login screen at an already-signed-in customer.
+  // Resolved on mount. `status` stays 'loading' until this settles so the router never flashes an
+  // "unavailable" screen at someone whose app is simply still opening. (React StrictMode runs this
+  // twice in development; the first run is ignored through `active`. Two first opens of one shop at
+  // once can make the second fail on the server's unique keys — openEmbeddedSession retries it.)
   useEffect(() => {
     let active = true;
-    const startedAt = sessionVersion.current;
 
-    // Inside the Shopify admin there is no sign-in and no stored session: the shop that opened the app
-    // is proved by the ID token App Bridge sends, and "resolving the session" is opening the app for
-    // that shop. When that fails the reason is kept, so the page can say why instead of showing a form
-    // that asks for something the merchant has no way to provide.
     if (isEmbedded()) {
       authRepository.openEmbeddedSession().then((result) => {
-        if (!active || sessionVersion.current !== startedAt) return;
+        if (!active) return;
         if ('user' in result) {
           updateCachedUser(result.user);
           setUser(result.user);
           setStatus('authenticated');
         } else {
-          setSessionEndedReason(result.code);
+          setOpenFailure(result.code);
           setStatus('unauthenticated');
         }
       });
-      return () => {
-        active = false;
-      };
+    } else {
+      authRepository.fetchSession().then((session) => {
+        if (!active) return;
+        if (session) {
+          updateCachedUser(session);
+          setUser(session);
+          setStatus('authenticated');
+        } else {
+          setStatus('unauthenticated');
+        }
+      });
     }
-
-    authRepository.fetchSession().then((session) => {
-      if (!active || sessionVersion.current !== startedAt) return;
-      if (session) {
-        updateCachedUser(session);
-        setUser(session);
-        setStatus('authenticated');
-      } else {
-        setStatus('unauthenticated');
-      }
-    });
     return () => {
       active = false;
     };
   }, []);
 
-  // The server refused to continue the session. Sign out here too, so RequireAuth sends the
-  // customer to sign-in straight away instead of leaving them on a page whose requests all fail.
-  useEffect(() => {
-    function handleSessionEnded(event: Event) {
-      const code = (event as CustomEvent<{ code?: string }>).detail?.code;
-      sessionVersion.current += 1;
-      resetCachedUser();
-      resetNotifications();
-      setUser(null);
-      setStatus('unauthenticated');
-      setSessionEndedReason(code ?? 'INVALID_REFRESH_TOKEN');
-    }
-    window.addEventListener(SESSION_ENDED_EVENT, handleSessionEnded);
-    return () => window.removeEventListener(SESSION_ENDED_EVENT, handleSessionEnded);
-  }, []);
-
-  const adoptSession = useCallback((session: UserRow) => {
-    sessionVersion.current += 1;
-    resetCachedUser();
-    // The notification store is module state that outlives a sign-out, so without this the next
-    // person to sign in on this browser would see the previous account's bell until it refetched.
-    resetNotifications();
-    updateCachedUser(session);
-    setUser(session);
-    setStatus('authenticated');
-    setSessionEndedReason(null);
-  }, []);
-
-  const completeShopifySignIn = useCallback(
-    async (grant: string) => {
-      adoptSession(await authRepository.completeShopifySignIn(grant));
-    },
-    [adoptSession],
-  );
-
-  const logout = useCallback(async () => {
-    sessionVersion.current += 1;
-    await authRepository.logout();
-    resetCachedUser();
-    resetNotifications();
-    setUser(null);
-    setStatus('unauthenticated');
-    setSessionEndedReason(null);
-  }, []);
-
-  const clearSessionEndedReason = useCallback(() => setSessionEndedReason(null), []);
-
-  const value = useMemo<AuthContextValue>(
-    () => ({
-      status,
-      user,
-      sessionEndedReason,
-      clearSessionEndedReason,
-      completeShopifySignIn,
-      logout,
-    }),
-    [status, user, sessionEndedReason, clearSessionEndedReason, completeShopifySignIn, logout],
-  );
+  const value = useMemo<AuthContextValue>(() => ({ status, user, openFailure }), [status, user, openFailure]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

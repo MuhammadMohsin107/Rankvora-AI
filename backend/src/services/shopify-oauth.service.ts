@@ -124,9 +124,10 @@ export function requireConfigured() {
 /**
  * Shopify's authorization screen for `shop`, returning to the one registered callback.
  *
- * Connecting a store and signing in with Shopify both come through here, and both land on the same
- * redirect URI — only the signed `state` differs. Keeping one URI means neither flow needs a new
- * entry in the app's redirect_urls, which only `shopify app deploy` can change.
+ * Used to connect a store from Integrations, or to grant permissions a connection is missing. It is
+ * not how a merchant gets in — inside the Shopify admin the shop is identified by its ID token — so
+ * the signed `state` carries a user and store that are already known. It returns to the one
+ * registered callback, which only `shopify app deploy` can change.
  */
 export function buildAuthorizeUrl(shop: string, state: string): string {
   requireConfigured();
@@ -147,8 +148,7 @@ export function buildInstallUrl(userId: number, storeId: number, shop: string): 
 /** Shopify's documented OAuth-callback HMAC check: sort every param except hmac/signature,
  * join as key=value with '&', HMAC-SHA256 with the app secret, compare to the sent hmac.
  *
- * The same signature covers the query Shopify appends when it opens the app from the admin or the
- * App Store (`shop`, `timestamp`, `host`, …), which is how sign-in trusts a shop it did not type. */
+ * The same check covers any query Shopify signs with the app secret (`shop`, `timestamp`, `host`, …). */
 export function verifyCallbackHmac(query: Record<string, unknown>): boolean {
   const { hmac, signature: _signature, ...rest } = query as Record<string, string>;
   if (!hmac) return false;

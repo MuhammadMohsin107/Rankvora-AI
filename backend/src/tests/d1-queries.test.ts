@@ -14,7 +14,7 @@ import { isUniqueViolation } from '../db/errors.js';
 import { insertReturning, updateReturning } from '../db/returning.js';
 import {
   aiDiscoverySettings, aiFixProposals, audits, findings, integrations, jobs, pageSettings, schemaTemplates,
-  stores, userSessions, users,
+  stores, users,
 } from '../db/schema.js';
 import { ApiError } from '../middleware/error.js';
 import { addPromptQuery, setIndexNowKey } from '../services/ai-discovery.service.js';
@@ -22,8 +22,7 @@ import { listPriorityFindings } from '../services/finding.service.js';
 import { markConnectorState, markConnectorSynced } from '../services/integration.service.js';
 import { readOnboardingPreferences, writeOnboardingPreferences } from '../services/onboarding-preferences.service.js';
 import { saveSchemaTemplate } from '../services/schema-template.service.js';
-import { createSession, rotateSession } from '../services/session.service.js';
-import { findRememberedStore } from '../services/shopify-login.service.js';
+import { findRememberedStore } from '../services/shopify-account.service.js';
 import { updateUserById } from '../services/user.service.js';
 
 let counter = 0;
@@ -125,18 +124,6 @@ describe('rows read back with RETURNING', () => {
     assert.equal(changed.length, 1);
     assert.equal(changed[0]?.status, 'failed');
     assert.deepEqual(await updateReturning(jobs, { status: 'failed' }, and(eq(jobs.id, job.id), eq(jobs.status, 'queued'))), []);
-  });
-});
-
-describe('checks that depended on how many rows an update changed', () => {
-  it('a refresh token rotates once; the old token cannot rotate it again', async () => {
-    const { user } = await owner();
-    const expires = new Date(Date.now() + 86_400_000);
-    await createSession(user.id, 'token-1', expires, { ipAddress: null, userAgent: null });
-    assert.equal(await rotateSession('token-1', 'token-2', expires, { ipAddress: null, userAgent: null }), true);
-    assert.equal(await rotateSession('token-1', 'token-3', expires, { ipAddress: null, userAgent: null }), false);
-    const sessions = await db.select().from(userSessions).where(eq(userSessions.userId, user.id));
-    assert.equal(sessions.length, 1);
   });
 });
 

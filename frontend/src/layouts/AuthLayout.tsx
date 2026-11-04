@@ -13,7 +13,7 @@ interface AuthLayoutProps {
 }
 
 /**
- * ─── Sign-in shell ───────────────────────────────────────────────────────────
+ * ─── Signed-out shell ────────────────────────────────────────────────────────
  *
  *   LEFT   — a panel saying what the product does, its copy set on a live world-map wall
  *            (AuthWorldMap), with the chart cards and AI node beside it from `xl` up. From `lg` up.

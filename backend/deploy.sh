@@ -31,7 +31,7 @@ say "Checking .env"
 [ -f .env ] || fail ".env not found. Create it from .env.example — see README 'CloudPanel' section."
 
 missing=()
-for key in DATABASE_PATH JWT_ACCESS_SECRET JWT_REFRESH_SECRET TOKEN_ENCRYPTION_KEY BACKEND_URL FRONTEND_URL; do
+for key in DATABASE_PATH JWT_ACCESS_SECRET TOKEN_ENCRYPTION_KEY BACKEND_URL FRONTEND_URL; do
   value=$(grep -E "^${key}=" .env | head -1 | cut -d= -f2- || true)
   [ -n "$value" ] || missing+=("$key")
 done

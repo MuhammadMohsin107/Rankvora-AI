@@ -5,7 +5,7 @@ import { shopifyConnections, stores } from '../db/schema.js';
 import { ShopifyClient } from '../audit-engine/store-data/shopify-client.js';
 import { ApiError } from '../middleware/error.js';
 import { verifyShopifyIdToken } from '../lib/shopify-id-token.js';
-import { establishShopAccount } from './shopify-login.service.js';
+import { establishShopAccount } from './shopify-account.service.js';
 import { exchangeIdTokenForToken, missingScopes, requireConfigured } from './shopify-oauth.service.js';
 
 /**
@@ -108,7 +108,7 @@ export async function openEmbeddedSession(idToken: string): Promise<EmbeddedSess
 
   // Managed installation grants the scopes in shopify.app.toml, so a shortfall means the toml and
   // the code's own list have drifted apart — or the merchant has not yet approved a newer version.
-  // Either way the shop cannot be audited or fixed, so it opens nothing, as in the redirect sign-in.
+  // Either way the shop cannot be audited or fixed, so it opens nothing.
   const missing = missingScopes(tokens.scope);
   if (missing.length > 0) {
     throw new ApiError(403, `Shopify did not grant: ${missing.join(', ')}`, 'SHOPIFY_SCOPES_MISSING');

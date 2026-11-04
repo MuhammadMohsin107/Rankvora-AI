@@ -1,42 +1,22 @@
-import { createHash, timingSafeEqual } from 'node:crypto';
 import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import { db } from '../db/client.js';
 import { integrations, shopifyConnections, stores, users } from '../db/schema.js';
 import { ApiError } from '../middleware/error.js';
 import { encryptToken } from '../lib/crypto.js';
-import {
-  signShopifyLoginGrant,
-  signShopifyLoginState,
-  verifyShopifyLoginGrant,
-  verifyShopifyLoginState,
-} from '../lib/jwt.js';
-import type { RequestMetadata } from '../lib/requestMetadata.js';
 import { ShopifyClient } from '../audit-engine/store-data/shopify-client.js';
 import { fetchShopIdentity, fetchShopOwner, type ShopIdentity } from '../audit-engine/store-data/shopify.queries.js';
-import {
-  buildAuthorizeUrl,
-  exchangeCodeForToken,
-  missingScopes,
-  requireConfigured,
-  verifyCallbackHmac,
-  type TokenResponse,
-} from './shopify-oauth.service.js';
+import type { TokenResponse } from './shopify-oauth.service.js';
 import { NOTIFICATION_LINKS, createNotification } from './notification.service.js';
-import { completeExternalSignIn } from './auth.service.js';
 import { applyShopifyFacts, factsFromShop } from './store-profile.service.js';
 
 /**
- * ─── Sign in with Shopify ────────────────────────────────────────────
+ * ─── A shop becomes an account ───────────────────────────────────────
  *
- * The shop IS the identity. A merchant proves who they are by approving Rankvora AI on Shopify's own
- * authorization screen, which Shopify only shows to someone signed in to that shop's admin. Rankvora AI
- * never sees or stores a password for this route.
- *
- *   start      the browser sends a shop (typed, or delivered signed by Shopify) and a nonce hash
- *   authorize  Shopify authenticates the merchant and redirects to the shared callback
- *   callback   the code is exchanged, the token proven against the Admin API, and the shop resolved
- *              to an account — the existing one, or a new one created from Shopify's own records
- *   complete   the starting browser redeems a two-minute grant with its raw nonce for a session
+ * The shop IS the identity. Shopify only opens an app for someone who is signed in to that shop's
+ * admin, and the ID token that open carries proves it (shopify-embedded.service.ts), so a shop that
+ * arrives with a working token has been authenticated by Shopify itself. This file turns that shop
+ * into the account that owns it — the existing one, or a new one created from Shopify's own records.
+ * Nothing here sees, asks for or stores a password: the account holds no credential.
  *
  * WHICH ACCOUNT A SHOP OPENS. A shop Rankvora AI already holds a connection for signs in to the account
  * that owns that store — including a connection left behind by an uninstall, because reinstalling
@@ -61,12 +41,6 @@ import { applyShopifyFacts, factsFromShop } from './store-profile.service.js';
  * is told to contact support.
  */
 
-const SHOP_DOMAIN = /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
-
-function hashNonce(nonce: string): string {
-  return createHash('sha256').update(nonce).digest('hex');
-}
-
 /** The encrypted credential columns, shared by the insert and update paths so the two can never
  * store a token pair differently. */
 function tokenColumns(tokens: TokenResponse) {
@@ -79,81 +53,13 @@ function tokenColumns(tokens: TokenResponse) {
   };
 }
 
-// ─── Start ───────────────────────────────────────────────────────────
-
-/** The authorization URL for a shop the merchant typed on Rankvora AI's sign-in page. */
-export function beginShopifyLogin(shop: string, nonce: string): string {
-  requireConfigured();
-  return buildAuthorizeUrl(shop, signShopifyLoginState(shop, hashNonce(nonce)));
-}
-
-/**
- * The authorization URL for a shop Shopify delivered — the merchant opened Rankvora AI from the App
- * Store or from the Apps list in their admin, so nothing was typed at all.
- *
- * The query is trusted only after its HMAC verifies. No freshness window is applied: replaying an
- * old launch link does nothing but show Shopify's own authorization screen again, which Shopify
- * still guards with the merchant's admin session.
- */
-export function beginShopifyLaunch(launch: Record<string, string>, nonce: string): string {
-  requireConfigured();
-  if (!verifyCallbackHmac(launch)) {
-    throw new ApiError(401, 'This link from Shopify could not be verified. Open Rankvora AI from your Shopify admin again.', 'SHOPIFY_HMAC_INVALID');
-  }
-  const shop = launch.shop;
-  if (typeof shop !== 'string' || !SHOP_DOMAIN.test(shop)) {
-    throw new ApiError(400, 'This link from Shopify did not name a store.', 'SHOPIFY_LAUNCH_INVALID');
-  }
-  return beginShopifyLogin(shop, nonce);
-}
-
-// ─── Callback ────────────────────────────────────────────────────────
-
-/**
- * Completes Shopify's side of sign-in and returns the grant the frontend redeems.
- *
- * Nothing is recorded until the token has been exchanged AND used successfully against the Admin
- * API — the same rule the Integrations connect flow follows, so a shop is never attached to an
- * account on the strength of a token that was never proven to work.
- */
-export async function handleShopifyLoginCallback(query: Record<string, unknown>): Promise<string> {
-  requireConfigured();
-
-  if (!verifyCallbackHmac(query)) throw new ApiError(401, 'Invalid Shopify OAuth signature', 'SHOPIFY_HMAC_INVALID');
-
-  const shop = String(query.shop);
-  const code = String(query.code);
-
-  let state;
-  try {
-    state = verifyShopifyLoginState(String(query.state));
-  } catch {
-    throw new ApiError(401, 'Invalid or expired OAuth state', 'SHOPIFY_STATE_INVALID');
-  }
-  if (state.shop !== shop) throw new ApiError(401, 'OAuth state does not match shop', 'SHOPIFY_STATE_MISMATCH');
-
-  const tokens = await exchangeCodeForToken(shop, code);
-
-  // A store approved without every permission could not be audited or fixed, so it opens nothing.
-  const missing = missingScopes(tokens.scope);
-  if (missing.length > 0) {
-    throw new ApiError(403, `Shopify did not grant: ${missing.join(', ')}`, 'SHOPIFY_SCOPES_MISSING');
-  }
-
-  const client = new ShopifyClient({ shopDomain: shop, accessToken: tokens.accessToken });
-  const userId = await establishShopAccount(shop, tokens, client);
-
-  return signShopifyLoginGrant(userId, state.nonceHash);
-}
-
 /**
  * Turns a token Shopify has just issued for `shop` into the account that owns the shop, and returns
  * that account's id.
  *
- * Both ways in end here — the redirect sign-in above, and the embedded app's token exchange
- * (shopify-embedded.service.ts) — so a shop is recognised, reinstalled and created by one set of
- * rules whichever door the merchant came through. The caller has already proved the token works;
- * what this adds is reading the shop's identity with it and deciding which account that identity is.
+ * The embedded app's token exchange (shopify-embedded.service.ts) ends here, so a shop is recognised,
+ * reinstalled and created by one set of rules. The caller has already proved the token works; what
+ * this adds is reading the shop's identity with it and deciding which account that identity is.
  */
 export async function establishShopAccount(shop: string, tokens: TokenResponse, client: ShopifyClient): Promise<number> {
   const identity = await fetchShopIdentity(client);
@@ -321,7 +227,7 @@ async function signInToKnownShop(
  * hash, reset or recover. The merchant signs in with Shopify, and only with Shopify.
  *
  * Exported for tests only (tests/d1-transactions.test.ts drives it with a stand-in Shopify client);
- * the app reaches it through completeShopifyLogin.
+ * the app reaches it through establishShopAccount.
  */
 export async function createAccountForShop(
   shop: string,
@@ -402,33 +308,4 @@ export async function createAccountForShop(
 
   console.log(`[scorelo-api] shopify: sign-in created an account for ${shop} (user ${userId}, store ${storeId})`);
   return userId;
-}
-
-// ─── Complete ────────────────────────────────────────────────────────
-
-/**
- * Exchanges the grant for a session — only in the browser that started the sign-in.
- *
- * Every failure is the same 401: an expired grant, a forged one and a nonce from another browser
- * are indistinguishable from outside.
- */
-export async function completeShopifyLogin(grant: string, nonce: string, metadata: RequestMetadata) {
-  const rejected = () =>
-    new ApiError(401, 'This Shopify sign-in has expired. Please start again.', 'SHOPIFY_LOGIN_INVALID');
-
-  let payload;
-  try {
-    payload = verifyShopifyLoginGrant(grant);
-  } catch {
-    throw rejected();
-  }
-
-  const expected = Buffer.from(payload.nonceHash, 'hex');
-  const presented = createHash('sha256').update(nonce).digest();
-  if (expected.length !== presented.length || !timingSafeEqual(expected, presented)) {
-    console.warn(`[scorelo-auth] shopify sign-in rejected: nonce mismatch (user ${payload.sub})`);
-    throw rejected();
-  }
-
-  return completeExternalSignIn(payload.sub, metadata);
 }

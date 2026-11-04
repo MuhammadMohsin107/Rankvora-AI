@@ -12,7 +12,7 @@ process.env.SHOPIFY_API_SECRET ??= 'test-client-secret';
 process.env.BACKEND_URL ??= 'http://localhost:5000';
 process.env.TOKEN_ENCRYPTION_KEY ??= '0'.repeat(64);
 
-const { matchConnection } = await import('../services/shopify-login.service.js');
+const { matchConnection } = await import('../services/shopify-account.service.js');
 type Connection = Parameters<typeof matchConnection>[1][number];
 
 const GID = 'gid://shopify/Shop/1001';

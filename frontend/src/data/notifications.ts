@@ -249,12 +249,6 @@ export async function clearReadNotifications(): Promise<void> {
   }
 }
 
-/** Drops everything on sign-out, so the next person in this tab never sees the previous one's. */
-export function resetNotifications(): void {
-  state = EMPTY;
-  listeners.forEach((listener) => listener(state));
-}
-
 function startPolling() {
   if (timer !== null) return;
   timer = window.setInterval(() => {

@@ -34,7 +34,6 @@ export const env = {
    */
   mockAuthEnabled: (process.env.NODE_ENV ?? 'development') === 'development' && process.env.MOCK_AUTH === 'true',
   jwtAccessSecret: required('JWT_ACCESS_SECRET'),
-  jwtRefreshSecret: required('JWT_REFRESH_SECRET'),
   // Shopify app credentials — optional at startup (unlike the vars above) so the rest of the
   // API keeps working before a real Shopify Partner app is provisioned. Routes that need them
   // check shopifyConfigured() and fail with a clear 500 instead of crashing the whole server.

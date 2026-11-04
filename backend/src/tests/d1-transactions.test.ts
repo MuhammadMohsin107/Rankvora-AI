@@ -20,7 +20,7 @@ const { insertReturning } = await import('../db/returning.js');
 const { groupForD1 } = await import('../db/limits.js');
 const schema = await import('../db/schema.js');
 const { auditScores, audits, findings, integrations, jobs, shopifyConnections, stores, users } = schema;
-const { createAccountForShop } = await import('../services/shopify-login.service.js');
+const { createAccountForShop } = await import('../services/shopify-account.service.js');
 const { ShopifyClient } = await import('../audit-engine/store-data/shopify-client.js');
 const { runAuditJob } = await import('../audit-engine/runner.js');
 

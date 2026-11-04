@@ -1,6 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
 import { env } from '../config/env.js';
-import { verifyAccessToken } from '../lib/jwt.js';
 import { looksLikeShopifyIdToken, ShopifyIdTokenError, verifyShopifyIdToken } from '../lib/shopify-id-token.js';
 import { findInstalledOwner } from '../services/shopify-embedded.service.js';
 
@@ -15,14 +14,14 @@ export interface AuthenticatedUser {
 export const RETRY_INVALID_SESSION_HEADER = 'X-Shopify-Retry-Invalid-Session-Request';
 
 /**
- * Who is calling. Two kinds of bearer token are accepted, and the token itself says which:
+ * Who is calling: the account that owns the shop named by a Shopify ID token.
  *
- *   A Shopify ID token   the embedded app. App Bridge adds one to every request the page makes; it
- *                        names the shop, and the caller is that shop's account. Nothing is stored.
- *   This app's own JWT   the access token issued by the redirect sign-in (and what local development
- *                        with MOCK_AUTH replaces). Kept for the standalone flow and the test suite.
+ * App Bridge adds an ID token to every request the page makes; Shopify signs it, it names the shop,
+ * and it lives about a minute, so nothing is stored and there is nothing to log out of. This app
+ * issues no token of its own — a bearer token that is not a valid Shopify ID token is refused.
  *
- * Either way `req.user` is the same, so no route needs to know which door the caller came through.
+ * Local development can switch authentication off entirely with MOCK_AUTH (development only; see
+ * config/env.ts), which treats every request as user 1.
  */
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   if (env.mockAuthEnabled) {
@@ -38,18 +37,12 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     return;
   }
 
-  if (looksLikeShopifyIdToken(token)) {
-    void authenticateShopifyIdToken(req, res, next, token);
+  if (!looksLikeShopifyIdToken(token)) {
+    res.status(401).json({ error: 'Invalid or expired token' });
     return;
   }
 
-  try {
-    const payload = verifyAccessToken(token);
-    req.user = { id: payload.sub };
-    next();
-  } catch {
-    res.status(401).json({ error: 'Invalid or expired token' });
-  }
+  void authenticateShopifyIdToken(req, res, next, token);
 }
 
 async function authenticateShopifyIdToken(req: Request, res: Response, next: NextFunction, token: string) {
