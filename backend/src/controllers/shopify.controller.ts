@@ -2,11 +2,12 @@ import type { Request, Response } from 'express';
 import { env } from '../config/env.js';
 import { ApiError } from '../middleware/error.js';
 import { optionalStoreId, requireUserId } from '../lib/requestContext.js';
-import { callbackQuerySchema } from '../schemas/shopify.schema.js';
+import { parseShopHandle } from '../lib/shopify-shop.js';
+import { callbackQuerySchema, type OpenBody } from '../schemas/shopify.schema.js';
 import { buildInstallUrl, disconnectShopify, handleShopifyCallback } from '../services/shopify-oauth.service.js';
 import { getShopifyStatus, syncShopifyStore } from '../services/shopify-sync.service.js';
 import { getCurrentStoreId } from '../services/store.service.js';
-import { adminAppUrl } from '../services/shopify-embedded.service.js';
+import { adminAppUrl, entryForShop } from '../services/shopify-embedded.service.js';
 import { describeError, logValue } from '../lib/logger.js';
 import {
   handleAppScopesUpdate,
@@ -38,6 +39,25 @@ export async function getInstall(req: Request, res: Response) {
   // Quoted: `shop` is the caller's query string, and a raw newline in it could forge a log line.
   console.log(`[scorelo-api] shopify: installation started for ${logValue(shop)} (user ${userId}, store ${storeId})`);
   res.json({ data: { url: buildInstallUrl(userId, storeId, shop) } });
+}
+
+/**
+ * The bare site's one question: "which store?". Answers with the Shopify address to send the visitor
+ * to — the app in their admin when it is installed there, Shopify's install screen when it is not.
+ *
+ * Anonymous by design: it identifies nothing and issues nothing, and the visitor proves who they are
+ * to Shopify, not to this site. The only thing taken from the request is the store handle, validated
+ * and rebuilt server-side (services/shopify-embedded.service.ts, entryForShop), so this cannot be
+ * turned into a redirect to anywhere but a Shopify address.
+ */
+export async function postOpen(req: Request, res: Response) {
+  const handle = parseShopHandle((req.body as OpenBody).shop);
+  if (!handle) {
+    throw new ApiError(400, 'Enter your store’s Shopify address, for example my-store.myshopify.com.', 'SHOPIFY_SHOP_INVALID');
+  }
+  const entry = await entryForShop(handle);
+  console.log(`[scorelo-api] shopify: ${handle}.myshopify.com asked to ${entry.installed ? 'open' : 'install'} the app rid=${req.requestId ?? '-'}`);
+  res.json({ data: entry });
 }
 
 /** A shop domain taken from the callback's query, kept only when it has the shape of a real one. */

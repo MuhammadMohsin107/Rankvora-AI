@@ -4,6 +4,7 @@ import {
   getInstall,
   getStatus,
   postDisconnect,
+  postOpen,
   postSync,
   postWebhookAppScopesUpdate,
   postWebhookAppUninstalled,
@@ -13,11 +14,22 @@ import {
 } from '../controllers/shopify.controller.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { authenticate } from '../middleware/authenticate.js';
+import { rateLimit } from '../middleware/rateLimit.js';
 import { validateRequest } from '../middleware/validateRequest.js';
-import { installQuerySchema } from '../schemas/shopify.schema.js';
+import { installQuerySchema, openBodySchema } from '../schemas/shopify.schema.js';
 import { storeIdQuerySchema } from '../schemas/common.schema.js';
 
 export const shopifyRouter = Router();
+
+// The bare site's "which store?" form. Anonymous and session-free: it only turns a store address into the
+// Shopify address to go to (the app in their admin, or Shopify's install screen), so Shopify does the
+// authenticating. Limited like the other anonymous endpoint, since it reads the database.
+shopifyRouter.post(
+  '/open',
+  rateLimit({ name: 'shopify:open', windowMs: 60 * 1000, max: 20, message: 'Too many attempts. Please wait a moment and try again.' }),
+  validateRequest({ body: openBodySchema }),
+  asyncHandler(postOpen),
+);
 
 // Install must be authenticated (it signs the caller's user id into the OAuth state).
 shopifyRouter.get('/install', authenticate, validateRequest({ query: installQuerySchema }), asyncHandler(getInstall));

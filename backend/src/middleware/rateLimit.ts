@@ -4,8 +4,9 @@ import { ApiError } from './error.js';
 
 /**
  * ─── Fixed-window rate limiter ───────────────────────────────────────
- * Small, dependency-free. It guards the one route an anonymous caller can reach — the embedded
- * app's open call — which can end in a request to Shopify.
+ * Small, dependency-free. It guards the routes an anonymous caller can reach — the embedded
+ * app's open call, which can end in a request to Shopify, and the bare site's store form, which reads
+ * the database.
  *
  * WHAT THIS IS FOR: raising the cost of hammering those endpoints. It is not a DDoS defence — that
  * belongs at the edge.

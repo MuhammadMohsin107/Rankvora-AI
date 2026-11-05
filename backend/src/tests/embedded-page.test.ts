@@ -121,6 +121,31 @@ describe('the page frame', () => {
   });
 });
 
+describe('the bare site’s store form', () => {
+  // /login outside the admin: the visitor types their store and Shopify authenticates them. The page must
+  // reach Shopify only through the server's answer, and only after checking that answer is a Shopify address.
+  const page = readFrontend('src/pages/auth/OpenFromShopify.tsx');
+  const repository = readFrontend('src/data/shopify.repository.ts');
+
+  it('asks for the store with a Polaris field and goes on through the server', () => {
+    assert.match(page, /<TextField\b/);
+    assert.match(page, /openStoreOnShopify\(/);
+  });
+
+  it('no longer sends the visitor to the generic Shopify admin to find the app themselves', () => {
+    const code = page.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    assert.doesNotMatch(code, /admin\.shopify\.com/);
+    assert.doesNotMatch(code, /Go to your Shopify admin/);
+  });
+
+  it('only navigates to an address on Shopify', () => {
+    const open = repository.match(/export async function openStoreOnShopify[\s\S]*?\n\}/)?.[0] ?? '';
+    assert.match(open, /api\.post<[^>]*>\('\/shopify\/open'/);
+    assert.ok(open.indexOf('isShopifyAddress(url)') !== -1, 'the answer is not checked');
+    assert.ok(open.indexOf('isShopifyAddress(url)') < open.indexOf('openOutsideAdmin(url)'), 'the check must come before the navigation');
+  });
+});
+
 describe('Polaris controls', () => {
   // Every button the merchant sees is the shared Button (a Polaris <s-button>). The only `.btn-*` classes
   // left are the ones index.css defines for the standalone development chrome, which merchants never see.

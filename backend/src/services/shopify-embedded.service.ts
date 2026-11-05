@@ -5,6 +5,7 @@ import { shopifyConnections, stores } from '../db/schema.js';
 import { ShopifyClient } from '../audit-engine/store-data/shopify-client.js';
 import { ApiError } from '../middleware/error.js';
 import { verifyShopifyIdToken } from '../lib/shopify-id-token.js';
+import { shopDomainOf } from '../lib/shopify-shop.js';
 import { establishShopAccount } from './shopify-account.service.js';
 import { exchangeIdTokenForToken, missingScopes, requireConfigured } from './shopify-oauth.service.js';
 
@@ -66,6 +67,26 @@ export async function findInstalledOwner(shop: string): Promise<number | null> {
  */
 export function adminAppUrl(shop: string, path: string): string {
   return `https://${shop}/admin/apps/${env.shopifyApiKey}${path}`;
+}
+
+/**
+ * Where to send a visitor who named their store on the bare site, so that Shopify itself — never this
+ * site — authenticates them and decides whether the app is installed.
+ *
+ *   installed      → the app inside their admin. Shopify asks them to sign in if they are not, and then
+ *                    loads the app, which opens its own session from the ID token (openEmbeddedSession).
+ *   not installed  → Shopify's install screen for this app. The merchant approves the scopes in
+ *                    shopify.app.toml there (managed installation), and Shopify opens the app, which
+ *                    creates the account and starts guided setup exactly as for any first open.
+ *
+ * Both are addresses on Shopify, built here from the handle alone: the visitor's text never reaches
+ * a redirect, and no session is issued or remembered.
+ */
+export async function entryForShop(handle: string): Promise<{ url: string; installed: boolean }> {
+  requireConfigured();
+  const shop = shopDomainOf(handle);
+  if (await findInstalledOwner(shop)) return { url: adminAppUrl(shop, ''), installed: true };
+  return { url: `https://admin.shopify.com/store/${handle}/oauth/install?client_id=${encodeURIComponent(env.shopifyApiKey!)}`, installed: false };
 }
 
 /** The installed shop a store belongs to, or null when it has none (or was uninstalled). */

@@ -57,6 +57,31 @@ export async function beginShopifyInstall(shopDomain: string): Promise<void> {
   openOutsideAdmin(url);
 }
 
+/** Whether `address` is somewhere only Shopify serves from — the one kind of place the bare site sends anyone. */
+export function isShopifyAddress(address: string): boolean {
+  try {
+    const url = new URL(address);
+    return url.protocol === 'https:' && (url.hostname === 'admin.shopify.com' || /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(url.hostname));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The bare site's way in: the visitor names their store, the server says where Shopify should take them,
+ * and the browser goes there. Shopify signs them in and, if Rankvora AI is not installed on that store,
+ * asks them to install it; either way it ends with the app open inside their admin, which identifies the
+ * shop by its ID token as always. Nothing is signed in or remembered here.
+ *
+ * The address comes from the server, which builds it from the store handle alone; it is checked once more
+ * here so that a page which has somehow been fed another address still never leaves Shopify's domains.
+ */
+export async function openStoreOnShopify(shop: string): Promise<void> {
+  const { url } = await api.post<{ url: string; installed: boolean }>('/shopify/open', { shop });
+  if (!isShopifyAddress(url)) throw new ApiError('Unexpected address from the server', 502, 'SHOPIFY_ADDRESS_UNEXPECTED');
+  openOutsideAdmin(url);
+}
+
 /** Reads the connected store's real data. Throws on failure — there is no silent success. */
 export function syncShopifyStore(): Promise<ShopifySyncSummary> {
   return api.post<ShopifySyncSummary>('/shopify/sync');
