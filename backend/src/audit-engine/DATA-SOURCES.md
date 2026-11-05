@@ -44,7 +44,7 @@ score. The **Source** column below is the guard against that.
 | `canonicals` | `<link rel="canonical">` as rendered; duplicate handle detection | **Crawl** (+ Admin for handles) | `read_products` | **Implemented** — `checks/seo/canonicals.ts`: rendered `<link rel="canonical">` on every crawled page (missing, empty, conflicting, off-domain, pointing elsewhere; targets that point elsewhere are requested to catch broken and redirecting ones), plus duplicate pages across the published catalogue |
 | `handles-redirects` | `UrlRedirect` records (complete, paginated), handles of every product/collection/page/article | Admin | `read_online_store_navigation` (requested; stores connected before it was added must re-approve) + `read_products`, `read_content` | **Implemented** — `checks/seo/handles-redirects.ts`: broken destinations, loops, chains, inactive redirects, duplicate sources, invalid targets, copy-of and badly formatted handles. Reports "not measured" with the exact scope when the permission is missing |
 | `sitemap` | `/sitemap.xml`, `/robots.txt`, per-page `noindex` | **Crawl** | — | **Implemented** — `checks/seo/sitemap-indexability.ts` |
-| `internal-links` | Rendered anchor graph, HTTP status of each target | **Crawl** | — | **Implemented** — `checks/seo/internal-links.ts` |
+| `internal-links` | Rendered anchor graph, HTTP status of each target | **Crawl** | — | **Implemented** — `checks/seo/internal-links.ts` (a sample of the audit's pages and up to 25 targets). The complete picture — every page, every link to the store and to other websites — is the separate link scan (`link-scan/engine.ts`), shown on the same page |
 
 ## Content (6)
 

@@ -10,7 +10,7 @@ import { sortByCell, type SubPillarAnalysis } from '../subpillar.model';
 export const internalLinksAnalysis: SubPillarAnalysis = {
   slug: 'internal-links',
   title: 'Internal Links & 404s',
-  description: 'Make sure crawlers and shoppers can reach every page, and that no link leads to a dead end.',
+  description: 'Make sure crawlers and shoppers can reach every page, and that no link — to your store or to another website — leads to a dead end.',
   summary: '',
   healthChip: '',
   totals: {
@@ -29,9 +29,9 @@ export const internalLinksAnalysis: SubPillarAnalysis = {
   findings: [],
   evidence: {
     title: 'Affected links',
-    // The unit here is the PAGE, not the individual link: the check counts each crawled page's
-    // internal and external links. `source`, `target`, `anchor` and `httpStatus` were never
-    // written — no link is followed, so no HTTP status exists to report.
+    // The unit here is the PAGE: this table counts each audited page's internal and external links. The
+    // links themselves — every address, what it answered and which pages contain it — are in the complete
+    // link scan above (components/seo/links/LinkScanPanel.tsx).
     caption: 'Crawled pages with their internal linking counts',
     searchPlaceholder: 'Search product or page…',
     searchKeys: ['name', 'url', 'recommendation'],

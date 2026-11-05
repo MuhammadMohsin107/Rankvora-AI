@@ -46,6 +46,12 @@ interface Props {
    * all of them. The route decides; the template just renders what it is given.
    */
   configurator?: React.ReactNode;
+  /**
+   * A section belonging to this sub-pillar alone, shown in the page itself — above its findings, and also
+   * when there is no audit yet, for a section that does not depend on one. Internal Links has the complete
+   * link scan, which reads the whole store and needs no audit; the route decides, as with `configurator`.
+   */
+  extraSection?: React.ReactNode;
 }
 
 /**
@@ -53,7 +59,7 @@ interface Props {
  * Every SEO sub-pillar renders through this shell and supplies its own
  * score, findings, evidence columns and terminology.
  */
-export default function SeoSubPillarPage({ analysis, configurator }: Props) {
+export default function SeoSubPillarPage({ analysis, configurator, extraSection }: Props) {
   const [data, setData] = useState<SubPillarAnalysis | null>(null);
   const [state, setState] = useState<LoadState>('loading');
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -224,6 +230,7 @@ export default function SeoSubPillarPage({ analysis, configurator }: Props) {
           )}
         </div>
       </div>
+      {extraSection && <div className="page-shell pb-6">{extraSection}</div>}
       </AppPage>
     );
   }
@@ -301,6 +308,8 @@ export default function SeoSubPillarPage({ analysis, configurator }: Props) {
           <div className="col-span-12 xl:col-span-5">
             <HealthCard totals={data.totals} findings={data.findings} onSelectIssue={focusEvidence} />
           </div>
+
+          {extraSection && <div className="col-span-12">{extraSection}</div>}
 
           {/* Findings */}
           <div className="col-span-12">

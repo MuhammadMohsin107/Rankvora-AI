@@ -36,6 +36,10 @@ const TEST_ENVIRONMENT: Record<string, string> = {
   SHOPIFY_API_SECRET: 'test-client-secret',
   BACKEND_URL: 'http://localhost:5000',
   FRONTEND_URL: 'http://localhost:5173',
+
+  // No test starts a link scan by itself when an audit finishes: a scan requests a real website. The
+  // link-scan tests start theirs on purpose, against servers they run themselves.
+  LINK_SCAN_AUTO: 'false',
 };
 
 for (const [name, value] of Object.entries(TEST_ENVIRONMENT)) process.env[name] = value;

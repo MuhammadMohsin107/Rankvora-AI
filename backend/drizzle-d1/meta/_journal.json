@@ -22,6 +22,13 @@
       "when": 1793777622054,
       "tag": "0002_drop_user_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793883453453,
+      "tag": "0003_link_scans",
+      "breakpoints": true
     }
   ]
 }

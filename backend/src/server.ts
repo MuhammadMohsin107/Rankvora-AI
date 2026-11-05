@@ -4,6 +4,7 @@ import { app } from './app.js';
 import { startAutoAnalysisScheduler } from './services/auto-analysis.service.js';
 import { startWeeklySummaryScheduler } from './services/weekly-summary.service.js';
 import { failInterruptedJobs } from './services/job.service.js';
+import { failInterruptedLinkScans } from './services/link-scan.service.js';
 
 /**
  * ─── The Node entry point ────────────────────────────────────────────
@@ -62,6 +63,12 @@ if (env.failInterruptedJobsOnStart) {
       if (closed > 0) console.warn(`[scorelo-api] marked ${closed} interrupted audit job(s) as failed — they were running when the previous process stopped`);
     })
     .catch((error) => console.error(`[scorelo-api] could not close interrupted audit jobs — ${describeErrorWithStack(error)}`))
+    // Link scans run in this process too, so the ones a previous process left running are closed out the same way.
+    .then(() => failInterruptedLinkScans())
+    .then((closed) => {
+      if (closed > 0) console.warn(`[scorelo-api] marked ${closed} interrupted link scan(s) as failed — they were running when the previous process stopped`);
+    })
+    .catch((error) => console.error(`[scorelo-api] could not close interrupted link scans — ${describeErrorWithStack(error)}`))
     .finally(listen);
 } else {
   console.log('[scorelo-api] not closing out interrupted audit jobs (FAIL_INTERRUPTED_JOBS=false)');

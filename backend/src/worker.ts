@@ -11,6 +11,8 @@ import { isApiPath, serveWebsite } from './cloudflare/shell.js';
 import { useCloudflareEdge } from './middleware/cloudflareEdge.js';
 import { useSharedRateLimitStore } from './middleware/rateLimit.js';
 import { useAuditRunStarter } from './services/job.service.js';
+import { useLinkScanStarter } from './services/link-scan.service.js';
+import { runLinkScanBatch } from './link-scan/engine.js';
 import { runScheduledWork } from './services/scheduled-work.service.js';
 
 // Durable Object classes must be exported by the Worker's main module (wrangler.jsonc binds them).
@@ -58,9 +60,12 @@ interface WorkflowBinding<Params> {
   create(options: { id?: string; params?: Params }): Promise<unknown>;
 }
 
-interface AuditRunParams {
-  jobId: number;
-}
+/**
+ * What a Workflow instance is started with: an audit run (`jobId`) or a link scan (`linkScanId`). Both run in
+ * the one Workflow class below — a scan is long and steps through batches, an audit is one step — so there is a
+ * single Workflow binding to configure.
+ */
+type AuditRunParams = { jobId: number; linkScanId?: undefined } | { linkScanId: number; jobId?: undefined };
 
 /** The RateLimiter Durable Object binding: the calls made on it here. */
 interface RateLimiterNamespace {
@@ -106,6 +111,13 @@ function useCloudflareServices(env: WorkerEnv): void {
     await env.AUDIT_WORKFLOW.create({
       id: `audit-${job.id}-${randomUUID().slice(0, 8)}`,
       params: { jobId: job.id },
+    });
+  });
+
+  useLinkScanStarter(async (scan) => {
+    await env.AUDIT_WORKFLOW.create({
+      id: `links-${scan.id}-${randomUUID().slice(0, 8)}`,
+      params: { linkScanId: scan.id },
     });
   });
 
@@ -156,11 +168,33 @@ export default {
  */
 export class AuditWorkflow extends WorkflowEntrypoint<WorkerEnv, AuditRunParams> {
   async run(event: WorkflowEvent<AuditRunParams>, step: WorkflowStep): Promise<void> {
-    const { jobId } = event.payload;
+    if (event.payload.linkScanId !== undefined) {
+      await this.runLinkScan(event.payload.linkScanId, step);
+      return;
+    }
+    const { jobId } = event.payload as { jobId: number };
     await step.do('run audit', { retries: { limit: 0, delay: '1 second' }, timeout: '1 hour' }, async () => {
       useCloudflareServices(this.env);
       await runWithDatabase(openDatabase(this.env), () => runAuditJob(jobId));
       return { jobId };
     });
   }
+
+  /**
+   * One link scan: a step per batch. Each step is its own invocation with its own request and query
+   * budget, which is what lets a store with thousands of pages be scanned completely on Workers. A batch
+   * repeats nothing it already recorded (link-scan/engine.ts), so a step that fails is retried.
+   */
+  private async runLinkScan(scanId: number, step: WorkflowStep): Promise<void> {
+    // 40 pages or 120 targets a step: 1,000 steps cover 40,000 pages. The ceiling is a runaway guard, not a limit anyone meets.
+    for (let batch = 1; batch <= MAX_LINK_SCAN_STEPS; batch += 1) {
+      const { done } = await step.do(`links batch ${batch}`, { retries: { limit: 2, delay: '5 seconds' }, timeout: '10 minutes' }, async () => {
+        useCloudflareServices(this.env);
+        return runWithDatabase(openDatabase(this.env), () => runLinkScanBatch(scanId));
+      });
+      if (done) return;
+    }
+  }
 }
+
+const MAX_LINK_SCAN_STEPS = 1_000;

@@ -7,6 +7,7 @@ import { clientErrorsRouter } from './routes/client-errors.js';
 import { healthRouter } from './routes/health.js';
 import { authRouter } from './routes/auth.js';
 import { shopifyRouter } from './routes/shopify.js';
+import { linkScansRouter } from './routes/link-scans.js';
 import { googleRouter } from './routes/google.js';
 import { pagespeedRouter } from './routes/pagespeed.js';
 import { usersRouter } from './routes/users.js';
@@ -81,6 +82,7 @@ app.use(express.json({ verify: (req, _res, buf) => { (req as express.Request).ra
 app.use('/api', healthRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/shopify', shopifyRouter);
+app.use('/api/link-scans', linkScansRouter);
 app.use('/api/google', googleRouter);
 // PageSpeed Insights. Its own mount rather than a branch of /api/google: it shares a vendor with
 // Search Console and Analytics and nothing else — no OAuth grant, no account, no token — and

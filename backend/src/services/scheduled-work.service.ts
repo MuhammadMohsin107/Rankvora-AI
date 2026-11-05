@@ -2,6 +2,7 @@ import { env } from '../config/env.js';
 import { describeError } from '../lib/logger.js';
 import { runDueAutoAnalyses, type AutoAnalysisSweep } from './auto-analysis.service.js';
 import { failStuckJobs } from './job.service.js';
+import { failStuckLinkScans } from './link-scan.service.js';
 import { runWeeklySummaries, type WeeklySummarySweep } from './weekly-summary.service.js';
 
 /**
@@ -33,11 +34,13 @@ export interface ScheduledWorkResult {
 /** The three sweeps, injectable so tests can drive this without a database. */
 export interface ScheduledWorkTasks {
   failStuckJobs: (now: Date) => Promise<number>;
+  /** Optional so a test of the other sweeps need not supply it. */
+  failStuckLinkScans?: (now: Date) => Promise<number>;
   runDueAutoAnalyses: (now: Date) => Promise<AutoAnalysisSweep>;
   runWeeklySummaries: (now: Date) => Promise<WeeklySummarySweep>;
 }
 
-const defaultTasks: ScheduledWorkTasks = { failStuckJobs, runDueAutoAnalyses, runWeeklySummaries };
+const defaultTasks: ScheduledWorkTasks = { failStuckJobs, failStuckLinkScans, runDueAutoAnalyses, runWeeklySummaries };
 
 /**
  * Runs every part, each on its own: one part failing is logged and the others still run.
@@ -53,6 +56,13 @@ export async function runScheduledWork(now: Date = new Date(), tasks: ScheduledW
     }
   } catch (error) {
     result.failures.push(`stuck jobs: ${describeError(error)}`);
+  }
+
+  try {
+    const closed = (await tasks.failStuckLinkScans?.(now)) ?? 0;
+    if (closed > 0) console.warn(`[scorelo-cron] closed out ${closed} stuck link scan(s)`);
+  } catch (error) {
+    result.failures.push(`stuck link scans: ${describeError(error)}`);
   }
 
   if (env.autoAnalysisEnabled) {

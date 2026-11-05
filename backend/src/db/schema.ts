@@ -565,6 +565,113 @@ export const jobs = sqliteTable(
   ],
 );
 
+// ─── link_scans ──────────────────────────────────────────────────────
+// One row per COMPLETE link scan of a store: every page of the storefront is loaded, every link found on
+// them is read, and every distinct address those links lead to — on the store and on other websites — is
+// requested once and its answer recorded (link-scan/engine.ts). Unlike the audit's crawl, which samples,
+// this is the whole store, so it cannot run in one request: it works through the addresses in batches,
+// and everything it needs to carry on lives in these two tables, which is what lets a Cloudflare
+// Workflow (a new step per batch) and a Node process (a loop) run the same scan, and lets either survive
+// being stopped.
+export const linkScans = sqliteTable(
+  'link_scans',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    storeId: integer('store_id')
+      .notNull()
+      .references(() => stores.id, { onDelete: 'cascade' }),
+    // queued → running → completed | failed | cancelled. At most one active (queued or running) scan per
+    // store, by the partial unique index below — the same guarantee jobs has for audits.
+    status: text('status', { length: 16 }).notNull().default('queued'),
+    // The Shopify shop this scan was of. A store row keeps its history across Disconnect, and a different shop can then
+    // be connected to it; the scans of the previous shop must not be shown as this one's (the same rule audits follow —
+    // services/audit.service.ts, assertAuditOfConnectedShop). Null only for a scan whose store had no connection.
+    shopDomain: text('shop_domain', { length: 255 }),
+    // What started it: the merchant ('manual'), a finished audit ('audit') or the scheduled sweep ('schedule').
+    trigger: text('trigger', { length: 16 }).notNull().default('manual'),
+    // Where the scan is: finding the store's address and sitemap ('discovering'), loading every page
+    // ('crawling'), requesting the remaining link targets ('checking'), or totting up ('finishing').
+    phase: text('phase', { length: 16 }).notNull().default('discovering'),
+    // The storefront origin that was scanned (https://www.brand.com), once found. Everything on it, and on
+    // the other hosts the same store answers to (`hosts`), counts as an internal link.
+    origin: text('origin', { length: 512 }),
+    hosts: text('hosts', { mode: 'json' }),
+    // The store's robots.txt rules for Rankvora AI's crawler, parsed once at the start so every batch
+    // decides the same way which pages it may load.
+    robots: text('robots', { mode: 'json' }),
+    progress: integer('progress').notNull().default(0),
+    // What the scan is doing, with the real counts so far ("Checking links — 120 of 410").
+    stage: text('stage', { length: 191 }),
+    // Set when a safety ceiling stopped the scan from covering everything ('urls' = too many addresses),
+    // so a partial scan is never presented as a complete one. Null = nothing was left out.
+    limitReached: text('limit_reached', { length: 16 }),
+    // Counts by where a link points and what came back, refreshed after every batch (link-scan/engine.ts, tally).
+    summary: text('summary', { mode: 'json' }),
+    error: text('error'),
+    startedAt: integer('started_at', { mode: 'timestamp_ms' }),
+    finishedAt: integer('finished_at', { mode: 'timestamp_ms' }),
+    // Written by every batch. A scan whose heartbeat stops is dead, and the scheduled sweep closes it out.
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(now),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now),
+  },
+  (table) => [
+    index('link_scans_store_created_idx').on(table.storeId, table.createdAt),
+    uniqueIndex('link_scans_store_active_unique_idx').on(table.storeId).where(sql`${table.status} IN ('queued', 'running')`),
+    check('link_scans_status_valid', sql`${table.status} IN ('queued', 'running', 'completed', 'failed', 'cancelled')`),
+    check('link_scans_phase_valid', sql`${table.phase} IN ('discovering', 'crawling', 'checking', 'finishing')`),
+    check('link_scans_progress_range', sql`${table.progress} BETWEEN 0 AND 100`),
+  ],
+);
+
+// ─── link_scan_urls ──────────────────────────────────────────────────
+// Every distinct address one scan came across, once each — and the work list the scan is working
+// through: a row is 'pending' until it has been requested, then 'done' with the answer beside it.
+//
+//   role 'page'     a page of the store: loaded, and its links read (so it is both checked and crawled)
+//   role 'sitemap'  a sitemap document: loaded, and the addresses it lists become pages
+//   role 'target'   anything a link leads to that is not crawled — other websites, files, filtered or
+//                   utility addresses — requested only to see whether it answers
+export const linkScanUrls = sqliteTable(
+  'link_scan_urls',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    scanId: integer('scan_id')
+      .notNull()
+      .references(() => linkScans.id, { onDelete: 'cascade' }),
+    // Absolute, normalised, fragment and tracking parameters removed (link-scan/url.ts, normalizeLink).
+    url: text('url').notNull(),
+    role: text('role', { length: 8 }).notNull().default('target'),
+    // True when the address is on the store itself.
+    internal: integer('internal', { mode: 'boolean' }).notNull().default(false),
+    // True when the store's own sitemap lists this address — so a listed address that answers 404 is
+    // reported as that, even when no page links to it.
+    inSitemap: integer('in_sitemap', { mode: 'boolean' }).notNull().default(false),
+    state: text('state', { length: 8 }).notNull().default('pending'),
+    // What came back (link-scan/outcome.ts): ok | redirect | broken | blocked | unverified | skipped.
+    outcome: text('outcome', { length: 12 }),
+    // The final HTTP status, after redirects. Null when no response arrived.
+    status: integer('status'),
+    finalUrl: text('final_url'),
+    hops: integer('hops').notNull().default(0),
+    // Machine-readable cause (not_found, gone, server_error, dns_failed, timed_out, …) and the sentence for the merchant.
+    reason: text('reason', { length: 32 }),
+    detail: text('detail'),
+    // How many pages link here. Filled in when the scan finishes, for the addresses that have a problem.
+    sourceCount: integer('source_count'),
+    // For a page: the links found on it, as JSON [[address, anchor text], …] — what answers "which pages
+    // contain this broken link?" without a row for every link of every page.
+    outlinks: text('outlinks'),
+    checkedAt: integer('checked_at', { mode: 'timestamp_ms' }),
+  },
+  (table) => [
+    uniqueIndex('link_scan_urls_scan_url_idx').on(table.scanId, table.url),
+    index('link_scan_urls_work_idx').on(table.scanId, table.state, table.role, table.id),
+    index('link_scan_urls_result_idx').on(table.scanId, table.outcome, table.internal),
+    check('link_scan_urls_role_valid', sql`${table.role} IN ('page', 'sitemap', 'target')`),
+    check('link_scan_urls_state_valid', sql`${table.state} IN ('pending', 'done')`),
+  ],
+);
+
 // ─── page_settings ────────────────────────────────────────────────────
 // Persists per-page settings instead of localStorage-only storage.
 export const pageSettings = sqliteTable(

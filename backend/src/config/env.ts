@@ -201,6 +201,28 @@ export const env = {
    * crawler-agent requests as abuse.
    */
   crawlProbeBots: process.env.CRAWL_PROBE_BOTS !== 'false',
+  // ─── Link scan ──────────────────────────────────────────────────────
+  // The complete link check (link-scan/engine.ts): every page of the storefront is loaded and every
+  // link on them — to the store and to other websites — is requested once. Unlike the audit's crawl it
+  // is not a sample, so it runs in batches that can be spread across Workflow steps; these are the
+  // limits it keeps to.
+  /** Kill switch for link scans (the manual button, the one after each audit and the API). */
+  linkScanEnabled: process.env.LINK_SCAN_ENABLED !== 'false',
+  /** Start a scan by itself when an audit finishes (at most one every LINK_SCAN_AUTO_MIN_HOURS hours per store). */
+  linkScanAuto: process.env.LINK_SCAN_AUTO !== 'false',
+  linkScanAutoMinHours: Number(process.env.LINK_SCAN_AUTO_MIN_HOURS ?? 6),
+  /** Ceiling on distinct addresses one scan will hold. Past it the scan carries on with what it has and says so. */
+  linkScanMaxUrls: Number(process.env.LINK_SCAN_MAX_URLS ?? 30_000),
+  /** Pages loaded per batch. A batch is one Workflow step, so this bounds a step's requests and queries. */
+  linkScanBatchPages: Number(process.env.LINK_SCAN_BATCH_PAGES ?? 40),
+  /** Link targets requested per batch (each can cost up to four requests when it is retried). */
+  linkScanBatchChecks: Number(process.env.LINK_SCAN_BATCH_CHECKS ?? 120),
+  /** Simultaneous requests to OTHER websites, never more than two to any one of them. */
+  linkScanExternalConcurrency: Number(process.env.LINK_SCAN_EXTERNAL_CONCURRENCY ?? 8),
+  /** How long another website gets to answer. */
+  linkScanExternalTimeoutMs: Number(process.env.LINK_SCAN_EXTERNAL_TIMEOUT_MS ?? 10_000),
+  /** A scan with no heartbeat for this long is dead; the scheduled sweep (or the next start-up) closes it out. */
+  linkScanStuckMs: Number(process.env.LINK_SCAN_STUCK_MS ?? 30 * 60_000),
   // ─── Scheduled re-analysis ──────────────────────────────────────────
   // Per-store scheduling lives in the database (`stores.auto_analysis`, `analysis_frequency`) and
   // is the merchant's to set in Settings. These are the OPERATOR's controls over the sweep that

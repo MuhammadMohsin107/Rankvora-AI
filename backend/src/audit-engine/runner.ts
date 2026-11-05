@@ -10,6 +10,7 @@ import type { SnapshotProgress, SnapshotStep } from './store-data/types.js';
 import { unavailableResult, type AuditCheck, type PillarKey, type SubPillarResult } from './types.js';
 import { notifyAnalysisFailed, notifyAuditOutcome, notifyScoreMovement } from '../services/notification.service.js';
 import { runPromptSweep } from '../services/prompt-tracking.service.js';
+import { startAutoLinkScan } from '../services/link-scan.service.js';
 import { applyShopifyFacts, factsFromShop } from '../services/store-profile.service.js';
 import { describeError } from '../lib/logger.js';
 
@@ -371,6 +372,11 @@ export async function runAuditJob(jobId: number, deps: RunnerDeps = {}): Promise
     // Compares this audit against the previous one and reports the largest pillar move. Gated by
     // `notifyScoreChanges`. Silent when no pillar moved, so an unchanged store adds nothing here.
     await notifyScoreMovement(job.storeId, auditId);
+
+    // The audit's crawl looks at a sample; the link scan reads the whole store. Started here so its results are
+    // waiting on the Internal Links page without anyone pressing a button. It runs on its own — this audit is
+    // already complete — and never throws.
+    await startAutoLinkScan(job.storeId);
   } catch (error) {
     // "CODE: message" for a StoreDataError as before, and for a database failure the SQL and the
     // driver's reason rather than drizzle's message with every bound value in it.
