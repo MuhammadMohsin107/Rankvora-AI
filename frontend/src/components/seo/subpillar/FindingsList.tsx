@@ -66,7 +66,6 @@ export default function FindingsList({ findings, onInvestigate, emptyTitle }: Pr
                     <SeverityBadge severity={finding.severity} />
                     <h3 className="text-[13px] font-semibold text-surface-900">{finding.title}</h3>
                   </div>
-                  <p className="mt-1 text-[12.5px] leading-[1.45] text-surface-600">{finding.whyItMatters}</p>
                   {/* The count and what it is out of — nothing else. "Impact" and "Effort" stood
                       here: words each check typed in by hand, the same for every store. The
                       severity badge above is the rating the audit's rules actually set. */}
