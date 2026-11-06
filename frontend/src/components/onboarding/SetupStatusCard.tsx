@@ -64,7 +64,7 @@ export default function SetupStatusCard() {
     ? nextScan
       ? `Next scheduled scan: ${nextScan}${schedule.timeZone ? ` (${schedule.timeZone})` : ''}`
       : 'Scheduled scans are on.'
-    : 'Scheduled scans are off — your store is analysed when you ask.';
+    : 'Scheduled scans are off.';
 
   if (todo.length === 0 && !schedule.enabled) return null;
 

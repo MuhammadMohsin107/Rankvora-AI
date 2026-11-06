@@ -140,7 +140,7 @@ export default function SchemaTemplateBuilder() {
         if (draft.enabled) next.add(key); else next.delete(key);
         return next;
       });
-      setNotice({ tone: 'success', text: 'Saved. Nothing is on your storefront yet — see the note below.' });
+      setNotice({ tone: 'success', text: 'Saved. Not on your storefront yet.' });
     } catch (error) {
       setNotice({ tone: 'error', text: error instanceof ApiError ? error.message : 'That template could not be saved.' });
     } finally {
@@ -168,10 +168,7 @@ export default function SchemaTemplateBuilder() {
     <div className="space-y-2">
       {/* ── Context switcher ─────────────────────────────────────── */}
       <div className={`${settingsCard} p-3`}>
-        <p className="text-[12.5px] font-semibold text-surface-900">Schema / JSON-LD settings</p>
-        <p className="mt-0.5 text-[11.5px] leading-[1.45] text-surface-500">
-          Choose what structured data Rankvora AI should generate from your Shopify data, for each kind of page.
-        </p>
+        <p className="text-[12.5px] font-semibold text-surface-900">Schema settings</p>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {CONTEXTS.map((entry) => (
             <button
@@ -195,9 +192,6 @@ export default function SchemaTemplateBuilder() {
       <div className={`${settingsCard} overflow-hidden`}>
         <div className="border-b border-surface-200 px-3 py-2">
           <p className="text-[12px] font-semibold text-surface-900">Built-in templates</p>
-          <p className="mt-0.5 text-[11px] text-surface-500">
-            {builtIn.length} type{builtIn.length === 1 ? '' : 's'} available for {CONTEXTS.find((entry) => entry.kind === context)?.label.toLowerCase()}.
-          </p>
         </div>
         <ul className="divide-y divide-surface-100">
           {builtIn.map((type) => {
@@ -365,12 +359,12 @@ export default function SchemaTemplateBuilder() {
           </div>
           {preview.sample && (
             <p className="mt-0.5 text-[11px] text-surface-500">
-              Rendered against your real {preview.sample.kind}: <span className="font-medium text-surface-700">{preview.sample.title}</span>
+              Sample {preview.sample.kind}: <span className="font-medium text-surface-700">{preview.sample.title}</span>
             </p>
           )}
 
           <pre ref={scrollChaining} className="mt-2 max-h-80 overflow-auto rounded-md bg-surface-950 p-2.5 font-mono text-[10.5px] leading-[1.5] text-surface-100">
-{preview.jsonLd ? JSON.stringify(preview.jsonLd, null, 2) : 'Nothing resolved — every property is either unused or empty in your Shopify data.'}
+{preview.jsonLd ? JSON.stringify(preview.jsonLd, null, 2) : 'Nothing resolved.'}
           </pre>
 
           {/* Why a property is absent, stated per property. An empty box with no explanation is
@@ -406,10 +400,7 @@ export default function SchemaTemplateBuilder() {
 
       {/* ── What this does not do yet ────────────────────────────── */}
       <div className="rounded-md border border-info-100 bg-info-50 px-2.5 py-2 text-[11px] leading-[1.45] text-info-800">
-        <span className="font-semibold">Nothing here is on your storefront yet.</span> Rankvora AI generates, previews and
-        validates this schema from your real Shopify data. Putting it on the page needs a Shopify theme app extension,
-        which is the next piece of work — until it ships, the Schema audit above still reports what your theme renders
-        on its own.
+        <span className="font-semibold">Nothing here is on your storefront yet.</span>
       </div>
     </div>
   );

@@ -195,7 +195,7 @@ export default function InvestigationDrawer({ finding, evidence, selectedRows = 
               </div>
             ) : preview.length === 0 ? (
               <p className="mt-1.5 rounded-md bg-surface-50 px-2.5 py-2 text-[11.5px] text-surface-500">
-                No sampled items for this issue in the current crawl extract.
+                No sampled items.
               </p>
             ) : (
               <ul className="mt-1.5 space-y-1.5">
@@ -251,7 +251,7 @@ export default function InvestigationDrawer({ finding, evidence, selectedRows = 
           <section className="mt-3 rounded-md border border-brand-100 bg-brand-50/60 p-3">
             <h3 className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-700">
               <Lightbulb size={12} aria-hidden="true" />
-              Rankvora AI recommendation
+              Recommendation
             </h3>
             <p className="mt-1 text-[12.5px] leading-[1.5] text-surface-700">{finding.recommendation}</p>
             {/* What this recommendation covers, as measured. "Impact" and "Effort" stood here —

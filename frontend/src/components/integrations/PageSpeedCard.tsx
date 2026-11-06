@@ -137,7 +137,7 @@ function ReportPanel({ report, showFieldNotice }: { report: PageSpeedReport; sho
       ) : showFieldNotice ? (
         <p className="mt-1.5 rounded-md bg-surface-50 px-2 py-1 text-[10.5px] leading-[1.4] text-surface-600">
           {/* A real absence, said plainly. Not an error, and not filled in from the lab run below. */}
-          No real-visitor data for this device yet — INP cannot be shown until it exists.
+          No real-visitor data for this device yet.
         </p>
       ) : null}
 
@@ -157,7 +157,7 @@ function ReportPanel({ report, showFieldNotice }: { report: PageSpeedReport; sho
 
       {report.opportunities.length > 0 && (
         <div className="mt-1.5">
-          <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-surface-500">Biggest savings Google costed</p>
+          <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-surface-500">Top savings</p>
           <ul className="mt-0.5 divide-y divide-surface-100">
             {report.opportunities.slice(0, 3).map((opportunity) => (
               <li key={opportunity.id} className="flex items-center justify-between gap-2 py-[3px]">
@@ -257,13 +257,7 @@ export default function PageSpeedCard({ onHealthChange }: PageSpeedCardProps = {
           <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-surface-100 text-surface-700">
             <Gauge size={17} aria-hidden="true" />
           </span>
-          <div className="min-w-0">
-            <h3 className="text-[12.5px] font-bold text-surface-950">PageSpeed Insights</h3>
-            <p className="mt-0.5 text-[11.5px] leading-[1.4] text-surface-500">
-              How fast your storefront actually is — Core Web Vitals from real Chrome visitors, and
-              a Lighthouse lab test that says what to fix first.
-            </p>
-          </div>
+          <h3 className="min-w-0 self-center text-[12.5px] font-bold text-surface-950">PageSpeed Insights</h3>
         </div>
 
         {health && <StatusBadge label={health.badge.label} tone={health.badge.tone} />}
@@ -295,9 +289,7 @@ export default function PageSpeedCard({ onHealthChange }: PageSpeedCardProps = {
       {/* ── Nothing to measure ───────────────────────────────────── */}
       {status && !status.storefrontUrl && (
         <p className="mt-2 rounded-md bg-surface-50 px-2.5 py-2 text-[11.5px] leading-[1.4] text-surface-600">
-          There is no storefront to measure yet. PageSpeed Insights measures your live public store,
-          so connect your Shopify store in the panel above first. Nothing needs to be set up for
-          PageSpeed itself — it asks for no account and no permissions.
+          Connect your Shopify store above to measure it.
         </p>
       )}
 
@@ -312,9 +304,7 @@ export default function PageSpeedCard({ onHealthChange }: PageSpeedCardProps = {
 
           {status.reports.length === 0 ? (
             <p className="mt-2 text-[11.5px] leading-[1.4] text-surface-500">
-              No measurement has been taken yet, so nothing is known about this store's speed —
-              and nothing is estimated in its place. A run asks Google to load your storefront on an
-              emulated phone and on desktop; it usually takes under a minute.
+              Not measured yet.
             </p>
           ) : (
             <>
@@ -323,10 +313,7 @@ export default function PageSpeedCard({ onHealthChange }: PageSpeedCardProps = {
                   paragraph twice. Per-device only when the two genuinely differ. */}
               {status.reports.every((report) => !report.field) && (
                 <p className="mt-2 rounded-md bg-surface-50 px-2.5 py-1.5 text-[11px] leading-[1.4] text-surface-600">
-                  Google has no real-visitor data for this page yet — that needs enough Chrome
-                  visits to report anonymously, so a new or quiet store has none. It is not a
-                  measurement of zero, and INP cannot be shown at all until it exists. The lab test
-                  below always runs.
+                  No real-visitor data yet. Lab results only.
                 </p>
               )}
 
@@ -349,13 +336,13 @@ export default function PageSpeedCard({ onHealthChange }: PageSpeedCardProps = {
 
           <div className="mt-2.5 flex flex-wrap items-center gap-2 border-t border-surface-100 pt-2">
             <Button onClick={() => void handleRun()} loading={running}>
-              {running ? 'Measuring…' : status.reports.length === 0 ? 'Run first measurement' : 'Measure again'}
+              {running ? 'Measuring…' : status.reports.length === 0 ? 'Run measurement' : 'Measure again'}
             </Button>
             {running && (
               // Said before the wait, not discovered during it. Google is loading the storefront
               // in a real browser; a spinner with no explanation reads as a hang.
               <p className="text-[11px] leading-[1.4] text-surface-500">
-                Google is loading your storefront in a real browser. This usually takes up to {EXPECTED_RUN_SECONDS} seconds.
+                Takes up to {EXPECTED_RUN_SECONDS} seconds.
               </p>
             )}
             {!running && (
@@ -374,8 +361,7 @@ export default function PageSpeedCard({ onHealthChange }: PageSpeedCardProps = {
             // An operator note, kept quiet and kept honest: the connector works without a key, and
             // this explains the rate-limiting that a shared anonymous quota can cause.
             <p className="mt-1.5 text-[10.5px] leading-[1.4] text-surface-400">
-              This server calls PageSpeed Insights without an API key, on Google's shared anonymous
-              quota. Set PAGESPEED_API_KEY to give it a quota of its own.
+              No API key set — using Google's shared quota.
             </p>
           )}
 

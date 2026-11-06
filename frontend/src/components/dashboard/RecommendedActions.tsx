@@ -46,7 +46,6 @@ export default function RecommendedActions({ actions }: Props) {
             <CheckCircle2 size={20} aria-hidden="true" />
           </span>
           <p className="text-[12.5px] font-semibold text-surface-900">Nothing to recommend</p>
-          <p className="text-[11.5px] text-surface-500">The latest analysis found no open issues to act on.</p>
         </div>
       ) : (
         <ol className="px-3.5 py-0.5">

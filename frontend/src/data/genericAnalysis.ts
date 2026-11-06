@@ -15,7 +15,7 @@
 // "never displayed" is a property of code that can change; a zero cannot be mistaken for a
 // measurement, and a fabricated number can.
 //
-// What this DOES legitimately carry is the static presentation config: titles, descriptions,
+// What this DOES legitimately carry is the static presentation config: titles,
 // column definitions, search keys and the LABELS beside each total ("Products", "Healthy",
 // "Issues"). Those describe what a sub-pillar measures, not what it found.
 
@@ -50,7 +50,7 @@ function normalizeCells(cells: Record<string, TableCellValue>): Record<string, C
 function emptyEvidence(config: GenericSubPillarConfig): EvidenceConfig {
   return {
     title: `${config.title} Evidence`,
-    caption: `Evidence from the latest ${config.title} analysis`,
+    caption: '',
     searchPlaceholder: 'Search evidence…',
     searchKeys: ['item', 'issue'],
     columns: [
@@ -97,7 +97,6 @@ export function buildAnalysis(routeKey: string, config: GenericSubPillarConfig, 
   return {
     slug: routeKey,
     title: config.title,
-    description: config.description,
     supportsBulkFix: true,
     bulkFixMode: 'generic',
     // Replaced by the API before render. Empty rather than a sentence describing numbers that

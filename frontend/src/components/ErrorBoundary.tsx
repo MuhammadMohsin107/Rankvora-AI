@@ -52,11 +52,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-critical-50 text-critical-600">
             <AlertTriangle size={20} aria-hidden="true" />
           </span>
-          <h1 className="mt-3 text-[15px] font-semibold text-surface-950">Something went wrong on this screen</h1>
-          <p className="mt-1.5 text-[12.5px] leading-[1.5] text-surface-500">
-            Rankvora AI hit an error it could not recover from. Your data is unaffected — nothing was
-            being saved when this happened.
-          </p>
+          <h1 className="mt-3 text-[15px] font-semibold text-surface-950">Something went wrong</h1>
 
           {/* The real message, not a generic one. Someone reporting this can paste something
               actionable instead of "the page went white". */}

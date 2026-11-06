@@ -94,22 +94,19 @@ export default function Notifications() {
               tell the merchant there is nothing, when the truth is that nobody could look. */}
           {status === 'error' && items.length === 0 && (
             <div className="px-3 py-8 text-center">
-              <p className="text-[12.5px] font-medium text-surface-700">Your notifications could not be loaded.</p>
+              <p className="text-[12.5px] font-medium text-surface-700">Notifications could not be loaded.</p>
               <Button variant="secondary" onClick={() => void loadNotifications()} className="mt-2">Try again</Button>
             </div>
           )}
 
           {/* Notifications are written only by events that happened — a finished or failed audit,
               a failed sync, an expired token, an uninstall. An empty list is therefore a real
-              state, not a loading gap, and it says what would put something here. Shown only
+              state, not a loading gap. Shown only
               after a load that succeeded. */}
           {status === 'ready' && items.length === 0 && (
             <div className="px-3 py-8 text-center">
               <BellOff size={18} className="mx-auto text-surface-300" aria-hidden="true" />
               <p className="mt-2 text-[12.5px] font-medium text-surface-700">No notifications yet</p>
-              <p className="mt-1 text-[11.5px] leading-[1.45] text-surface-500">
-                Rankvora AI will tell you here when an audit finishes or could not finish, when a pillar score moves, when your store connection changes — connected, expired or removed — and, if you have it switched on, with a summary every Monday.
-              </p>
             </div>
           )}
 

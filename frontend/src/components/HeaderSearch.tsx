@@ -270,10 +270,6 @@ export default function HeaderSearch({ className = '' }: { className?: string })
                   />
                 ))}
               </Group>
-
-              <p className="px-3 py-1 text-[10.5px] leading-[1.4] text-surface-400">
-                Type to search every page and every open issue from your latest audit.
-              </p>
             </>
           )}
 
@@ -302,7 +298,7 @@ export default function HeaderSearch({ className = '' }: { className?: string })
               // A statement about the request, never about the store.
               <p className="flex items-start gap-1.5 px-3 py-1.5 text-[11.5px] leading-[1.4] text-critical-700">
                 <AlertCircle size={12} className="mt-px flex-shrink-0" aria-hidden="true" />
-                Issues could not be searched just now. The pages above still work.
+                Issues could not be searched.
               </p>
             ) : issues.length === 0 ? (
               <p className="px-3 py-1.5 text-[11.5px] text-surface-500">

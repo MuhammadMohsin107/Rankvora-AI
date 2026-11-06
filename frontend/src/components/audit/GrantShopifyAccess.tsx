@@ -33,7 +33,7 @@ export default function GrantShopifyAccess({ scope }: { scope: string }) {
       // Navigates away to Shopify; nothing changes here until Shopify redirects back.
       await beginShopifyInstall(status.shopDomain);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not open Shopify. Please try again.');
+      setError(err instanceof ApiError ? err.message : 'Could not open Shopify. Try again.');
       setBusy(false);
     }
   };

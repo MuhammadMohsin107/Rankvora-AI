@@ -116,20 +116,20 @@ const refOf = (proposal: Pick<AiFixProposal, 'resourceType' | 'resourceId'>) => 
 const AUTO_GENERATE_LIMIT = 5;
 
 const UNAVAILABLE_TEXT: Record<string, string> = {
-  disabled: 'AI drafting is turned off on this server. Write the value yourself below.',
-  not_configured: 'AI drafting is not set up on this server yet — no model provider is configured. Write the value yourself below.',
-  off: 'AI drafting is not available on this server right now. Write the value yourself below.',
-  none: 'Rankvora AI did not write a value for this item. Try again, or write one yourself.',
-  unavailable: 'The AI service could not draft this right now. Try again, or write the value yourself.',
-  not_fixable: 'Rankvora AI cannot write a value for this issue.',
-  nothing_to_fix: 'There is nothing to fix for this item in the latest analysis.',
+  disabled: 'AI drafting is turned off. Write the value yourself.',
+  not_configured: 'AI drafting is not set up. Write the value yourself.',
+  off: 'AI drafting is unavailable. Write the value yourself.',
+  none: 'No value was written. Try again, or write one yourself.',
+  unavailable: 'AI could not draft this. Try again, or write it yourself.',
+  not_fixable: 'No automatic fix for this issue.',
+  nothing_to_fix: 'Nothing to fix for this item.',
 };
 
 const REAUDIT_TEXT: Record<ApplyFixesResult['reaudit'], string> = {
-  queued: 'Rankvora AI is re-analyzing your store to confirm the fix — progress is shown at the top of the page.',
-  'already-running': 'An analysis was already running when this was saved. Press Re-analyze when it finishes to confirm the fix.',
+  queued: 'Re-analyzing your store to confirm the fix.',
+  'already-running': 'Re-analyze after the running analysis to confirm the fix.',
   'not-needed': '',
-  failed: 'Press Re-analyze to update your scores with this change.',
+  failed: 'Re-analyze to update your scores.',
 };
 
 function rowName(row: EvidenceRow): string {
@@ -254,7 +254,7 @@ export default function InvestigationFix({ finding, rows, capability, autoGenera
           for (const row of rows) {
             const held = proposals.find((proposal) => refOf(proposal) === row.id && proposal.field === field.field);
             if (held?.status === 'applied') {
-              next[row.id] = { ...EMPTY, phase: 'applied', appliedValue: held.proposedValue, savedNote: 'Saved to your store from Rankvora AI.' };
+              next[row.id] = { ...EMPTY, phase: 'applied', appliedValue: held.proposedValue, savedNote: 'Saved to your store.' };
             } else if (held?.status === 'proposed') {
               next[row.id] = {
                 ...EMPTY, phase: 'draft', proposalId: held.id, draft: held.proposedValue, reason: held.reason, model: held.model,
@@ -282,10 +282,10 @@ export default function InvestigationFix({ finding, rows, capability, autoGenera
   const problemWith = (row: EvidenceRow, value: string): string | null => {
     const normalized = normalizeValue(value);
     if (!normalized) return `Write the ${field.label.toLowerCase()} first.`;
-    if (/[\r\n]/.test(value)) return 'Keep it to a single line — a meta tag cannot carry line breaks.';
+    if (/[\r\n]/.test(value)) return 'Keep it to a single line.';
     if (normalized.length < minLength) return `${normalized.length} characters — at least ${minLength} are needed.`;
     if (normalized.length > maxLength) return `${normalized.length} characters — keep it to ${maxLength} or fewer.`;
-    if (normalized === normalizeValue(row.current?.value ?? '')) return 'This is the same as the current value.';
+    if (normalized === normalizeValue(row.current?.value ?? '')) return 'Same as the current value.';
     return null;
   };
 
@@ -305,14 +305,14 @@ export default function InvestigationFix({ finding, rows, capability, autoGenera
         if (result.reauditJobId) followAuditRun(result.reauditJobId);
         onApplied?.(row.id, trimmed);
       } else {
-        patch(row.id, { saving: false, saveError: outcome?.detail ?? 'Your store did not accept this change. Nothing was saved.' });
+        patch(row.id, { saving: false, saveError: outcome?.detail ?? 'Your store did not accept this change.' });
       }
     } catch (error) {
       patch(row.id, {
         saving: false,
         saveError: error instanceof ApiError && [400, 403, 409, 429, 502].includes(error.status)
           ? error.message
-          : 'Rankvora AI could not save this to your store. Nothing was changed — please try again.',
+          : 'Could not save to your store. Try again.',
       });
     }
   };
@@ -374,7 +374,7 @@ export default function InvestigationFix({ finding, rows, capability, autoGenera
                 </p>
 
                 {loadingEarlier && item.phase === 'idle' && (
-                  <p className="mt-1 text-[11.5px] text-surface-500">Checking for a fix already written for this {noun}…</p>
+                  <p className="mt-1 text-[11.5px] text-surface-500">Checking for an earlier fix…</p>
                 )}
 
                 {item.phase === 'generating' && (
@@ -382,8 +382,8 @@ export default function InvestigationFix({ finding, rows, capability, autoGenera
                     <Loader2 size={14} className="mt-0.5 flex-shrink-0 animate-spin text-brand-600 motion-reduce:animate-none" aria-hidden="true" />
                     <p className="text-[11.5px] leading-[1.45] text-brand-800">
                       {fromTemplate
-                        ? `Filling the alt-text template with this ${noun}'s own details…`
-                        : `Reading this ${noun}'s current content from your store and writing an optimized ${field.label.toLowerCase()} for it…`}
+                        ? 'Filling from your template…'
+                        : `Writing the ${field.label.toLowerCase()}…`}
                     </p>
                   </div>
                 )}
@@ -397,7 +397,7 @@ export default function InvestigationFix({ finding, rows, capability, autoGenera
 
                 {item.phase === 'idle' && !loadingEarlier && item.mode === 'view' && (
                   <p className="mt-1 text-[11.5px] text-surface-500">
-                    {canDraft ? `No fix written yet for this ${noun}.` : 'Write the value yourself below.'}
+                    {canDraft ? 'No fix written yet.' : 'Write the value yourself.'}
                   </p>
                 )}
 
@@ -412,9 +412,9 @@ export default function InvestigationFix({ finding, rows, capability, autoGenera
                     {item.reason && <p className="mt-1 text-[11px] leading-[1.45] text-surface-600">{item.reason}</p>}
                     <p className={`mt-1 items-center gap-1 text-[10.5px] text-surface-500 ${item.source === 'template' || item.source === null ? 'hidden' : 'flex'}`}>
                       <Store size={11} aria-hidden="true" />
-                      {item.source === 'store' && `Written from this ${noun}'s current content in your store.`}
-                      {item.source === 'audit' && `Written from your last analysis — your store could not be read just now.`}
-                      {item.source === 'earlier' && 'Drafted earlier for this item. Regenerate for a fresh one.'}
+                      {item.source === 'store' && 'Written from your store.'}
+                      {item.source === 'audit' && 'Written from your last analysis.'}
+                      {item.source === 'earlier' && 'Drafted earlier.'}
                     </p>
                   </>
                 )}
@@ -499,7 +499,7 @@ export default function InvestigationFix({ finding, rows, capability, autoGenera
 
       {rows.length > AUTO_GENERATE_LIMIT && (
         <p className="text-[10.5px] text-surface-500">
-          The first {AUTO_GENERATE_LIMIT} are drafted at a time. Use Generate fixes in the table to write many at once.
+          The first {AUTO_GENERATE_LIMIT} are drafted. Use Generate fixes in the table for more.
         </p>
       )}
     </div>

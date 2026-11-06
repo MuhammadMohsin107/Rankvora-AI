@@ -48,16 +48,16 @@ function formatPercent(fraction: number): string {
  */
 function describeLoadFailure(error: unknown): string {
   if (!(error instanceof ApiError)) {
-    return 'Could not reach the Rankvora AI API. Check that the backend is running.';
+    return 'Could not reach the Rankvora AI API.';
   }
   if (error.status === 404) {
     return error.code === 'STORE_NOT_FOUND'
-      ? 'This account has no store yet. Create or connect a store first.'
-      : 'This server has no Google Analytics endpoint. The API is running an older build — redeploy and restart it.';
+      ? 'This account has no store yet. Connect a store first.'
+      : 'This server has no Google Analytics endpoint. Redeploy the API.';
   }
-  if (error.status === 401) return 'Your session has expired. Open Rankvora AI again from your Shopify admin.';
+  if (error.status === 401) return 'Session expired. Reopen Rankvora AI from your Shopify admin.';
   return error.status >= 500
-    ? `The server could not read the connection state (HTTP ${error.status}). ${error.message}`
+    ? `Server error (HTTP ${error.status}). ${error.message}`
     : error.message;
 }
 
@@ -71,17 +71,17 @@ function describeLoadFailure(error: unknown): string {
  */
 function describePropertyListFailure(error: unknown): string {
   if (!(error instanceof ApiError)) {
-    return 'Could not reach the Rankvora AI API to list this account’s GA4 properties.';
+    return 'Could not reach the Rankvora AI API.';
   }
   switch (error.status) {
     case 401:
-      return 'Google would not accept this connection when listing properties. Reconnect Google, then choose a property.';
+      return 'Google rejected this connection. Reconnect Google.';
     case 403:
       // Account-level, so it is not "no access to that property" — the usual cause is the
       // Analytics Admin API being off for the server's Google Cloud project.
-      return 'Google refused to list this account’s GA4 properties. Check that the Analytics Admin API is enabled for this server’s Google Cloud project.';
+      return 'Google refused to list properties. Check the Analytics Admin API is enabled for this server.';
     case 409:
-      return 'The Google connection ended before the properties could be listed. Connect Google again.';
+      return 'The Google connection ended. Connect again.';
     default:
       return error.message;
   }
@@ -186,8 +186,8 @@ export default function GoogleAnalyticsCard({ onHealthChange }: GoogleAnalyticsC
     } catch (err) {
       setError(
         err instanceof ApiError && err.status === 503
-          ? 'Google is not configured on this server yet.'
-          : 'We could not start the Google connection. Please try again.',
+          ? 'Google is not configured on this server.'
+          : 'Could not start the Google connection.',
       );
       setBusy(false);
     }
@@ -204,7 +204,7 @@ export default function GoogleAnalyticsCard({ onHealthChange }: GoogleAnalyticsC
       setError(
         err instanceof ApiError && [400, 401, 403, 409].includes(err.status)
           ? err.message
-          : 'We could not read that property. Please try again.',
+          : 'Could not read that property.',
       );
     } finally {
       // The status the selection returned predates the read that followed it: a success stamped a
@@ -244,13 +244,7 @@ export default function GoogleAnalyticsCard({ onHealthChange }: GoogleAnalyticsC
           <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-surface-100 text-surface-700">
             <BarChart3 size={17} aria-hidden="true" />
           </span>
-          <div className="min-w-0">
-            <h3 className="text-[12.5px] font-bold text-surface-950">Google Analytics</h3>
-            <p className="mt-0.5 text-[11.5px] leading-[1.4] text-surface-500">
-              What happened after the click — which landing pages held attention, where visits came
-              from, and which of them converted.
-            </p>
-          </div>
+          <h3 className="min-w-0 self-center text-[12.5px] font-bold text-surface-950">Google Analytics</h3>
         </div>
 
         {/* Was a green "Connected" for any grant carrying the Analytics scope — before a property was
@@ -276,7 +270,7 @@ export default function GoogleAnalyticsCard({ onHealthChange }: GoogleAnalyticsC
       {/* ── Not configured: an operator problem, not a merchant one ─── */}
       {status && !status.configured && (
         <p className="mt-2 rounded-md bg-surface-50 px-2.5 py-2 text-[11.5px] leading-[1.4] text-surface-600">
-          Not available on this server yet — Google OAuth credentials have not been configured.
+          Google sign-in is not configured on this server.
         </p>
       )}
 
@@ -284,8 +278,7 @@ export default function GoogleAnalyticsCard({ onHealthChange }: GoogleAnalyticsC
       {status?.configured && !status.connected && (
         <div className="mt-2.5 border-t border-surface-100 pt-2.5">
           <p className="text-[11.5px] leading-[1.4] text-surface-500">
-            Rankvora AI requests read-only access. It can read your Analytics reports and cannot change
-            anything in Google Analytics.
+            Read-only access. Rankvora AI cannot change anything in Google Analytics.
           </p>
           <div className="mt-2">
             <Button onClick={() => void handleConnect()} disabled={busy}>
@@ -301,8 +294,7 @@ export default function GoogleAnalyticsCard({ onHealthChange }: GoogleAnalyticsC
           <p className="rounded-md border border-warning-100 bg-warning-50 px-2.5 py-2 text-[11.5px] leading-[1.4] text-warning-800">
             {/* Not an error. The connection works — it just was not granted Analytics access, and
                 Google only issues scopes on fresh consent, so the fix is a reconnect. */}
-            This Google connection was made before Analytics access was added. Reconnect to grant
-            it. Your Search Console connection is unaffected.
+            This connection lacks Analytics access. Reconnect to grant it.
           </p>
           <div className="mt-2">
             <Button onClick={() => void handleConnect()} disabled={busy}>
@@ -319,14 +311,10 @@ export default function GoogleAnalyticsCard({ onHealthChange }: GoogleAnalyticsC
               above rows that looked exactly like the read-only fields elsewhere on this page, so
               the badge said "Setup incomplete" while the screen appeared to be reporting a property
               that was already in use — and the one action left was invisible. */}
-          <p className="text-[12px] font-semibold text-surface-800">One step left — choose the property for this store</p>
-          <p className="mt-0.5 text-[11.5px] leading-[1.4] text-surface-500">
-            {/* Never chosen automatically: an agency account routinely has dozens, and a guess
-                would report another client's traffic as this store's. */}
-            Connected as {status?.googleEmail ?? 'your Google account'}. Rankvora AI will not pick for
-            you — an agency account routinely has dozens, and a guess would report another client's
-            traffic as this store's. Select one below to finish setup.
-          </p>
+          {/* Never chosen automatically: an agency account routinely has dozens, and a guess
+              would report another client's traffic as this store's. */}
+          <p className="text-[12px] font-semibold text-surface-800">Choose a property</p>
+          <p className="mt-0.5 text-[11.5px] leading-[1.4] text-surface-500">Connected as {status?.googleEmail ?? 'your Google account'}.</p>
 
           {propertiesError ? (
             // The listing failed. Saying "can read no GA4 properties" here would invent Google's
@@ -340,17 +328,16 @@ export default function GoogleAnalyticsCard({ onHealthChange }: GoogleAnalyticsC
           ) : !propertiesLoaded ? (
             <p className="mt-2 flex items-center gap-1.5 text-[11.5px] text-surface-500">
               <Loader2 size={12} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
-              Reading the properties on this Google account…
+              Loading properties…
             </p>
           ) : properties.length === 0 ? (
             // Google answered, and the answer was none. Only reachable once a list came back.
             <p className="mt-2 text-[11.5px] leading-[1.4] text-surface-500">
-              This Google account can read no GA4 properties. Create one in Google Analytics, or ask
-              the property owner for at least Viewer access, then{' '}
+              No GA4 properties. Create one or get Viewer access, then{' '}
               <Button variant="ghost" onClick={() => void loadProperties()}>check again</Button>.
             </p>
           ) : (
-            // Scrolls: the note above this list says an agency account routinely has dozens, and
+            // Scrolls: an agency account routinely has dozens of properties, and
             // an un-capped list pushes the card past the fold before they reach the right one.
             <ul ref={scrollChaining} className="mt-2 max-h-56 space-y-1 overflow-y-auto pr-0.5">
               {properties.map((property) => (
@@ -433,9 +420,7 @@ export default function GoogleAnalyticsCard({ onHealthChange }: GoogleAnalyticsC
                 // because a property with no tag on the storefront stays empty forever and looks
                 // exactly like a broken connection.
                 <p className="mt-2 rounded-md bg-surface-50 px-2.5 py-2 text-[11.5px] leading-[1.4] text-surface-600">
-                  Google recorded no sessions for this property in this period. That is the real
-                  figure, not a connection problem. A new property stays empty until its measurement
-                  tag is installed on the storefront, and then for another 24-48 hours.
+                  No sessions in this period. Check the GA4 tag is installed on your storefront.
                 </p>
               )}
 

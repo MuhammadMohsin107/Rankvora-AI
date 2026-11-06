@@ -184,9 +184,9 @@ export default function SeoSubPillarPage({ analysis, configurator, extraSection 
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-100 text-surface-500">
             <Radar size={18} />
           </span>
-          <h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">{data.title} — not measured</h2>
+          <h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">Not measured</h2>
           <p className="mt-1 max-w-md text-[12.5px] leading-[1.5] text-surface-500">
-            {data.unavailableReason ?? 'Rankvora AI could not measure this check for your store.'}
+            {data.unavailableReason ?? 'This check could not be measured.'}
           </p>
           <p className="mt-2 text-[11px] text-surface-400">Last audit {data.lastAnalyzed}</p>
           {/* A missing permission is fixed in Shopify, through the same approval screen Connect
@@ -208,25 +208,19 @@ export default function SeoSubPillarPage({ analysis, configurator, extraSection 
             <Radar size={18} />
           </span>
           <h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">
-            No {analysis.title} audit available
+            No audit yet
           </h2>
           {loadMessage && <p className="mt-1 max-w-md text-[12.5px] leading-[1.5] text-surface-600">{loadMessage}</p>}
           {implemented === false ? (
             /* Rankvora AI has no check registered for this sub-pillar, so an audit run provably
                cannot populate it. Offering the button here would be a dead end. */
             <p className="mt-1 max-w-md text-[12.5px] leading-[1.5] text-surface-500">
-              Rankvora AI does not measure this check yet, so running an audit will not populate this
-              page. Support for it is still being built.
+              This check is not measured yet.
             </p>
           ) : (
-            <>
-              <p className="mt-1 max-w-sm text-[12.5px] leading-[1.5] text-surface-500">
-                Run an audit to generate real results for this check. Nothing on this page is estimated.
-              </p>
-              {/* Runs a real audit job and reloads this page's data when it finishes — it no
-                  longer just navigates to the dashboard while claiming to run one. */}
-              <RunAuditButton />
-            </>
+            /* Runs a real audit job and reloads this page's data when it finishes — it no
+               longer just navigates to the dashboard while claiming to run one. */
+            <RunAuditButton />
           )}
         </div>
       </div>
@@ -244,11 +238,9 @@ export default function SeoSubPillarPage({ analysis, configurator, extraSection 
             <AlertCircle size={18} />
           </span>
           <h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">
-            Unable to load {analysis.title} analysis
+            Unable to load
           </h2>
-          <p className="mt-1 max-w-sm text-[12.5px] leading-[1.5] text-surface-500">
-            {loadMessage ?? 'The analysis could not be retrieved.'} Your previous results are unaffected.
-          </p>
+          {loadMessage && <p className="mt-1 max-w-sm text-[12.5px] leading-[1.5] text-surface-500">{loadMessage}</p>}
           <Button variant="primary" onClick={() => load()} className="mt-3">
             
             Retry
@@ -274,10 +266,9 @@ export default function SeoSubPillarPage({ analysis, configurator, extraSection 
       secondaryActions={settingsAvailable ? [{ label: 'Settings', onClick: () => setSettingsOpen(true), accessibilityLabel: `${analysis.title} settings` }] : undefined}
     >
       <div className="page-shell">
-        {/* One line of context and when the audit last ran, on a single row: the title and the page's
-            actions are in the page frame, so there is no second title here. */}
-        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="page-subtitle min-w-0">{data.description}</p>
+        {/* When the audit last ran. The title and the page's actions are in the page frame, so there is
+            no second title here. */}
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-end">
           <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
             {/* A seeded fixture is never passed off as a measurement of the merchant's store. */}
             {data.source === 'seed' && (
@@ -316,8 +307,7 @@ export default function SeoSubPillarPage({ analysis, configurator, extraSection 
             <FindingsList
               findings={data.findings}
               onInvestigate={(finding) => setInvestigation({ finding, rows: [] })}
-              emptyTitle={`Excellent — no ${data.title} issues`}
-              emptyBody="Nothing was flagged in the latest analysis."
+              emptyTitle="No issues found"
             />
           </div>
 
@@ -348,11 +338,8 @@ export default function SeoSubPillarPage({ analysis, configurator, extraSection 
                     to={area.href}
                     className="group flex items-center justify-between gap-2 rounded-md border border-surface-200/80 bg-surface-0 px-2.5 py-1.5 transition-colors hover:border-brand-200 hover:bg-surface-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                   >
-                    <span className="min-w-0">
-                      <span className="block truncate text-[12.5px] font-medium text-surface-800 group-hover:text-brand-700">
-                        {area.label}
-                      </span>
-                      <span className="block truncate text-[10.5px] text-surface-500">{area.hint}</span>
+                    <span className="min-w-0 truncate text-[12.5px] font-medium text-surface-800 group-hover:text-brand-700">
+                      {area.label}
                     </span>
                     <ArrowRight
                       size={13}

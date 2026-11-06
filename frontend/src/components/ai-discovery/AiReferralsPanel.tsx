@@ -42,24 +42,24 @@ function formatDate(iso: string): string {
  */
 function describeFailure(error: unknown): { message: string; actionable: boolean } {
   if (!(error instanceof ApiError)) {
-    return { message: 'Could not reach the Rankvora AI API. Check that the backend is running.', actionable: false };
+    return { message: 'Could not reach the Rankvora AI API.', actionable: false };
   }
   switch (error.code) {
     case 'GOOGLE_NOT_CONNECTED':
-      return { message: 'Connect Google on the Integrations page to see which AI assistants send you traffic.', actionable: true };
+      return { message: 'Connect Google on the Integrations page.', actionable: true };
     case 'GA4_SCOPE_MISSING':
-      return { message: 'This Google connection was made before Analytics access was added. Reconnect Google on the Integrations page.', actionable: true };
+      return { message: 'This connection lacks Analytics access. Reconnect Google on the Integrations page.', actionable: true };
     case 'GA4_PROPERTY_NOT_SELECTED':
-      return { message: 'Choose which Analytics property this store reports on, on the Integrations page.', actionable: true };
+      return { message: 'Choose an Analytics property on the Integrations page.', actionable: true };
     case 'GA4_ACCESS_DENIED':
       return { message: error.message, actionable: true };
     default:
       break;
   }
   if (error.status === 404) {
-    return { message: 'This server has no AI referrals endpoint. The API is running an older build — redeploy and restart it.', actionable: false };
+    return { message: 'This server has no AI referrals endpoint. Redeploy the API.', actionable: false };
   }
-  if (error.status === 401) return { message: 'Your session has expired. Open Rankvora AI again from your Shopify admin.', actionable: false };
+  if (error.status === 401) return { message: 'Session expired. Reopen Rankvora AI from your Shopify admin.', actionable: false };
   return { message: error.message, actionable: false };
 }
 
@@ -91,14 +91,10 @@ export default function AiReferralsPanel() {
     <section className={cardClass} aria-labelledby="ai-referrals-title">
       <div className="flex flex-wrap items-start justify-between gap-2.5 border-b border-surface-100 px-3 py-2">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-surface-500">Outcome</p>
-          <h2 id="ai-referrals-title" className="mt-1 flex items-center gap-1.5 text-[15px] font-semibold tracking-tight text-surface-950">
+          <h2 id="ai-referrals-title" className="flex items-center gap-1.5 text-[15px] font-semibold tracking-tight text-surface-950">
             <TrendingUp size={15} className="text-brand-500" />
             AI referral traffic
           </h2>
-          <p className="mt-1 text-[12px] leading-[1.45] text-surface-500">
-            Visits that arrived from an AI assistant, read from your own Google Analytics property.
-          </p>
         </div>
         {/* The picker survives a failed read that was not a setup problem, so a period the property
             cannot answer for is never a dead end — otherwise a merchant who picked 90d and hit a
@@ -154,12 +150,12 @@ export default function AiReferralsPanel() {
             <MetricTile label="AI sessions" value={data.totals.sessions.toLocaleString()} detail={`of ${data.allSessions.toLocaleString()} total`} tone={data.totals.sessions > 0 ? 'info' : 'neutral'} />
             {/* No sessions at all is not a 0% share — there was nothing to take a share of. */}
             <MetricTile
-              label="Share of all traffic"
+              label="Share of traffic"
               value={data.totals.shareOfAllSessions === null ? '—' : formatPercent(data.totals.shareOfAllSessions)}
-              detail={data.totals.shareOfAllSessions === null ? 'no sessions recorded' : `${days}-day window`}
+              detail={data.totals.shareOfAllSessions === null ? 'no sessions' : `${days}-day window`}
             />
-            <MetricTile label="Engaged sessions" value={data.totals.engagedSessions.toLocaleString()} detail="AI referrals only" />
-            <MetricTile label="Conversions" value={data.totals.conversions.toLocaleString()} detail="AI referrals only" tone={data.totals.conversions > 0 ? 'success' : 'neutral'} />
+            <MetricTile label="Engaged sessions" value={data.totals.engagedSessions.toLocaleString()} />
+            <MetricTile label="Conversions" value={data.totals.conversions.toLocaleString()} tone={data.totals.conversions > 0 ? 'success' : 'neutral'} />
           </div>
 
           {data.platforms.length > 0 ? (
@@ -195,17 +191,14 @@ export default function AiReferralsPanel() {
             <div className="flex items-start gap-2 border-t border-surface-100 px-3 py-3.5">
               <Bot size={15} className="mt-0.5 flex-shrink-0 text-surface-400" />
               <p className="text-[12.5px] leading-[1.5] text-surface-600">
-                No sessions from any of the {data.platformsChecked} AI assistants Rankvora AI recognises arrived in this window.
-                Analytics answered — this is a real zero, not a missing reading.
+                No AI referral sessions in this window.
               </p>
             </div>
           )}
 
           {/* Permanent, not a tooltip. See the header. */}
           <p className="border-t border-surface-100 px-3 py-1.5 text-[11px] leading-[1.5] text-surface-500">
-            These are a <span className="font-medium text-surface-700">floor</span>, not a total. An assistant that
-            answers from your content without linking sends no referral, an in-app browser often arrives as direct, and a
-            shopper who searches your brand after reading an answer is counted as organic search.
+            A <span className="font-medium text-surface-700">floor</span>, not a total — answers without a link send no referral.
           </p>
         </>
       )}

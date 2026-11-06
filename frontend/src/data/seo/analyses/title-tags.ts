@@ -12,7 +12,6 @@ import { sortByCell, type SubPillarAnalysis } from '../subpillar.model';
 export const titleTagsAnalysis: SubPillarAnalysis = {
   slug: 'title-tags',
   title: 'Title Tags',
-  description: 'Evaluate how effectively your store uses unique, descriptive and search-friendly page titles.',
   supportsBulkFix: true,
   bulkFixMode: 'title-tags',
   summary: '',
@@ -58,9 +57,9 @@ export const titleTagsAnalysis: SubPillarAnalysis = {
     sorts: [sortByCell('length', 'Sort: title length', 'desc'), sortByCell('url', 'Sort: URL')],
   },
   relatedAreas: [
-    { label: 'Meta Descriptions', href: '/seo/meta-descriptions', hint: 'The other half of the search snippet' },
-    { label: 'Canonicals & Duplicates', href: '/seo/canonicals', hint: 'Where duplicate titles usually originate' },
-    { label: 'Schema / JSON-LD', href: '/seo/schema', hint: 'Structured data behind rich results' },
+    { label: 'Meta Descriptions', href: '/seo/meta-descriptions' },
+    { label: 'Canonicals & Duplicates', href: '/seo/canonicals' },
+    { label: 'Schema / JSON-LD', href: '/seo/schema' },
   ],
   lastAnalyzed: '',
 };

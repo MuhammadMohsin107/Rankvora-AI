@@ -132,7 +132,7 @@ export function SelectInput<T extends string>({
   return <SelectField id={id} label={label} details={hint} error={error} value={value} options={options} onChange={onChange} disabled={disabled} optionLabel={labelFor} />;
 }
 
-/** Toggle row: label, microcopy, switch — Polaris's `<s-switch>`. Microcopy is required. */
+/** Toggle row: label and switch — Polaris's `<s-switch>`. A line of microcopy only where the label alone would mislead. */
 export function ToggleRow({
   id,
   label,
@@ -143,7 +143,7 @@ export function ToggleRow({
 }: {
   id: string;
   label: string;
-  description: string;
+  description?: string;
   checked: boolean;
   onChange: (next: boolean) => void;
   disabled?: boolean;

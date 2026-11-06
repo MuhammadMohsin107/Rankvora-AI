@@ -95,7 +95,7 @@ async function startAnalysis(): Promise<'succeeded' | 'failed' | 'busy'> {
     set({
       state: 'error',
       error: {
-        message: err instanceof ApiError ? err.message : 'Could not start the audit run. Please try again.',
+        message: err instanceof ApiError ? err.message : 'Could not start the audit. Try again.',
         needsConnection: err instanceof ApiError && err.code === 'STORE_NOT_CONNECTED',
       },
     });
@@ -124,7 +124,7 @@ async function trackToEnd(jobId: number): Promise<'succeeded' | 'failed'> {
     });
     if (finished.status === 'failed') {
       // The job's own error is written by the runner and is already merchant-safe.
-      set({ state: 'error', error: { message: finished.error ?? 'The audit run failed. Please try again.', needsConnection: false } });
+      set({ state: 'error', error: { message: finished.error ?? 'The audit failed. Try again.', needsConnection: false } });
       return 'failed';
     }
     set({ state: 'idle', progress: 100, stage: null, completed: snapshot.completed + 1 });
@@ -133,7 +133,7 @@ async function trackToEnd(jobId: number): Promise<'succeeded' | 'failed'> {
     // The run itself may well be fine; what failed is asking how it is going.
     set({
       state: 'error',
-      error: { message: 'Rankvora AI could not check on the analysis. It may still be running — reload this page in a moment to see its results.', needsConnection: false },
+      error: { message: 'Could not check on the analysis. Reload in a moment.', needsConnection: false },
     });
     return 'failed';
   }

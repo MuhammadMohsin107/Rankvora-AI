@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, ClipboardCheck, Loader2, Sparkles } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import type { EvidenceRow, RowStatus } from '../../../data/seo/subpillar.model';
 import { applyFixes, fetchAiFixStatus, planAiFixes } from '../../../data/findings.repository';
 import { followAuditRun } from '../../../data/useAuditRun';
 import { titleFieldBounds } from '../../../data/fixBounds';
 import { ApiError } from '../../../lib/api';
-import { card, eyebrow } from './tone';
+import { card } from './tone';
 import Button from '../../../components/polaris/Button';
 import { TextAreaField } from '../../polaris/fields';
 
@@ -73,7 +73,7 @@ function validate(row: EvidenceRow, value: string, mode: 'title-tags' | 'generic
   if (mode === 'title-tags' && (trimmed.length < bounds.minLength || trimmed.length > bounds.maxLength)) {
     return `Use ${bounds.minLength}-${bounds.maxLength} characters`;
   }
-  if (trimmed === current) return 'Recommendation must meaningfully change the value';
+  if (trimmed === current) return 'Same as the current value';
   return null;
 }
 
@@ -226,27 +226,27 @@ export default function BulkFixWorkflow({
     // than being softened into wording that fits both and helps neither.
     if (!fromTemplate) {
       if (reasons.includes('disabled')) {
-        return 'AI drafting is turned off on this server. The recommendations below need to be written by hand.';
+        return 'AI drafting is turned off. Write the values yourself.';
       }
       if (reasons.includes('not_configured')) {
-        return 'AI drafting is not set up on this server yet — no model provider is configured. Ask your administrator to add the AI credentials, or write the values yourself.';
+        return 'AI drafting is not set up. Write the values yourself.';
       }
       if (reasons.includes('nothing_to_plan')) {
-        return 'These rows are not covered by AI drafting yet — write the values yourself, or edit the suggestions above.';
+        return 'AI drafting does not cover these rows. Write the values yourself.';
       }
     }
     if (reasons.includes('nothing_to_fix') || reasons.includes('not_fixable')) {
       return fromTemplate
         // Per-row reasons sit under each box and say which of these it was; this is the summary.
-        ? 'Nothing was filled in. Each row below says why — usually an image that already has alt text, or a template that produced nothing for it. Check your template in Image Alt Text settings, or write the values yourself.'
-        : 'Rankvora AI has no stored evidence for these rows to draft from, so nothing was requested. Re-analyze the store, or write the values yourself.';
+        ? 'Nothing was filled in. Each row says why.'
+        : 'Nothing to draft from. Re-analyze, or write the values yourself.';
     }
     if (reasons.includes('nothing_to_plan')) {
-      return 'These rows are not covered by automatic values yet — write them yourself, or edit the suggestions above.';
+      return 'These rows have no automatic values. Write them yourself.';
     }
     return fromTemplate
-      ? 'Your template could not be applied right now. Nothing has been filled in for you — the boxes are exactly as they were.'
-      : 'AI could not draft these right now. Nothing has been filled in for you — the boxes are exactly as they were.';
+      ? 'Your template could not be applied. Nothing was filled in.'
+      : 'AI could not draft these. Nothing was filled in.';
   };
 
   /**
@@ -381,9 +381,9 @@ export default function BulkFixWorkflow({
       // a merchant who sees "12 saved" and an unchanged score would reasonably assume a bug.
       const reaudit =
         result.reaudit === 'queued'
-          ? ' A fresh audit is running — scores update when it finishes.'
+          ? ' Scores update after the new audit.'
           : result.reaudit === 'already-running'
-            ? ' An audit is already running and will pick these up.'
+            ? ' The running audit will pick these up.'
             : '';
 
       // The reasons are carried IN the notice rather than promised somewhere else on screen. Every
@@ -403,7 +403,7 @@ export default function BulkFixWorkflow({
       setApplyNotice(
         error instanceof ApiError && [400, 403, 409, 429, 502].includes(error.status)
           ? error.message
-          : 'We could not save these changes to Shopify. Please try again.',
+          : 'Could not save to Shopify. Try again.',
       );
     } finally {
       setIsApplying(false);
@@ -425,9 +425,8 @@ export default function BulkFixWorkflow({
                 now writes to the merchant's live store, so it says so BEFORE the button is
                 pressed — "test mode" above a control that edits a real storefront is the most
                 expensive kind of wrong wording. */}
-            <p className={eyebrow}>Review before saving to Shopify</p>
-            <h2 id="bulk-fix-title" className="mt-0.5 text-[15px] font-semibold tracking-tight text-surface-950">Review {mode === 'title-tags' ? 'title tag' : 'recommended'} fixes</h2>
-            <p className="text-[11px] text-surface-500">Nothing changes until you press Save. Saved values are written to your live store.</p>
+            <h2 id="bulk-fix-title" className="text-[15px] font-semibold tracking-tight text-surface-950">Review fixes</h2>
+            <p className="text-[11px] text-surface-500">Saving writes to your live store.</p>
           </div>
           <Button variant="ghost" onClick={onClose} accessibilityLabel="Close review" icon="x" />
         </header>
@@ -435,7 +434,7 @@ export default function BulkFixWorkflow({
         {isGenerating ? (
           <div className="flex min-h-40 flex-col items-center justify-center gap-2 text-[12.5px] text-surface-600">
             <Loader2 size={18} className="animate-spin text-brand-600" />
-            Drafting recommendations from your store's own content…
+            Drafting…
           </div>
         ) : applied.length > 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 px-4 py-8 text-center">
@@ -449,8 +448,7 @@ export default function BulkFixWorkflow({
                 that is still live. There is no safe local undo for a remote write, so the screen
                 says where the real one is instead of faking one. */}
             <p className="max-w-md text-[12.5px] text-surface-600">
-              These values are now live on your store. A fresh audit is running — scores update when
-              it finishes. To change one back, edit it in Shopify admin under Search engine listing.
+              Now live on your store. To change one back, edit it in Shopify admin.
             </p>
             <div className="mt-1 flex flex-wrap justify-center gap-1.5">
               <Button variant="ghost" onClick={() => setShowHistory((value) => !value)}>What changed</Button>
@@ -580,8 +578,7 @@ export default function BulkFixWorkflow({
               </div>
             </div>
             <footer className="flex flex-col-reverse gap-2 border-t border-surface-200 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-              <div className="inline-flex items-center gap-1.5 text-[11.5px] text-surface-500"><ClipboardCheck size={13} /> Validated before saving to your live store</div>
-              <div className="flex flex-col items-end gap-1.5">
+              <div className="flex flex-col items-end gap-1.5 sm:ml-auto">
                 {/* Says plainly what the button does. It used to read "Apply N test fixes" while
                     only rewriting the table — the wording was accurate and the behaviour was the
                     problem. Both are fixed: this writes to Shopify, and it says so. */}
@@ -593,7 +590,7 @@ export default function BulkFixWorkflow({
                 {ready.length > writable.length && (
                   <p className="text-[11px] leading-[1.4] text-surface-500">
                     {ready.length - writable.length} row{ready.length - writable.length === 1 ? '' : 's'} can't be saved
-                    from here — Rankvora AI has no stored evidence linking them to a finding. Update those in Shopify admin.
+                    here. Update {ready.length - writable.length === 1 ? 'it' : 'them'} in Shopify admin.
                   </p>
                 )}
                 <div className="flex justify-end gap-1.5">

@@ -30,7 +30,7 @@ export const croTables: Record<string, GenericSubPillarDetails> = {
     },
   ),
   'cro/cart-recovery': details(
-    'Cart Recovery Flow Coverage',
+    'Cart Recovery Coverage',
     'Recovery journeys available for abandoned-cart shoppers.',
     'Search by flow…',
     {
@@ -102,7 +102,7 @@ export const croTables: Record<string, GenericSubPillarDetails> = {
     },
   ),
   'cro/locator': details(
-    'Store Locator Data Quality',
+    'Store Locator Quality',
     'Store-locator presence as it renders on the storefront.',
     'Search by location…',
     {

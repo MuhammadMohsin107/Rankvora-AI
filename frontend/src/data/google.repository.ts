@@ -94,7 +94,7 @@ export function describeGoogleOutcome(
   if (outcome === 'connected') {
     return {
       tone: 'success',
-      message: 'Google Search Console connected. Choose which property this store reports on.',
+      message: 'Google connected. Choose a property.',
     };
   }
   if (outcome !== 'failed') return null;
@@ -102,16 +102,16 @@ export function describeGoogleOutcome(
   const message = (() => {
     switch (reason) {
       case 'GOOGLE_ACCESS_DENIED':
-        return 'Google access was not granted. Nothing was connected.';
+        return 'Google access was not granted.';
       case 'GOOGLE_NO_REFRESH_TOKEN':
         // The one failure the merchant must act on outside Rankvora AI, so it says exactly where to go.
         return 'Google did not return a renewable connection. Remove Rankvora AI at myaccount.google.com/permissions, then connect again.';
       case 'GOOGLE_STATE_INVALID':
-        return 'That connection link expired. Please try connecting again.';
+        return 'That link expired. Connect again.';
       case 'GOOGLE_NOT_CONFIGURED':
-        return 'Google Search Console is not configured on this server yet.';
+        return 'Search Console is not configured on this server.';
       default:
-        return 'Google Search Console could not be connected. Please try again.';
+        return 'Search Console could not be connected.';
     }
   })();
 

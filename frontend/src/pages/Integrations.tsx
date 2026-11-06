@@ -9,7 +9,6 @@ import {
   type HealthCheckedProvider,
   type IntegrationRecord,
 } from '../data/integrations.repository';
-import { isPillarVisible } from '../config/modules';
 import { isEmbedded } from '../lib/embedded';
 import { isGoogleProvider } from '../data/googleHealth';
 import { PAGESPEED_PROVIDER } from '../data/pagespeedHealth';
@@ -157,7 +156,7 @@ export default function Integrations() {
         tone: 'success',
         message:
           `Synced ${summary.products} products, ${summary.collections} collections, ` +
-          `${summary.pages} pages and ${summary.articles} articles from your store.${partial}`,
+          `${summary.pages} pages and ${summary.articles} articles.${partial}`,
       });
       await load();
     } catch (error) {
@@ -175,7 +174,7 @@ export default function Integrations() {
       setShopify(await disconnectShopify());
       setConfirmingDisconnect(false);
       setSelected(null);
-      setBanner({ tone: 'info', message: 'Shopify disconnected. Your previous audit history has been kept.' });
+      setBanner({ tone: 'info', message: 'Shopify disconnected. Audit history kept.' });
       await load();
     } catch (error) {
       setBanner({ tone: 'error', message: describeShopifyError(error) });
@@ -199,15 +198,13 @@ export default function Integrations() {
     // bar. What is left is the content, on the admin's own background.
     <AppPage heading="Integrations" primaryAction={{ label: 'Add integration', onClick: () => setIsAdding(true) }}>
     <div className="page-shell section-stack">
-      <p className="page-subtitle">Connect your data sources to give Rankvora AI the information it needs to analyze your store.</p>
-
       {banner && <BannerNotice banner={banner} onDismiss={() => setBanner(null)} />}
 
       <section className="grid grid-cols-2 gap-2 lg:grid-cols-4" aria-label="Integration summary">
-        <MetricTile label="Connected" value={connected} detail="Data sources active" tone="success" />
-        <MetricTile label="Needs attention" value={attention} detail="Action recommended" tone="warning" />
-        <MetricTile label="Available now" value={availableCount} detail="Connectors you can use" />
-        <MetricTile label="Last Shopify sync" value={shopify?.lastSyncedAt ? new Date(shopify.lastSyncedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Never'} detail="Most recent store read" tone="info" />
+        <MetricTile label="Connected" value={connected} tone="success" />
+        <MetricTile label="Needs attention" value={attention} tone="warning" />
+        <MetricTile label="Available" value={availableCount} />
+        <MetricTile label="Last Shopify sync" value={shopify?.lastSyncedAt ? new Date(shopify.lastSyncedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Never'} tone="info" />
       </section>
 
       <ShopifyPanel
@@ -259,7 +256,7 @@ export default function Integrations() {
         const groupRecords = records.filter((record) => record.group === group);
         return (
           <section key={group} className="space-y-2" aria-labelledby={`${group}-integrations`}>
-            <SectionHeading eyebrow="Connection group" title={group} />
+            <SectionHeading title={group} />
             {/* Three across from `sm` up, because every group holds three or fewer providers and
                 the previous md:2 / xl:3 left the third alone on its own row at most window
                 widths — a lone card beside dead space, which reads as a layout fault rather than
@@ -278,11 +275,6 @@ export default function Integrations() {
                       ? <StatusBadge label={record.badge?.label ?? record.status} tone={record.badge?.tone ?? statusTone[record.status]} />
                       : <StatusBadge label="Coming soon" tone="neutral" />}
                   </div>
-
-                  {/* line-clamp rather than a min-height: the cards align on their own because the
-                      action below is pushed to the bottom, so reserving space here only padded
-                      every card to fit the longest description in the group. */}
-                  <p className="mt-1.5 line-clamp-2 text-[11.5px] leading-[1.4] text-surface-500">{record.description}</p>
 
                   {record.notice && <p className="mt-1.5 rounded-md bg-warning-50 px-2 py-1 text-[11px] font-medium leading-[1.4] text-warning-700">{record.notice}</p>}
 
@@ -303,7 +295,7 @@ export default function Integrations() {
                       ? <Button variant="secondary" onClick={() => setSelected(record)}>View details</Button>
                       // No Connect action without a connector behind it. The previous build offered
                       // one for all six providers and "connected" them by writing a status column.
-                      : <p className="text-[11.5px] leading-[1.4] text-surface-500">Connector not available yet.</p>}
+                      : <p className="text-[11.5px] leading-[1.4] text-surface-500">Not available yet.</p>}
                   </div>
                 </article>
               ))}
@@ -312,7 +304,7 @@ export default function Integrations() {
         );
       })}
 
-      <Drawer open={Boolean(selected)} title={selected?.name ?? ''} eyebrow="Integration detail" onClose={() => setSelected(null)}>
+      <Drawer open={Boolean(selected)} title={selected?.name ?? ''} onClose={() => setSelected(null)}>
         {selected && (
           <div className="space-y-2">
             <div className="flex flex-wrap gap-2">
@@ -392,20 +384,16 @@ export default function Integrations() {
               </p>
             )}
 
-            <p className="text-[11px] leading-[1.4] text-surface-500">
-              {selected.id === 'shopify'
-                ? 'Manage this connection from the Shopify panel above.'
-                : selectedHealth
-                  // Said plainly, rather than the old "not available yet" — untrue of both Google
-                  // connectors, which are available and each have a panel on this page.
-                  ? `Manage this connection from the ${selected.name} panel above.`
-                  : 'This connector is not available yet. Nothing is connected.'}
-            </p>
+            {/* Only where it is true: Shopify and the health-checked connectors are available, each
+                with a panel on this page. */}
+            {selected.id !== 'shopify' && !selectedHealth && (
+              <p className="text-[11px] leading-[1.4] text-surface-500">Not available yet.</p>
+            )}
           </div>
         )}
       </Drawer>
 
-      <Drawer open={isAdding} title="Add an integration" eyebrow="Available data sources" onClose={() => setIsAdding(false)}>
+      <Drawer open={isAdding} title="Add integration" onClose={() => setIsAdding(false)}>
         <div className="space-y-2">
           {records.filter((record) => record.available && record.status === 'Not Connected').map((record) => (
             <button
@@ -414,29 +402,23 @@ export default function Integrations() {
               className="flex w-full items-center gap-2.5 rounded-lg border border-surface-200 p-2.5 text-left transition hover:border-brand-200 hover:bg-brand-50"
             >
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-surface-100"><Database size={16} /></div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[12px] font-bold text-surface-900">{record.name}</p>
-                <p className="mt-0.5 text-[11px] leading-[1.4] text-surface-500">{record.description}</p>
-              </div>
+              <p className="min-w-0 flex-1 text-[12px] font-bold text-surface-900">{record.name}</p>
               <span aria-hidden="true" className="text-surface-400">&#8250;</span>
             </button>
           ))}
-          <div className="rounded-md bg-surface-50 px-2.5 py-2 text-[11px] leading-[1.4] text-surface-500">
-            {records.some((record) => record.available && record.status === 'Not Connected')
-              ? 'Only Shopify has a live connector today. The remaining providers are listed on this page and will become connectable as their connectors ship.'
-              : 'Every available connector is already set up. The remaining providers will become connectable as their connectors ship.'}
-          </div>
+          {!records.some((record) => record.available && record.status === 'Not Connected') && (
+            <div className="rounded-md bg-surface-50 px-2.5 py-2 text-[11px] leading-[1.4] text-surface-500">
+              Every available connector is set up.
+            </div>
+          )}
         </div>
       </Drawer>
 
-      <Drawer open={confirmingDisconnect} title="Disconnect Shopify?" eyebrow="Confirm" onClose={() => setConfirmingDisconnect(false)}>
+      <Drawer open={confirmingDisconnect} title="Disconnect Shopify?" onClose={() => setConfirmingDisconnect(false)}>
         <div className="space-y-2">
           <p className="text-[12.5px] leading-[1.45] text-surface-700">
-            Rankvora AI will delete its stored Shopify credentials and stop reading data from
-            <span className="font-semibold text-surface-900"> {shopify?.shopDomain}</span>. New audits cannot run until you reconnect.
-          </p>
-          <p className="text-[12.5px] leading-[1.45] text-surface-700">
-            Your existing audit history, findings and reports are kept — disconnecting does not delete past analysis.
+            Rankvora AI will delete its Shopify credentials and stop reading
+            <span className="font-semibold text-surface-900"> {shopify?.shopDomain}</span>. No new audits until you reconnect; past audits and reports are kept.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button variant="danger" onClick={runDisconnect} disabled={busy === 'disconnecting'}>
@@ -486,14 +468,7 @@ function ShopifyPanel({ status, busy, shopInput, shopInputError, onShopInputChan
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex items-start gap-2.5">
           <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-surface-100 text-surface-700"><Database size={18} /></div>
-          <div className="min-w-0">
-            <h2 className="text-[13px] font-bold text-surface-950">Shopify</h2>
-            <p className="mt-0.5 max-w-xl text-[11.5px] leading-[1.4] text-surface-500">
-              {isPillarVisible('cro')
-                ? 'Connect your Shopify store to analyze SEO, content, performance, CRO and AI readiness.'
-                : 'Connect your Shopify store to analyze SEO, content, performance and AI readiness.'}
-            </p>
-          </div>
+          <h2 className="min-w-0 self-center text-[13px] font-bold text-surface-950">Shopify</h2>
         </div>
         <StatusBadge
           label={
@@ -508,7 +483,7 @@ function ShopifyPanel({ status, busy, shopInput, shopInputError, onShopInputChan
 
       {!status.configured && (
         <p className="mt-2 rounded-md border border-warning-100 bg-warning-50 px-2.5 py-1.5 text-[11px] leading-[1.4] text-warning-800">
-          Shopify is not configured on this server yet. An administrator needs to add the app credentials before stores can be connected.
+          Shopify is not configured on this server. An administrator must add the app credentials.
         </p>
       )}
 
@@ -518,7 +493,7 @@ function ShopifyPanel({ status, busy, shopInput, shopInputError, onShopInputChan
         // must start from a Shopify surface. Reloading opens the app for the shop again.
         <div className="mt-2 max-w-lg">
           <p className="text-[11.5px] leading-[1.45] text-surface-500">
-            Rankvora AI connects to this store by itself whenever you open it from your Shopify admin. If it shows as not connected, reload to try again.
+            Reload to reconnect this store.
           </p>
           <div className="mt-2">
             <Button onClick={() => window.location.reload()}>Reload</Button>
@@ -545,7 +520,7 @@ function ShopifyPanel({ status, busy, shopInput, shopInputError, onShopInputChan
           {/* The address only tells Shopify which admin to open. Approval happens in Shopify's own
               UI, and only its signed callback creates a connection here. */}
           <p className="mt-1.5 text-[11px] leading-[1.4] text-surface-500">
-            You'll be taken to Shopify to review the permissions Rankvora AI requests and approve them. Nothing is connected until you do.
+            You approve the permissions in Shopify before anything connects.
           </p>
         </div>
       ) : (
@@ -558,7 +533,7 @@ function ShopifyPanel({ status, busy, shopInput, shopInputError, onShopInputChan
 
           {status.status === 'reauthorization_required' && (
             <p className="rounded-md border border-warning-100 bg-warning-50 px-2.5 py-1.5 text-[11px] leading-[1.4] text-warning-800">
-              Shopify authorization has expired. Reconnect your store to resume audits.
+              Shopify authorization expired. Reconnect to resume audits.
             </p>
           )}
           {status.lastSyncError && (
@@ -567,7 +542,7 @@ function ShopifyPanel({ status, busy, shopInput, shopInputError, onShopInputChan
 
           {summary ? (
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-surface-500">Data read from your store</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-surface-500">Store data</p>
               <div className="mt-1.5 grid grid-cols-2 gap-2 sm:grid-cols-5">
                 <Field label="Products" value={String(summary.products)} />
                 <Field label="Collections" value={String(summary.collections)} />
@@ -577,7 +552,7 @@ function ShopifyPanel({ status, busy, shopInput, shopInputError, onShopInputChan
               </div>
               {summary.truncated.length > 0 && (
                 <p className="mt-2 text-[11.5px] leading-[1.4] text-warning-700">
-                  Your crawl scope limit was reached for {summary.truncated.join(', ')} — these counts are partial. Raise the page limit in Settings → Analysis to read more.
+                  Scope limit reached for {summary.truncated.join(', ')} — counts are partial.
                 </p>
               )}
               {summary.unavailable.length > 0 && (
@@ -586,7 +561,7 @@ function ShopifyPanel({ status, busy, shopInput, shopInputError, onShopInputChan
             </div>
           ) : (
             <p className="rounded-md bg-surface-50 px-2.5 py-1.5 text-[11px] leading-[1.4] text-surface-500">
-              No data has been read from this store yet. Run a sync to pull your catalog and content.
+              No data yet. Run a sync.
             </p>
           )}
 

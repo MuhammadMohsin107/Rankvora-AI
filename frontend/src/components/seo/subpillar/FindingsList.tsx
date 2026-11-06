@@ -1,21 +1,22 @@
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { affectedPhrase, type SubPillarFinding } from '../../../data/seo/subpillar.model';
 import SeverityBadge from './SeverityBadge';
-import { card, cardHeader, cardHeadingRow, cardTitle, eyebrow, toneStyles } from './tone';
+import { card, cardHeader, cardHeadingRow, cardTitle, toneStyles } from './tone';
 
 interface Props {
   findings: SubPillarFinding[];
   onInvestigate: (finding: SubPillarFinding) => void;
   /** Sub-pillar-specific empty-state copy. */
   emptyTitle: string;
-  emptyBody: string;
+  /** No longer shown: the title alone says it. Kept so existing callers still type-check. */
+  emptyBody?: string;
 }
 
 /**
  * Prioritized findings — severity first, each one stating what it costs
  * and opening the investigation drawer.
  */
-export default function FindingsList({ findings, onInvestigate, emptyTitle, emptyBody }: Props) {
+export default function FindingsList({ findings, onInvestigate, emptyTitle }: Props) {
   const open = findings.filter((finding) => finding.affected > 0);
 
   if (open.length === 0) {
@@ -32,7 +33,6 @@ export default function FindingsList({ findings, onInvestigate, emptyTitle, empt
         <h2 id="sp-findings-title" className="text-[12.5px] font-semibold text-surface-900">
           {emptyTitle}
         </h2>
-        <p className="text-[11.5px] text-surface-500">{emptyBody}</p>
       </section>
     );
   }
@@ -41,8 +41,7 @@ export default function FindingsList({ findings, onInvestigate, emptyTitle, empt
     <section className={`${card} overflow-hidden`} aria-labelledby="sp-findings-title">
       <div className={`${cardHeader} flex flex-wrap items-center justify-between gap-2`}>
         <div className={cardHeadingRow}>
-          <p className={eyebrow}>Findings</p>
-          <h2 id="sp-findings-title" className={cardTitle}>What Rankvora AI found</h2>
+          <h2 id="sp-findings-title" className={cardTitle}>Findings</h2>
         </div>
         <span className="rounded border border-surface-200 bg-surface-0 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-surface-600">
           {open.length} issue {open.length === 1 ? 'type' : 'types'}

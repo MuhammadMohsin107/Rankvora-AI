@@ -106,14 +106,14 @@ export const runPageSpeedMeasurement = () => api.post<PageSpeedStatus>('/pagespe
  */
 export function describePageSpeedFailure(error: unknown): string {
   if (!(error instanceof ApiError)) {
-    return 'Could not reach the Rankvora AI API. Check that the backend is running and that the app is pointed at it.';
+    return 'Could not reach the Rankvora AI API.';
   }
   if (error.status === 404) {
     return error.code === 'STORE_NOT_FOUND'
-      ? 'This account has no store yet. Connect your Shopify store first — PageSpeed Insights measures your public storefront.'
-      : 'This server has no PageSpeed Insights endpoint. The API is running an older build — redeploy and restart it.';
+      ? 'This account has no store yet. Connect your Shopify store first.'
+      : 'This server has no PageSpeed Insights endpoint. Redeploy the API.';
   }
-  if (error.status === 401) return 'Your session has expired. Open Rankvora AI again from your Shopify admin.';
+  if (error.status === 401) return 'Session expired. Reopen Rankvora AI from your Shopify admin.';
   // 409 (no storefront), 502 (Google refused or could not finish) and the rest already carry a
   // sentence written for the merchant.
   return error.message;

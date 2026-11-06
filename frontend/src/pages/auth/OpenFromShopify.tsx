@@ -28,7 +28,7 @@ const SHOWN_AS_SENT = new Set(['SHOPIFY_SHOP_INVALID', 'RATE_LIMITED']);
 
 function describeFailure(error: unknown): string {
   if (error instanceof ApiError && error.code && SHOWN_AS_SENT.has(error.code)) return error.message;
-  return 'Rankvora AI could not reach Shopify just now. Please try again in a moment.';
+  return 'Could not reach Shopify. Please try again.';
 }
 
 export default function OpenFromShopify() {
@@ -75,8 +75,7 @@ export default function OpenFromShopify() {
   return (
     <AuthLayout
       title="Open Rankvora AI"
-      subtitle="Enter your Shopify store address. Shopify will sign you in, and ask you to install Rankvora AI if your store doesn’t have it yet."
-      footer={<p>Rankvora AI runs inside your Shopify admin. You can also open it any time from Apps in your admin.</p>}
+      subtitle="Enter your Shopify store address to continue."
     >
       <div onKeyDown={onKeyDown}>
         <TextField
@@ -88,7 +87,6 @@ export default function OpenFromShopify() {
             setError(undefined);
           }}
           placeholder="my-store.myshopify.com"
-          details="Your .myshopify.com address. You can also paste the address from your Shopify admin."
           error={error}
           disabled={going}
         />

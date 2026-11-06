@@ -95,7 +95,7 @@ function CheckCallout({ check, showCurrent, editor, readOnly }: {
       {readOnly && check.verdict !== 'passing' && (
         <p className="mt-2 flex items-start gap-1.5 rounded-md bg-surface-0/70 px-2 py-1.5 text-[11.5px] leading-[1.5] text-surface-600 ring-1 ring-inset ring-surface-200">
           <Info size={13} className="mt-0.5 flex-shrink-0 text-surface-400" aria-hidden="true" />
-          Rankvora AI can’t change this in your store yet. What to change is described above; it is re-measured on every audit.
+          Rankvora AI can’t change this yet.
         </p>
       )}
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -134,10 +134,10 @@ function SearchPreview({ url, title, description }: { url: string | null; title:
       <p className="text-[11px] font-medium text-surface-500">Search result preview</p>
       <p className="mt-1.5 truncate text-[12px] text-surface-600">{url ?? 'URL not recorded'}</p>
       <p className={`mt-0.5 line-clamp-1 text-[16px] leading-snug ${title ? 'font-medium text-brand-700' : 'italic text-surface-400'}`}>
-        {title ?? 'Title tag not recorded in this audit'}
+        {title ?? 'Title tag not recorded'}
       </p>
       <p className={`mt-0.5 line-clamp-2 text-[12.5px] leading-[1.5] ${description ? 'text-surface-600' : 'italic text-surface-400'}`}>
-        {description ?? 'Meta description not recorded in this audit'}
+        {description ?? 'Meta description not recorded'}
       </p>
     </div>
   );
@@ -166,7 +166,7 @@ function MediaTable({ item, name, canFix, savedAlts, onSaved, onAddImage, imageA
         <div className="flex flex-col items-start gap-2 rounded-lg border border-success-200 bg-success-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="flex items-start gap-1.5 text-[12.5px] text-success-800">
             <CheckCircle2 size={15} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
-            An image was added to this product in Shopify. This page shows the last analysis, and updates when the one now running finishes.
+            Image added. This page updates after the next analysis.
           </p>
           <Button variant="secondary" onClick={onAddImage} className="flex-shrink-0">
             
@@ -177,14 +177,14 @@ function MediaTable({ item, name, canFix, savedAlts, onSaved, onAddImage, imageA
     }
     return item.imageCount === 0 ? (
       <div className="flex flex-col items-start gap-2 rounded-lg border border-dashed border-warning-300 bg-warning-50/60 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-[12.5px] text-surface-800">This product has no images. Shoppers cannot see what they would be buying.</p>
+        <p className="text-[12.5px] text-surface-800">This product has no images.</p>
         <Button variant="primary" onClick={onAddImage} className="flex-shrink-0">
           
           Add an image
         </Button>
       </div>
     ) : (
-      <p className="text-[12px] text-surface-500">The image-alt-text check did not record this product’s images in its sample for this audit.</p>
+      <p className="text-[12px] text-surface-500">Images not recorded in this audit.</p>
     );
   }
   const total = item.imageCount ?? item.images.length;
@@ -349,18 +349,14 @@ export default function CatalogDetail({ kind }: { kind: CatalogKind }) {
 
   if (state !== 'ready' || !catalog || !item) {
     const title = state === 'empty' ? config.emptyTitle : state === 'error' ? config.errorTitle : config.notFoundTitle;
-    const body = state === 'empty'
-      ? `Once an audit has run, every ${config.noun} it checked has its own page here.`
-      : state === 'error'
-        ? `${errorMessage ?? 'The latest audit could not be read.'} Your results are unaffected.`
-        : config.notFoundBody;
+    const body = state === 'error' ? errorMessage : null;
     return (
       <AppPage heading={kindTitle} back={back}>
       <div className="page-shell pt-3">
         <div className={`${cardClass} mx-auto mt-6 flex max-w-lg flex-col items-center p-6 text-center`}>
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-100 text-surface-500"><Info size={18} /></span>
           <h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">{title}</h2>
-          <p className="mt-1 text-[12.5px] leading-[1.5] text-surface-500">{body}</p>
+          {body && <p className="mt-1 text-[12.5px] leading-[1.5] text-surface-500">{body}</p>}
           {state === 'error' && <Button variant="primary" onClick={() => void load(true)} className="mt-3">Retry</Button>}
         </div>
       </div>
@@ -431,7 +427,7 @@ export default function CatalogDetail({ kind }: { kind: CatalogKind }) {
       if (kind !== 'product' || !(item.productType || item.vendor)) return null;
       return (
         <SectionCard key={section.id} {...sectionProps(section.id)} title={section.title}>
-          <Banner tone="info"><s-text>View only — read from your store as it is. Rankvora AI does not change these.</s-text></Banner>
+          <Banner tone="info"><s-text>View only.</s-text></Banner>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <p className="mb-1 text-[12px] font-medium text-surface-700">Type</p>
@@ -530,7 +526,7 @@ export default function CatalogDetail({ kind }: { kind: CatalogKind }) {
               <p className={`mt-2 text-[38px] font-semibold leading-none tracking-[-0.04em] tabular-nums ${rateTone}`}>
                 {item.passRate}<span className="text-[18px] text-surface-400">%</span>
               </p>
-              <p className="mt-1 text-[11px] tabular-nums text-surface-500">{item.passing} of {item.checks.length} checks that recorded this {config.noun}</p>
+              <p className="mt-1 text-[11px] tabular-nums text-surface-500">{item.passing} of {item.checks.length} checks</p>
             </div>
             <dl className="mt-3 grid grid-cols-3 divide-x divide-surface-200/70 border-t border-surface-200/70 text-center">
               {([

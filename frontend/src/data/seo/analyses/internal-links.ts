@@ -10,7 +10,6 @@ import { sortByCell, type SubPillarAnalysis } from '../subpillar.model';
 export const internalLinksAnalysis: SubPillarAnalysis = {
   slug: 'internal-links',
   title: 'Internal Links & 404s',
-  description: 'Make sure crawlers and shoppers can reach every page, and that no link — to your store or to another website — leads to a dead end.',
   summary: '',
   healthChip: '',
   totals: {
@@ -52,9 +51,9 @@ export const internalLinksAnalysis: SubPillarAnalysis = {
     sorts: [sortByCell('internalLinks', 'Sort: internal links'), sortByCell('name', 'Sort: name')],
   },
   relatedAreas: [
-    { label: 'Handles & Redirects', href: '/seo/handles-redirects', hint: 'Where these 404s should redirect' },
-    { label: 'Sitemap & Indexability', href: '/seo/sitemap', hint: 'How orphan pages get discovered' },
-    { label: 'Canonicals & Duplicates', href: '/seo/canonicals', hint: 'Which URL links should point at' },
+    { label: 'Handles & Redirects', href: '/seo/handles-redirects' },
+    { label: 'Sitemap & Indexability', href: '/seo/sitemap' },
+    { label: 'Canonicals & Duplicates', href: '/seo/canonicals' },
   ],
   lastAnalyzed: '',
 };

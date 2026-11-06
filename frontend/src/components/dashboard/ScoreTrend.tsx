@@ -82,7 +82,7 @@ export default function ScoreTrend({ data }: Props) {
             <LineChart size={18} aria-hidden="true" />
           </span>
           <p className="max-w-[240px] text-[12.5px] text-surface-500">
-            No score history yet. The trend appears once your store has been analyzed twice.
+            No score history yet.
           </p>
         </div>
       </section>

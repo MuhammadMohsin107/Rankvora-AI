@@ -116,7 +116,7 @@ export default function WorkspaceStoreCard({
     try {
       onRefreshed(await refreshWorkspaceFromShopify());
     } catch (error) {
-      setRefreshError(error instanceof ApiError ? error.message : 'Shopify could not be read. Please try again.');
+      setRefreshError(error instanceof ApiError ? error.message : 'Shopify could not be read.');
     } finally {
       setRefreshing(false);
     }
@@ -125,16 +125,13 @@ export default function WorkspaceStoreCard({
   const readAt = workspace.shopify ? new Date(workspace.shopify.readAt).toLocaleString() : null;
 
   return (
-    <SettingsCard
-      title="Store"
-      description="Filled in from your connected Shopify store. Change any field if you need to — a value you edit is kept when Rankvora AI reads Shopify again."
-    >
+    <SettingsCard title="Store">
       {connected ? (
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-surface-200 bg-surface-50/60 px-2.5 py-1.5">
           <p className="text-[11.5px] text-surface-600">
             {readAt
-              ? <>Read from Shopify {readAt}. Refreshed on every sync and audit.</>
-              : 'Not read from Shopify yet — refresh to fill these in now.'}
+              ? <>Read from Shopify {readAt}</>
+              : 'Not read from Shopify yet.'}
           </p>
           <Button loading={refreshing} variant="secondary" onClick={() => void refresh()} disabled={refreshing || dirty}>
             {refreshing ? 'Reading Shopify…' : 'Refresh from Shopify'}
@@ -143,7 +140,7 @@ export default function WorkspaceStoreCard({
       ) : (
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-info-100 bg-info-50 px-2.5 py-1.5">
           <p className="text-[11.5px] text-info-800">
-            No Shopify store is connected, so nothing is known about the store yet. Connect it and these fill in automatically.
+            No Shopify store connected.
           </p>
           <Button variant="primary" to="/integrations">Connect Shopify</Button>
         </div>
@@ -165,7 +162,6 @@ export default function WorkspaceStoreCard({
             value={workspace.storeName}
             onChange={(value) => onChange({ storeName: value })}
             invalid={Boolean(errors.storeName)}
-            placeholder={connected ? undefined : 'Filled in when Shopify is connected'}
             describedBy={errors.storeName ? 'storeName-error' : 'storeName-hint'}
           />
         </Field>
@@ -181,7 +177,6 @@ export default function WorkspaceStoreCard({
             onChange={(value) => onChange({ storeUrl: value })}
             invalid={Boolean(errors.storeUrl)}
             prefix="https://"
-            placeholder={connected ? undefined : 'Filled in when Shopify is connected'}
             describedBy={errors.storeUrl ? 'storeUrl-error' : 'storeUrl-hint'}
           />
         </Field>
@@ -219,11 +214,7 @@ export default function WorkspaceStoreCard({
             describedBy="timezone-hint"
           />
         </Field>
-        <Field
-          label="Industry"
-          htmlFor="industry"
-          hint="Shopify has no industry field, so this is yours to choose — the same list guided setup uses."
-        >
+        <Field label="Industry" htmlFor="industry">
           <SelectInput
             id="industry"
             value={workspace.industry}

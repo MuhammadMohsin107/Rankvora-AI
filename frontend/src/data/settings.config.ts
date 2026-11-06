@@ -172,5 +172,5 @@ export const planInfo = {
   name: 'Free',
   price: '',
   cadence: '',
-  description: 'All features are currently included. Paid plans are not available yet.',
+  description: 'All features included.',
 };

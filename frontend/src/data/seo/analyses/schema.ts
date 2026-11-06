@@ -12,7 +12,6 @@ import { sortByCell, type SubPillarAnalysis } from '../subpillar.model';
 export const schemaAnalysis: SubPillarAnalysis = {
   slug: 'schema',
   title: 'Schema / JSON-LD',
-  description: 'Verify that your structured data is present, valid and complete enough to earn rich results.',
   summary: '',
   healthChip: '',
   totals: {
@@ -55,9 +54,9 @@ export const schemaAnalysis: SubPillarAnalysis = {
     sorts: [sortByCell('blocks', 'Sort: blocks', 'desc'), sortByCell('name', 'Sort: name')],
   },
   relatedAreas: [
-    { label: 'Title Tags', href: '/seo/title-tags', hint: 'What the result headline says' },
-    { label: 'Meta Descriptions', href: '/seo/meta-descriptions', hint: 'What the result snippet says' },
-    { label: 'Sitemap & Indexability', href: '/seo/sitemap', hint: 'Whether these pages are indexable' },
+    { label: 'Title Tags', href: '/seo/title-tags' },
+    { label: 'Meta Descriptions', href: '/seo/meta-descriptions' },
+    { label: 'Sitemap & Indexability', href: '/seo/sitemap' },
   ],
   lastAnalyzed: '',
 };

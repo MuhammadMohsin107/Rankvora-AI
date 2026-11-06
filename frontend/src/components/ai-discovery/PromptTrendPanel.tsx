@@ -35,11 +35,11 @@ function formatDate(iso: string): string {
 }
 
 function describeFailure(error: unknown): string {
-  if (!(error instanceof ApiError)) return 'Could not reach the Rankvora AI API. Check that the backend is running.';
+  if (!(error instanceof ApiError)) return 'Could not reach the Rankvora AI API.';
   if (error.status === 404 && error.code !== 'STORE_NOT_FOUND') {
-    return 'This server has no prompt-history endpoint. The API is running an older build — redeploy and restart it.';
+    return 'This server has no prompt-history endpoint. Redeploy the API.';
   }
-  if (error.status === 401) return 'Your session has expired. Open Rankvora AI again from your Shopify admin.';
+  if (error.status === 401) return 'Session expired. Reopen Rankvora AI from your Shopify admin.';
   return error.message;
 }
 
@@ -132,10 +132,8 @@ function EmptyReason({ history }: { history: PromptHistory }) {
   if (!history.aiConfigured) {
     return (
       <p className={line}>
-        No AI provider is configured on this Rankvora AI deployment, so no question can be asked and no answer
-        can be recorded. This is a server setting, not something you can change here — an operator needs to
-        set <code className="font-mono text-[11.5px] text-surface-800">AI_PROVIDER</code> and the matching API key.
-        Until then the audit reports prompt tracking as not measured rather than showing a zero.
+        No AI provider configured. An operator must set{' '}
+        <code className="font-mono text-[11.5px] text-surface-800">AI_PROVIDER</code> and its API key.
       </p>
     );
   }
@@ -143,8 +141,7 @@ function EmptyReason({ history }: { history: PromptHistory }) {
   if (history.queries.length === 0) {
     return (
       <p className={line}>
-        No questions are being tracked yet, so there is nothing to ask. Add the questions your shoppers
-        actually type under {settings}, then run a sweep — the first real answers appear here.
+        No questions tracked yet. Add them under {settings}.
       </p>
     );
   }
@@ -152,17 +149,14 @@ function EmptyReason({ history }: { history: PromptHistory }) {
   if (history.queries.every((query) => !query.active)) {
     return (
       <p className={line}>
-        All {history.queries.length} tracked {history.queries.length === 1 ? 'question is' : 'questions are'} paused,
-        so no sweep asks anything. Re-activate at least one under {settings}.
+        All tracked questions are paused. Resume one under {settings}.
       </p>
     );
   }
 
   return (
     <p className={line}>
-      {history.queries.length} {history.queries.length === 1 ? 'question is' : 'questions are'} tracked and ready,
-      but no sweep has recorded an answer in the last {history.days} days. Press Check all now under {settings} — or
-      run an audit, which takes one sample per question automatically.
+      No answers recorded in the last {history.days} days. Run a check under {settings}.
     </p>
   );
 }
@@ -191,14 +185,10 @@ export default function PromptTrendPanel() {
     <section className={cardClass} aria-labelledby="prompt-trend-title">
       <div className="flex flex-wrap items-start justify-between gap-2.5 border-b border-surface-100 px-3 py-2">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-surface-500">Trend</p>
-          <h2 id="prompt-trend-title" className="mt-1 flex items-center gap-1.5 text-[15px] font-semibold tracking-tight text-surface-950">
+          <h2 id="prompt-trend-title" className="flex items-center gap-1.5 text-[15px] font-semibold tracking-tight text-surface-950">
             <MessageSquare size={15} className="text-brand-500" />
-            Assistant mentions over time
+            Assistant mentions
           </h2>
-          <p className="mt-1 text-[12px] leading-[1.45] text-surface-500">
-            How often assistants named this store, across every answer really recorded.
-          </p>
         </div>
         {history && history.totalSamples > 0 && (
           <StatusBadge label={`Last ${history.days} days`} tone="neutral" />
@@ -208,7 +198,7 @@ export default function PromptTrendPanel() {
       {loading && (
         <div className="flex items-center gap-2 px-3 py-4 text-[12.5px] text-surface-500">
           <Loader2 size={14} className="animate-spin" />
-          Reading recorded answers…
+          Loading…
         </div>
       )}
 
@@ -308,7 +298,7 @@ export default function PromptTrendPanel() {
             <div className="border-t border-surface-100">
               <div className="flex flex-wrap items-baseline justify-between gap-2 px-3 pt-2.5">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-500">
-                  Standing against your competitors
+                  Competitor standing
                 </p>
                 <p className="text-[11px] tabular-nums text-surface-500">
                   across {history.ranking.rankedAnswers.toLocaleString()} answers
@@ -326,21 +316,18 @@ export default function PromptTrendPanel() {
                       ? 'Never named'
                       : `${history.ranking.averageRank.toFixed(1)} of ${history.ranking.averageBrandsNamed.toFixed(1)}`
                   }
-                  detail="in answers that named you"
                   // No good/bad colour for the number itself: "2nd" was graded green by a cut-off
                   // nobody measured. Never being named is the one state that is plainly bad.
                   tone={history.ranking.averageRank === null ? 'critical' : 'neutral'}
                 />
-                <MetricTile label="Named first" value={history.ranking.timesFirst.toLocaleString()} detail="answers led with you" tone={history.ranking.timesFirst > 0 ? 'success' : 'neutral'} />
+                <MetricTile label="Named first" value={history.ranking.timesFirst.toLocaleString()} tone={history.ranking.timesFirst > 0 ? 'success' : 'neutral'} />
                 <MetricTile
-                  label="How early you appear"
+                  label="Position in answer"
                   value={history.ranking.averagePosition === null ? '—' : `${Math.round(history.ranking.averagePosition * 100)}% in`}
-                  detail="assistants lead with their pick"
                 />
                 <MetricTile
-                  label="Answers you lost"
+                  label="Answers lost"
                   value={history.ranking.answersLostEntirely.toLocaleString()}
-                  detail="a rival named, you weren’t"
                   tone={history.ranking.answersLostEntirely > 0 ? 'critical' : 'neutral'}
                 />
               </div>
@@ -375,24 +362,18 @@ export default function PromptTrendPanel() {
               ) : (
                 // A real result: the comparison set existed and none of them were named.
                 <p className="border-t border-surface-100 px-3 py-2.5 text-[12px] leading-[1.5] text-surface-600">
-                  None of your listed competitors were named in any recorded answer either. The assistants
-                  recommended other things entirely — or nothing specific.
+                  No listed competitor was named in any answer.
                 </p>
               )}
             </div>
           ) : (
             <p className="border-t border-surface-100 px-3 py-2.5 text-[12px] leading-[1.5] text-surface-600">
-              No competitors are set up, so there is nothing to rank against — being the only brand Rankvora AI
-              looks for is not a placement. Add competitor domains in onboarding, then run a sweep, and this
-              will show where you appear among them.
+              No competitors set up. Add competitor domains in guided setup to see your standing.
             </p>
           )}
 
           <p className="border-t border-surface-100 px-3 py-1.5 text-[11px] leading-[1.5] text-surface-500">
-            A rate and a placement, never a ranking in ChatGPT — an assistant’s answer is non-deterministic, so only
-            the distribution across several real samples means anything. Points below {history.minSamples} samples are
-            drawn hollow and marked “gathering”. Days with no sweep are gaps, not zeroes. Competitors are matched only
-            against the domains you entered; Rankvora AI never infers a brand from an answer.
+            Hollow points have fewer than {history.minSamples} samples.
           </p>
         </>
       )}

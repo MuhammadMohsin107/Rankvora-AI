@@ -101,7 +101,7 @@ export const contentTables: Record<string, GenericSubPillarDetails> = {
 
   'content/dup-templated': {
     table: {
-      title: 'Duplicate & Templated Copy Analysis',
+      title: 'Duplicate & Templated Copy',
       subtitle: 'Pages ranked by content similarity to their nearest sibling',
       searchPlaceholder: 'Search by page or pattern…',
       filters: ['All', 'Highly Templated', 'Potential Duplicate', 'Unique'],

@@ -56,7 +56,7 @@ export default function SignalCards({ refreshKey }: Props) {
   if (state.phase === 'error') {
     return (
       <section aria-label="Search, speed, AI answers and drafts" className={`${cardClass} flex flex-wrap items-center justify-between gap-2 px-3 py-2.5`}>
-        <p className="text-[12px] text-surface-600">These figures could not be loaded right now.</p>
+        <p className="text-[12px] text-surface-600">Figures could not be loaded.</p>
         <Button variant="ghost" onClick={() => { setState({ phase: 'loading' }); setAttempt((value) => value + 1); }}>
           Try again
         </Button>
@@ -250,7 +250,7 @@ function ApprovalsCard({ signal }: { signal: Signal<ApprovalSignal> }) {
         ) : undefined
       }
       value={<Figure>{total.toLocaleString('en-US')}</Figure>}
-      caption={total > 0 ? 'Drafts have not been published' : 'Nothing is waiting for your approval'}
+      caption={total > 0 ? 'Not yet published' : 'Nothing waiting'}
     />
   );
 }

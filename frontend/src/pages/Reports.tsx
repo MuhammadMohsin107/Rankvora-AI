@@ -66,8 +66,7 @@ function TrendChart({ points: trendPoints, period }: { points: ReportTrendPoint[
           label should not cost two lines at the top of every card. */}
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
         <div className="flex flex-wrap items-baseline gap-x-1.5">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-600">Trend</p>
-          <h3 className="text-[12.5px] font-bold text-surface-950">Overall score over time</h3>
+          <h3 className="text-[12.5px] font-bold text-surface-950">Score trend</h3>
         </div>
         <span className="text-[11px] text-surface-500">Last {period}</span>
       </div>
@@ -76,7 +75,7 @@ function TrendChart({ points: trendPoints, period }: { points: ReportTrendPoint[
           inside the selected period. Plotting a flat line or a zero would say otherwise. */}
       {trendPoints.length === 0 ? (
         <p className="flex h-[168px] items-center justify-center text-center text-[11.5px] text-surface-500">
-          No audits in the last {period}. Pick a longer period to see the trend.
+          No audits in the last {period}.
         </p>
       ) : (
         <svg
@@ -144,7 +143,7 @@ function ReportDetail({ auditId, onExport, exporting }: { auditId: number; onExp
   }, [auditId]);
 
   if (state === 'loading') return <p className="py-4 text-[12px] text-surface-500">Loading report…</p>;
-  if (state === 'error') return <p className="py-4 text-[12px] text-critical-600">This report could not be loaded.</p>;
+  if (state === 'error') return <p className="py-4 text-[12px] text-critical-600">Report could not be loaded.</p>;
 
   return (
     <div className="space-y-2.5">
@@ -179,7 +178,7 @@ function ReportDetail({ auditId, onExport, exporting }: { auditId: number; onExp
               </span>
             </div>
             {subScores.length === 0 ? (
-              <p className="px-2.5 py-1.5 text-[11px] text-surface-500">No sub-pillar was measured in this report.</p>
+              <p className="px-2.5 py-1.5 text-[11px] text-surface-500">Nothing measured.</p>
             ) : (
               <ul className="divide-y divide-surface-100">
                 {subScores.map((score) => (
@@ -258,7 +257,7 @@ export default function Reports() {
       setLoadState('success');
     } catch (error) {
       console.error('Failed to load reports', error);
-      setLoadError(error instanceof ApiError ? error.message : 'Reports could not be loaded. Please try again.');
+      setLoadError(error instanceof ApiError ? error.message : 'Reports could not be loaded.');
       setLoadState('error');
     }
   }, [period, comparison]);
@@ -278,7 +277,7 @@ export default function Reports() {
     setActionError(null);
     setActionNotice(null);
     auditRun.run(async () => {
-      setActionNotice('New report generated from a fresh audit of your store.');
+      setActionNotice('New report created.');
       await load();
     });
   };
@@ -291,7 +290,7 @@ export default function Reports() {
       const filename = await exportReportCsv(auditId);
       setActionNotice(`Downloaded ${filename}.`);
     } catch (error) {
-      setActionError(error instanceof ApiError ? error.message : 'The export could not be generated. Please try again.');
+      setActionError(error instanceof ApiError ? error.message : 'The export could not be generated.');
     } finally {
       setExportingId(null);
     }
@@ -313,7 +312,6 @@ export default function Reports() {
     return (
       <AppPage heading="Reports">
       <div className="page-shell section-stack">
-        <p className="page-subtitle">Understand how your store performance is changing over time.</p>
         <Notice tone="error">{loadError}</Notice>
         {/* Primary, like every other retry in the app — it is the only action on this screen. */}
         <div><Button onClick={load}>Try again</Button></div>
@@ -329,10 +327,9 @@ export default function Reports() {
     return (
       <AppPage heading="Reports">
       <div className="page-shell section-stack">
-        <p className="page-subtitle">Understand how your store performance is changing over time.</p>
         <EmptyState
           title="No store connected"
-          body="Connect your Shopify store to generate reports. Any audits you have already run are kept and will appear here again once a store is connected."
+          body="Connect your Shopify store to create reports."
           action={<Button variant="primary" to="/integrations">Connect a store</Button>}
         />
       </div>
@@ -345,10 +342,9 @@ export default function Reports() {
     return (
       <AppPage heading="Reports">
       <div className="page-shell section-stack">
-        <p className="page-subtitle">Understand how your store performance is changing over time.</p>
         <EmptyState
-          title="No reports available yet"
-          body={`Run an audit to generate your first report${state.shopDomain ? ` for ${state.shopDomain}` : ''}. Scores, pillar comparisons and the CSV export all come from that audit.`}
+          title="No reports yet"
+          body="Run an audit to create your first report."
           action={(
             <Button loading={auditRun.running} onClick={createReport} disabled={auditRun.running}>
               {auditRun.running ? `Running audit… ${auditRun.progress}%` : 'Create report'}
@@ -389,7 +385,7 @@ export default function Reports() {
       {actionNotice && <Notice tone="info" onDismiss={() => setActionNotice(null)}>{actionNotice}</Notice>}
       {overview.isFixture && (
         <Notice tone="info">
-          This report was generated from seeded development data, not from a live audit of your store.
+          Demo data, not a live audit of your store.
         </Notice>
       )}
 
@@ -428,9 +424,9 @@ export default function Reports() {
           detail={overview.baselineDate ? `vs ${shortDate(overview.baselineDate)}` : 'No baseline audit'}
           tone={overallDelta === null ? 'neutral' : overallDelta >= 0 ? 'success' : 'critical'}
         />
-        <MetricTile label="Issues resolved" value={overview.issuesResolved} detail="Across all pillars" tone="info" />
-        <MetricTile label="Critical issues" value={overview.criticalIssues} detail="Open, need attention" tone="critical" />
-        <MetricTile label="Findings tracked" value={overview.findingsTracked} detail="Latest audit" />
+        <MetricTile label="Issues resolved" value={overview.issuesResolved} tone="info" />
+        <MetricTile label="Critical issues" value={overview.criticalIssues} tone="critical" />
+        <MetricTile label="Findings tracked" value={overview.findingsTracked} />
       </section>
 
       {/* Side by side from `lg`, not `xl`: at 1024px there is room for both, and stacking them
@@ -439,31 +435,25 @@ export default function Reports() {
         <TrendChart points={trend} period={period} />
 
         <div className={`${panel} p-2.5`}>
-          <SectionHeading eyebrow="At a glance" title="What changed" />
+          <SectionHeading title="What changed" />
           <div className="mt-2 space-y-2">
             {topImprovement && (
               <div className="flex gap-2.5">
                 <div className="h-fit rounded-md bg-success-50 p-1.5 text-success-700"><TrendingUp size={14} /></div>
-                <div className="min-w-0">
-                  <p className="text-[12px] font-bold leading-[1.35] text-surface-900">
-                    {topImprovement.label} changed by {topImprovement.current! - topImprovement.previous! >= 0 ? '+' : ''}{topImprovement.current! - topImprovement.previous!} points
-                  </p>
-                  <p className="mt-0.5 text-[11px] leading-[1.4] text-surface-500">The largest score movement against the selected baseline.</p>
-                </div>
+                <p className="min-w-0 self-center text-[12px] font-bold leading-[1.35] text-surface-900">
+                  {topImprovement.label} changed by {topImprovement.current! - topImprovement.previous! >= 0 ? '+' : ''}{topImprovement.current! - topImprovement.previous!} points
+                </p>
               </div>
             )}
             {widestGap && (
               <div className="flex gap-2.5">
                 <div className="h-fit rounded-md bg-warning-50 p-1.5 text-warning-700"><TrendingDown size={14} /></div>
-                <div className="min-w-0">
-                  <p className="text-[12px] font-bold leading-[1.35] text-surface-900">{widestGap.label} is the widest gap</p>
-                  <p className="mt-0.5 text-[11px] leading-[1.4] text-surface-500">Currently the lowest-scoring pillar at {widestGap.current}/100.</p>
-                </div>
+                <p className="min-w-0 self-center text-[12px] font-bold leading-[1.35] text-surface-900">{widestGap.label} is lowest at {widestGap.current}/100</p>
               </div>
             )}
             {!topImprovement && (
               <p className="text-[11.5px] leading-[1.4] text-surface-500">
-                No pillar can be compared yet — {overview.baselineDate ? 'the baseline audit measured different pillars.' : 'this store has only one audit so far.'}
+                Nothing to compare yet.
               </p>
             )}
           </div>
@@ -474,12 +464,11 @@ export default function Reports() {
       <section className="space-y-2">
         {/* No Export button here. The page had two identical "Export CSV" actions — one in the
             page header, one in the card below — and a third would repeat the mistake. Exporting
-            lives in one place: the "Ready to share?" card. The drawer's export is a different
+            lives in one place: the "Export as CSV" card. The drawer's export is a different
             action (one named historical report), not a duplicate of this one. */}
         <SectionHeading
-          eyebrow="Comparison"
           title="Pillar performance"
-          description={overview.baselineDate ? `Compared with the audit from ${longDate(overview.baselineDate)}.` : 'No earlier audit to compare against yet.'}
+          description={overview.baselineDate ? `vs ${longDate(overview.baselineDate)}` : undefined}
         />
         <div className={`${panel} overflow-hidden`}>
           <div className="hidden grid-cols-[1.4fr_0.7fr_0.8fr_0.7fr_1.5fr_0.8fr] gap-2.5 border-b border-surface-200 bg-surface-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-surface-500 sm:grid">
@@ -533,7 +522,7 @@ export default function Reports() {
       {/* ── History and export ──────────────────────────────────────── */}
       <section className="grid gap-2.5 lg:grid-cols-[1.2fr_0.8fr]">
         <div className={`${panel} p-2.5`}>
-          <SectionHeading eyebrow="Report history" title="Previous reports" />
+          <SectionHeading title="Previous reports" />
           {/* Three fabricated titles with fabricated dates used to live here. These are the
               store's real audit runs; each one opens and exports the audit it names. */}
           {/* The history grows with every analysis, so it scrolls inside its card — the latest three
@@ -550,7 +539,7 @@ export default function Reports() {
                       {report.isFixture && <span className="ml-1.5 rounded bg-warning-50 px-1 py-px text-[10px] font-bold text-warning-700">Demo data</span>}
                     </p>
                     <p className="text-[11px] text-surface-500">
-                      Overall {showScore(report.overallScore)}{report.overallScore === null && ' · nothing measured in this run'}
+                      Overall {showScore(report.overallScore)}{report.overallScore === null && ' · nothing measured'}
                     </p>
                   </div>
                 </div>
@@ -563,13 +552,7 @@ export default function Reports() {
         <div className="rounded-lg border border-brand-100 bg-brand-50 p-2.5">
           <div className="flex items-start gap-2.5">
             <LineChart size={16} className="mt-0.5 flex-shrink-0 text-brand-700" />
-            <div className="min-w-0">
-              <h3 className="text-[12.5px] font-bold text-brand-950">Ready to share?</h3>
-              <p className="mt-0.5 text-[11.5px] leading-[1.4] text-brand-800">
-                Export the full report as CSV — run summary, pillar comparison, sub-pillar breakdown
-                and every issue with its recommendation.
-              </p>
-            </div>
+            <h3 className="min-w-0 text-[12.5px] font-bold text-brand-950">Export as CSV</h3>
           </div>
           <div className="mt-2">
             <Button variant="primary" onClick={() => runExport()} disabled={exportingId !== null}>
@@ -582,7 +565,6 @@ export default function Reports() {
       <Drawer
         open={openReportId !== null}
         title={openReportId !== null ? longDate(overview.history.find((item) => item.id === openReportId)?.runAt ?? overview.reportDate) : ''}
-        eyebrow="Report detail"
         // Closing drops `?audit=` as well, so a reload — or the back button — does not put the
         // drawer straight back. `replace`, because opening and closing a panel is not a place a
         // merchant should have to press Back through.

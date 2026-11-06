@@ -10,7 +10,6 @@ import { sortByCell, type SubPillarAnalysis } from '../subpillar.model';
 export const handlesRedirectsAnalysis: SubPillarAnalysis = {
   slug: 'handles-redirects',
   title: 'Handles & Redirects',
-  description: 'Keep URLs stable and make sure every redirect resolves cleanly in a single hop.',
   // Nothing here is writable by Rankvora AI: redirects are read with read_online_store_navigation and
   // never edited (no write scope is requested), and a handle is renamed in Shopify so the merchant
   // can keep its "create a URL redirect" option. Row selection and "Generate fixes" would open an
@@ -58,9 +57,9 @@ export const handlesRedirectsAnalysis: SubPillarAnalysis = {
     sorts: [sortByCell('hops', 'Sort: hops', 'desc'), sortByCell('path', 'Sort: path')],
   },
   relatedAreas: [
-    { label: 'Internal Links & 404s', href: '/seo/internal-links', hint: 'What still links to these URLs' },
-    { label: 'Canonicals & Duplicates', href: '/seo/canonicals', hint: 'How duplicate URLs consolidate' },
-    { label: 'Sitemap & Indexability', href: '/seo/sitemap', hint: 'Whether redirected URLs are still listed' },
+    { label: 'Internal Links & 404s', href: '/seo/internal-links' },
+    { label: 'Canonicals & Duplicates', href: '/seo/canonicals' },
+    { label: 'Sitemap & Indexability', href: '/seo/sitemap' },
   ],
   lastAnalyzed: '',
 };

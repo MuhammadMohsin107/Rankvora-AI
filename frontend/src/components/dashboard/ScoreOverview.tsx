@@ -1,6 +1,5 @@
 import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
 import type { KeyMetric, OverallScore, PillarScore, ScoreTrendPoint } from '../../data/dashboard/dashboard.types';
-import { joinNames } from '../../config/modules';
 import { pillarMeta } from '../../data/pillarMeta';
 import MetricSummary from './MetricSummary';
 import { SCORE_TARGET, cardClass, statusTone } from './scoreTone';
@@ -202,7 +201,7 @@ export default function ScoreOverview({ data, metrics, trend, pillars, onSelectM
               <span>
                 {data.measured
                   ? `Scored across ${measuredPillars} of ${pillars.length} pillars`
-                  : `Rankvora AI scores ${joinNames(pillars.map((pillar) => pillar.label))} once an audit has run.`}
+                  : 'No audit yet'}
               </span>
             </div>
           </div>

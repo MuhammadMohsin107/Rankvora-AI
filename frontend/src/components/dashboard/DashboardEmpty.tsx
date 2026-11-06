@@ -1,4 +1,4 @@
-import { Check, Circle, Globe, Loader2, Radar } from 'lucide-react';
+import { Check, Circle, Loader2, Radar } from 'lucide-react';
 import { useAuditRun } from '../../data/useAuditRun';
 import { stageStates } from '../../data/analysisStages';
 import Button from '../../components/polaris/Button';
@@ -46,8 +46,8 @@ export default function DashboardEmpty({ notice = null }: Props) {
         </h2>
         <p className="mb-2 max-w-md text-[12.5px] text-surface-500">
           {running
-            ? 'Your scores are still being collected, so none are shown yet. You can leave this page — the analysis carries on.'
-            : notice ?? 'Rankvora AI will read your store, check it across every area and show what to fix first. Nothing is changed in your store.'}
+            ? 'You can leave this page.'
+            : notice ?? 'Nothing is changed in your store.'}
         </p>
 
         {running && (
@@ -95,14 +95,6 @@ export default function DashboardEmpty({ notice = null }: Props) {
           </Button>
         )}
 
-        <p className="mt-2 inline-flex items-center gap-1.5 text-[11.5px] text-surface-400">
-          <Globe size={12} />
-          {/* Only a genuine first run has a baseline to speak of. With a notice, audits of a
-              PREVIOUSLY connected shop exist, and calling this one "the first" would be untrue. */}
-          {notice
-            ? 'An analysis reads your store through its connected data source — nothing is changed.'
-            : 'This first analysis becomes your baseline, so later changes can be measured against it.'}
-        </p>
       </div>
     </div>
   );

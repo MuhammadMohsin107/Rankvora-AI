@@ -27,9 +27,7 @@ export default function NotFound() {
         </span>
         <h2 className="mt-4 text-lg font-semibold text-surface-900">Page not found</h2>
         <p className="mt-1.5 max-w-md text-sm text-surface-500">
-          We couldn&apos;t find anything at{' '}
-          <span className="break-all font-mono text-[13px] text-surface-700">{pathname}</span>. The
-          link may be out of date, or the page may have moved.
+          Nothing at <span className="break-all font-mono text-[13px] text-surface-700">{pathname}</span>.
         </p>
         <Button variant="primary" to="/" className="mt-6">
           Back to dashboard

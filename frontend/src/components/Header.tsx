@@ -191,15 +191,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 {notifications.length === 0 && (items.length > 0 || notificationStatus === 'ready') && (
                   <p className="px-3 py-6 text-center text-[11.5px] leading-[1.45] text-surface-500">
                     {items.length > 0 ? (
-                      <>
-                        You're all caught up.<br />
-                        <span className="text-surface-400">Read notifications stay on the notifications page.</span>
-                      </>
+                      "You're all caught up."
                     ) : (
-                      <>
-                        Nothing to report yet.<br />
-                        <span className="text-surface-400">You'll hear about finished and failed audits, score changes, connection problems and your Monday summary here.</span>
-                      </>
+                      'Nothing to report yet.'
                     )}
                   </p>
                 )}

@@ -155,7 +155,7 @@ export default function Settings() {
       setDraft(structuredClone(result));
       setShowToast(true);
     } catch (error) {
-      setSaveError(error instanceof ApiError ? error.message : 'Could not save your changes. Please try again.');
+      setSaveError(error instanceof ApiError ? error.message : 'Could not save your changes.');
     } finally {
       setIsSaving(false);
     }
@@ -173,7 +173,6 @@ export default function Settings() {
               <AlertCircle size={18} />
             </span>
             <h2 className="mt-2.5 text-[15px] font-bold text-surface-950">Unable to load settings</h2>
-            <p className="mt-1.5 text-[12.5px] text-surface-500">Your saved preferences were not changed.</p>
             <div className="mt-2">
               <Button onClick={load}>
                 Retry
@@ -188,8 +187,6 @@ export default function Settings() {
 
   return (
     <SettingsPage className="section-stack">
-      <p className="page-subtitle">Manage your account, the store Rankvora AI analyzes, and how the platform behaves.</p>
-
       <div className="grid gap-2.5 lg:grid-cols-[212px_minmax(0,1fr)] lg:items-start">
         {/* ── Navigation ────────────────────────────────────────── */}
         <nav className="lg:sticky lg:top-3" aria-label="Settings sections">
@@ -296,8 +293,8 @@ export default function Settings() {
                     fixed at whatever was chosen on the first run. */}
                 <GuidedSetupCard />
 
-                <SettingsCard title="Workspace" description="The organisation this Rankvora AI workspace belongs to.">
-                  <Field label="Workspace name" htmlFor="workspaceName" error={errors.workspaceName} hint="Shown in reports and shared exports.">
+                <SettingsCard title="Workspace">
+                  <Field label="Workspace name" htmlFor="workspaceName" error={errors.workspaceName}>
                     <TextInput
                       id="workspaceName"
                       value={draft.workspace.workspaceName}
@@ -344,7 +341,7 @@ export default function Settings() {
               saving={isSaving}
               onSave={onSave}
               onCancel={onDiscard}
-              message={hasErrors ? 'Fix the highlighted fields to save' : 'You have unsaved changes'}
+              message={hasErrors ? 'Fix the highlighted fields' : 'Unsaved changes'}
             />
           )}
         </div>
@@ -372,14 +369,13 @@ function IntegrationsSection() {
   const connected = records.filter((record) => record.status === 'Connected').length;
   const attention = records.filter((record) => record.status === 'Needs Attention').length;
 
-  if (loadState === 'loading') return <SettingsCard title="Connected data sources" description="Loading…"><div className="h-24" /></SettingsCard>;
-  if (loadState === 'error') return <SettingsCard title="Connected data sources" description="Failed to load integrations."><div /></SettingsCard>;
+  if (loadState === 'loading') return <SettingsCard title="Data sources" description="Loading…"><div className="h-24" /></SettingsCard>;
+  if (loadState === 'error') return <SettingsCard title="Data sources" description="Failed to load integrations."><div /></SettingsCard>;
 
   return (
     <>
       <SettingsCard
-        title="Connected data sources"
-        description="Rankvora AI uses these connections to enrich its analysis. Manage them in the Integrations module."
+        title="Data sources"
         footer={
           <Link
             to="/integrations"
@@ -430,7 +426,7 @@ function IntegrationsSection() {
 function BillingSection() {
   return (
     <>
-      <SettingsCard title="Current plan" description="What this workspace is entitled to today.">
+      <SettingsCard title="Current plan">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -449,18 +445,12 @@ function BillingSection() {
       {/* This card previously rendered hard-coded meters (1,342 / 2,000 pages, 4 / 6 integrations)
           as filled progress bars, which read as measured consumption. Nothing tracks usage yet,
           so it says that instead — the same treatment the Billing card below already had. */}
-      <SettingsCard title="Usage" description="Your consumption against the current plan limits.">
-        <PreviewNotice>
-          Usage tracking is not connected in this build. Consumption against plan limits will appear
-          here once audits record it.
-        </PreviewNotice>
+      <SettingsCard title="Usage">
+        <PreviewNotice>Usage tracking is not available yet.</PreviewNotice>
       </SettingsCard>
 
-      <SettingsCard title="Billing" description="Payment method and invoice history.">
-        <PreviewNotice>
-          Rankvora AI is running on the Free plan in this build. Paid plans, payment methods and invoices require the billing
-          service, which is not connected here.
-        </PreviewNotice>
+      <SettingsCard title="Billing">
+        <PreviewNotice>Paid plans and invoices are not available yet.</PreviewNotice>
       </SettingsCard>
     </>
   );
@@ -472,7 +462,6 @@ function SettingsSkeleton() {
     <SettingsPage className="section-stack" aria-busy="true" aria-label="Loading settings">
       {/* Mirrors the loaded layout exactly — same track width, same paddings — so the page does
           not jump when the real content replaces it. */}
-      <div className="skeleton h-4 w-96 max-w-full" />
       <div className="grid gap-2.5 lg:grid-cols-[212px_minmax(0,1fr)]">
         <div className="space-y-1.5">
           {Array.from({ length: 8 }).map((_, index) => (

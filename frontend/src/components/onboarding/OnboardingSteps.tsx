@@ -82,12 +82,12 @@ export interface StepProps {
 }
 
 /** What each pillar is called when the merchant is choosing what to improve first. */
-export const PILLAR_GOALS: Record<string, { label: string; description: string }> = {
-  seo: { label: 'Search visibility', description: 'Titles, descriptions, structure and technical SEO that help shoppers find you.' },
-  content: { label: 'Product & collection content', description: 'The completeness and quality of what your product and collection pages say.' },
-  speed: { label: 'Store performance', description: 'How quickly your storefront loads and what slows it down.' },
-  'ai-discovery': { label: 'AI discovery', description: 'Whether AI assistants can read your store and name it in their answers.' },
-  cro: { label: 'Conversion (CRO)', description: 'Signals that affect whether visitors buy.' },
+export const PILLAR_GOALS: Record<string, { label: string }> = {
+  seo: { label: 'Search visibility' },
+  content: { label: 'Product & collection content' },
+  speed: { label: 'Store performance' },
+  'ai-discovery': { label: 'AI discovery' },
+  cro: { label: 'Conversion (CRO)' },
 };
 
 /** Human labels for the pillar slugs the API works in. */
@@ -179,18 +179,12 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
   return (
     <div className="space-y-4">
       {!snapshot.detection.available && snapshot.detection.unavailableReason && (
-        <UnavailableNote>
-          {snapshot.detection.unavailableReason} Nothing could be read from your store, so the facts below are
-          missing — you can still answer the questions, and they will be saved.
-        </UnavailableNote>
+        <UnavailableNote>{snapshot.detection.unavailableReason}</UnavailableNote>
       )}
 
       {/* ── Imported from Shopify · read-only ─────────────────────────── */}
       {shop && (
-        <FormSection
-          title="Imported from Shopify"
-          description="Read from your store each time you open this page, so a change in Shopify shows up here. You are not asked for any of it."
-        >
+        <FormSection title="Imported from Shopify">
           <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
             <FactTile label="Store" value={shop.name || null} icon={Store} />
             <FactTile label="Storefront" value={shop.primaryUrl ?? shop.myshopifyDomain} icon={Globe2} />
@@ -208,7 +202,7 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
             <FactTile label="Pages" value={countValue(content?.pages)} icon={FileText} />
           </div>
           <p className="mt-1.5 text-[11.5px] leading-[1.45] text-surface-500">
-            Articles and pages include unpublished ones — Shopify does not let us count only the published.
+            Articles and pages include unpublished ones.
           </p>
         </FormSection>
       )}
@@ -216,11 +210,10 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
       {/* ── The merchant's own choices ─────────────────────────────────── */}
       <FormGrid>
         <FormField
-          label="Store name for your reports"
+          label="Store name"
           htmlFor="onboarding-organization"
           badge="required"
           error={errors.organizationName}
-          hint="Confirm the name your reports and workspace should use."
           extras={
             shop?.name ? (
               <DetectedNote
@@ -245,10 +238,9 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
         </FormField>
 
         <FormField
-          label="Storefront to treat as canonical"
+          label="Storefront address"
           htmlFor="onboarding-domain"
           badge="optional"
-          hint="The address Rankvora AI crawls. Left blank, your Shopify primary domain is used."
           extras={
             shop?.primaryUrl ? (
               <DetectedNote
@@ -262,7 +254,7 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
                 {shop.myshopifyDomain && shop.myshopifyDomain !== hostOf(shop.primaryUrl)
                   ? ` (store address: ${shop.myshopifyDomain})`
                   : ''}
-                . Change it only if you publish canonical content elsewhere.
+                .
               </DetectedNote>
             ) : shop ? (
               <DetectedNote>Shopify did not return a primary domain for this store.</DetectedNote>
@@ -278,11 +270,10 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
         </FormField>
 
         <FormField
-          label="Markets that matter most"
+          label="Priority markets"
           htmlFor="onboarding-country-add"
           badge="required"
           error={errors.targetCountries}
-          hint="A market enabled in Shopify is not automatically a priority. Choose the ones that matter to your business."
           className="md:col-span-2"
           extras={
             <>
@@ -302,8 +293,7 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
                     onApply: () => addCountry(suggestions.detectedCountry as string),
                   }}
                 >
-                  Your Shopify billing address is in {suggestions.detectedCountry}. That is where the business is
-                  registered, which may or may not be where you sell.
+                  Your Shopify billing address is in {suggestions.detectedCountry}.
                 </DetectedNote>
               )}
             </>
@@ -342,7 +332,6 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
             label="Primary market"
             htmlFor="onboarding-primary-market"
             badge="optional"
-            hint="Which market wins when signals conflict."
             className="md:col-span-2"
           >
             <SelectField
@@ -359,7 +348,6 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
           className="md:col-span-2"
           title="Languages to audit"
           badge="optional"
-          description="Read from the languages published on your Shopify store. Tick the ones that matter to your business."
         >
           {suggestionsLoading && <SuggestionsPending />}
 
@@ -392,10 +380,7 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
           )}
 
           {!suggestionsLoading && suggestions && locales === null && (
-            <UnavailableNote>
-              Rankvora AI could not read the languages enabled on your store, so international checks will be judged
-              against your primary market only.
-            </UnavailableNote>
+            <UnavailableNote>Your store’s languages could not be read.</UnavailableNote>
           )}
         </FormSection>
       </FormGrid>
@@ -410,7 +395,6 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
   const aliases = draft.brandedTerms ?? [];
   const derivedIndustry = suggestions?.industry ?? null;
   const primaryLocale = suggestions?.languages?.find((locale) => locale.primary) ?? null;
-  const markets = draft.targetCountries ?? [];
 
   const aliasSuggestions = (suggestions?.brandedTerms ?? []).map((value) => ({
     value,
@@ -430,16 +414,15 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
   return (
     <div className="space-y-4">
       {!suggestionsLoading && suggestions && !suggestions.available && suggestions.unavailableReason && (
-        <UnavailableNote>{suggestions.unavailableReason} Choose your answers manually below.</UnavailableNote>
+        <UnavailableNote>{suggestions.unavailableReason}</UnavailableNote>
       )}
 
       <FormGrid>
         <FormField
-          label="Brand name for page titles"
+          label="Brand name"
           htmlFor="onboarding-brand"
           badge="required"
           error={errors.brandName}
-          hint="Added to product and collection titles, so keep it to the name customers know you by."
           extras={
             shop?.name ? (
               <DetectedNote
@@ -449,7 +432,7 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
                   onApply: () => patch({ brandName: shop.name }),
                 }}
               >
-                Your Shopify store name is “{shop.name}”. Shorten it if it is long.
+                Your Shopify store name is “{shop.name}”.
               </DetectedNote>
             ) : null
           }
@@ -467,7 +450,6 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
           label="Brand aliases"
           htmlFor="onboarding-aliases"
           badge="optional"
-          hint="Other names shoppers and AI assistants use for you, so an answer that uses a shorter or alternative name still counts as naming you."
           extras={
             !suggestionsLoading && aliasSuggestions.length > 0 ? (
               <div className="mt-2">
@@ -494,7 +476,6 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
           className="md:col-span-2"
           title="Industry"
           badge="required"
-          description="Choose every one that fits. It tells Rankvora AI what kind of store it is drafting for."
           error={errors.industries}
         >
           <MultiSelectChips
@@ -519,11 +500,11 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
               }}
             >
               {derivedIndustry.basis}
-              {derivedIndustry.confidence === 'low' && ' This is a weak match — please check it.'}
+              {derivedIndustry.confidence === 'low' && ' Weak match — please check.'}
             </DetectedNote>
           )}
           {!suggestionsLoading && suggestions?.available && !derivedIndustry && (
-            <DetectedNote>We could not tell your industry from your collections and product types — please choose one.</DetectedNote>
+            <DetectedNote>Industry could not be detected — choose one.</DetectedNote>
           )}
         </FormSection>
 
@@ -532,7 +513,6 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
           htmlFor="onboarding-language"
           badge="required"
           error={errors.contentLanguage}
-          hint="The language Rankvora AI writes drafts in."
           extras={
             primaryLocale ? (
               <DetectedNote
@@ -558,10 +538,9 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
         </FormField>
 
         <FormField
-          label="What you sell, in one line"
+          label="What you sell"
           htmlFor="onboarding-sells"
           badge="optional"
-          hint="Written for a person, not a search engine. It helps drafts sound like your store."
         >
           <TextArea
             id="onboarding-sells"
@@ -573,12 +552,6 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
           />
         </FormField>
       </FormGrid>
-
-      <p className="text-[12px] leading-[1.5] text-surface-500">
-        {markets.length > 0
-          ? `Priority markets: ${markets.join(', ')}. Change them in step 1.`
-          : 'You have not chosen your priority markets yet — do that in step 1.'}
-      </p>
     </div>
   );
 }
@@ -626,10 +599,9 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
       <FormGrid>
         <FormSection
           className="md:col-span-2"
-          title="What would you like Rankvora AI to improve first?"
+          title="Improve first"
           badge="required"
           error={errors.priorityPillars}
-          description="Choose one or more. Every area is still analysed and scored — this only decides which findings lead."
         >
           <div className="grid gap-2.5 sm:grid-cols-2">
             {pillarKeys.map((key) => {
@@ -640,7 +612,6 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
                   id={`onboarding-pillar-${key}`}
                   checked={chosenPillars.includes(key)}
                   label={goal?.label ?? key}
-                  description={goal?.description}
                   onToggle={() => togglePillar(key)}
                 />
               );
@@ -649,7 +620,7 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
           {chosenPillars.length > 1 && (
             <div className="mt-2.5">
               <p className="mb-1.5 text-[11.5px] leading-[1.45] text-surface-500">
-                When two findings are equally serious, this is the order they are listed in. Move one to change it.
+                Priority order
               </p>
               <PriorityList
                 items={chosenPillars.map((key) => ({ key, label: PILLAR_GOALS[key]?.label ?? key }))}
@@ -663,27 +634,23 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
           label="Target keywords"
           htmlFor="onboarding-keywords"
           badge="optional"
-          hint="Three to five terms you want to be found for. Choose from the suggestions or type your own."
           className="md:col-span-2"
           extras={
             <div className="mt-2 space-y-2 empty:hidden">
               {suggestionsLoading && <SuggestionsPending />}
               {!suggestionsLoading && keywordSuggestions.length > 0 && (
                 <SuggestionRow
-                  label="From your collections and product types — click to add"
+                  label="Suggestions"
                   suggestions={keywordSuggestions}
                   selected={keywords}
                   onAdd={(value) => keywords.length < 10 && patch({ targetKeywords: [...keywords, value] })}
                 />
               )}
               {!suggestionsLoading && suggestions?.available && keywordSuggestions.length === 0 && (
-                <InfoNote>
-                  Your store has no collections or product types we could turn into suggestions yet, so this list
-                  starts empty.
-                </InfoNote>
+                <InfoNote>No suggestions yet.</InfoNote>
               )}
               {catalogueUnread && suggestions?.unavailableReason && (
-                <UnavailableNote>{suggestions.unavailableReason} Add your keywords manually.</UnavailableNote>
+                <UnavailableNote>{suggestions.unavailableReason}</UnavailableNote>
               )}
             </div>
           }
@@ -705,11 +672,10 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
           className="md:col-span-2"
           title="Priority products and collections"
           badge="optional"
-          description="Pages you most want improved. They are marked as priorities in your catalogue lists."
         >
           {suggestionsLoading && <SuggestionsPending />}
           {!suggestionsLoading && catalogueUnread && (
-            <UnavailableNote>Your catalogue could not be read, so there is nothing to choose from right now.</UnavailableNote>
+            <UnavailableNote>Your catalogue could not be read.</UnavailableNote>
           )}
           {!suggestionsLoading && !catalogueUnread && (
             <div className="grid gap-2.5 sm:grid-cols-2">
@@ -762,8 +728,8 @@ export function StepMeasurement({ notice }: StepProps) {
 
 // ─── Step 5 · Permissions and monitoring ─────────────────────────────
 
-/** A permission, what it is set to and why, as a plain row — not a control. */
-function PermissionRow({ label, state, tone, detail }: { label: string; state: string; tone: 'on' | 'review' | 'off'; detail: string }) {
+/** A permission and what it is set to, as a plain row — not a control. */
+function PermissionRow({ label, state, tone }: { label: string; state: string; tone: 'on' | 'review' | 'off' }) {
   const chip = {
     on: 'bg-success-50 text-success-700 ring-success-100',
     review: 'bg-brand-50 text-brand-700 ring-brand-200/70',
@@ -771,10 +737,7 @@ function PermissionRow({ label, state, tone, detail }: { label: string; state: s
   }[tone];
   return (
     <li className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 px-3 py-2">
-      <div className="min-w-0 flex-1">
-        <p className="text-[12.5px] font-semibold text-surface-900">{label}</p>
-        <p className="mt-0.5 text-[11.5px] leading-[1.45] text-surface-500">{detail}</p>
-      </div>
+      <p className="min-w-0 flex-1 text-[12.5px] font-semibold text-surface-900">{label}</p>
       <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ring-1 ring-inset ${chip}`}>{state}</span>
     </li>
   );
@@ -813,10 +776,9 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
       <FormGrid>
         <FormSection
           className="md:col-span-2"
-          title="How should changes be approved?"
+          title="Change approval"
           badge="required"
           error={errors.automationConsent}
-          description="This governs every fix. You can change it whenever you like in Settings."
         >
           <div className="grid gap-2.5 sm:grid-cols-2">
             {legacy && (
@@ -824,7 +786,7 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
                 name="automation-consent"
                 value="low_risk"
                 label={consentLabel('low_risk')}
-                description="Choose one of the options below to replace it. Until then your earlier choice stands."
+                description="Choose an option below to replace it."
                 selected
                 onSelect={() => undefined}
                 className="sm:col-span-2"
@@ -836,7 +798,6 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
                 name="automation-consent"
                 value={option.value}
                 label={option.label}
-                description={option.description}
                 selected={consent === option.value}
                 onSelect={(value) => patch({ automationConsent: value as AutomationConsent })}
               />
@@ -844,47 +805,35 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
           </div>
           {consent === null && !errors.automationConsent && (
             <div className="mt-2">
-              <InfoNote>
-                Choose one to finish setup. Until you do, Rankvora AI reviews every change with you — an unanswered
-                question is never treated as permission to write to your store.
-              </InfoNote>
+              <InfoNote>Choose one to finish setup.</InfoNote>
             </div>
           )}
         </FormSection>
 
         <FormSection
           className="md:col-span-2"
-          title="What Rankvora AI is and is not allowed to do"
-          description="Each permission is separate. There is no single switch for “optimize everything”."
+          title="Permissions"
         >
           <ul className="divide-y divide-surface-100 overflow-hidden rounded-lg border border-surface-200 bg-surface-0">
             <PermissionRow
               label="Analyze your published store content"
               state="On"
               tone="on"
-              detail="Needed for any analysis. It reads your store and changes nothing."
             />
             <PermissionRow
               label="Prepare recommendations and drafts"
               state="On"
               tone="on"
-              detail="Drafts are only ever proposals — they never publish themselves."
             />
             <PermissionRow
               label="Publish content or metadata changes"
               state={consent === 'none' ? 'Off' : 'You approve each'}
               tone={consent === 'none' ? 'off' : 'review'}
-              detail={
-                consent === 'none'
-                  ? 'Nothing is written to your store.'
-                  : 'Titles, descriptions and image text change only after you approve that specific change.'
-              }
             />
             <PermissionRow
               label="Change URLs, crawler directives or theme code"
               state="Not offered"
               tone="off"
-              detail="Rankvora AI does not edit these. If it ever offers to, each change will need its own explicit review."
             />
           </ul>
         </FormSection>
@@ -893,7 +842,6 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
           label="Pages to leave alone"
           htmlFor="onboarding-protected"
           badge="optional"
-          hint="Rankvora AI will not propose or apply a change to these pages, or to anything beneath them."
           className="md:col-span-2"
         >
           <TagInput
@@ -906,16 +854,11 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
           />
         </FormField>
 
-        <FormSection
-          className="md:col-span-2"
-          title="Scheduled monitoring"
-          description="Re-analyses your store on a schedule so you see what changed. It only reads — it never changes your store."
-        >
+        <FormSection className="md:col-span-2" title="Scheduled monitoring">
           <CheckCard
             id="onboarding-monitoring"
             checked={monitoring}
             label="Re-analyze my store automatically"
-            description={monitoring ? 'On. You can still analyse whenever you like.' : 'Off. Your store is only analysed when you ask.'}
             onToggle={(next) => patch({ autoAnalysis: next })}
           />
           {monitoring && (
@@ -944,25 +887,20 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
                   onChange={(value) => patch({ preferredScanHour: value === '' ? null : Number(value) })}
                 />
                 <p className="mt-1 text-[11.5px] leading-[1.45] text-surface-500">
-                  {timeZone ? `Times are in your store’s timezone (${timeZone}).` : 'Your store’s timezone was not reported, so times are in UTC.'}
+                  {timeZone ? `Store timezone (${timeZone})` : 'UTC'}
                 </p>
               </div>
             </div>
           )}
-          <p className="mt-2 text-[12px] leading-[1.5] text-surface-600">
-            {!monitoring
-              ? 'Scheduled monitoring is off.'
-              : nextScan
-                ? `Next scan with your saved schedule: ${nextScan}.`
-                : 'Your next scan time is shown here once you have saved.'}
-          </p>
+          {monitoring && nextScan && (
+            <p className="mt-2 text-[12px] leading-[1.5] text-surface-600">Next scan: {nextScan}</p>
+          )}
         </FormSection>
 
         <FormSection
           className="md:col-span-2"
-          title="Alerts and summaries"
+          title="Alerts"
           badge="optional"
-          description="What Rankvora AI tells you about in the notification bell. Applied to your notification settings when you finish."
         >
           <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
             {alerts.map((option, index) => (
@@ -978,7 +916,7 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
             ))}
           </div>
           <p className="mt-1.5 text-[11.5px] leading-[1.45] text-surface-500">
-            Alerts appear in your notification bell. Rankvora AI does not send alert emails.
+            Shown in your notification bell.
           </p>
         </FormSection>
       </FormGrid>

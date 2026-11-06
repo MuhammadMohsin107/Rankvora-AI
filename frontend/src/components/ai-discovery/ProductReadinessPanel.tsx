@@ -47,13 +47,13 @@ const FILTERS: Filter[] = ['All', 'Critical', 'Needs Work', 'Healthy'];
 const PAGE_SIZE = 25;
 
 function describeFailure(error: unknown): string {
-  if (!(error instanceof ApiError)) return 'Could not reach the Rankvora AI API. Check that the backend is running.';
+  if (!(error instanceof ApiError)) return 'Could not reach the Rankvora AI API.';
   if (error.status === 404 && error.code !== 'STORE_NOT_FOUND') {
-    return 'This server has no product-readiness endpoint. The API is running an older build — redeploy and restart it.';
+    return 'This server has no product-readiness endpoint. Redeploy the API.';
   }
-  if (error.status === 401) return 'Your session has expired. Open Rankvora AI again from your Shopify admin.';
+  if (error.status === 401) return 'Session expired. Reopen Rankvora AI from your Shopify admin.';
   if (error.code === 'SHOPIFY_NOT_CONNECTED') {
-    return 'Connect your Shopify store on the Integrations page — this reads your live catalogue.';
+    return 'Connect your Shopify store on the Integrations page.';
   }
   return error.message;
 }
@@ -174,14 +174,10 @@ export default function ProductReadinessPanel() {
     <section className={cardClass} aria-labelledby="product-readiness-title">
       <div className="flex flex-wrap items-start justify-between gap-2.5 border-b border-surface-100 px-3 py-2">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-surface-500">Catalog</p>
-          <h2 id="product-readiness-title" className="mt-1 flex items-center gap-1.5 text-[15px] font-semibold tracking-tight text-surface-950">
+          <h2 id="product-readiness-title" className="flex items-center gap-1.5 text-[15px] font-semibold tracking-tight text-surface-950">
             <PackageSearch size={15} className="text-brand-500" />
             Product AI readiness
           </h2>
-          <p className="mt-1 text-[12px] leading-[1.45] text-surface-500">
-            Which of your products an AI assistant can find, match and act on — one row each, worst first.
-          </p>
         </div>
         <Button variant="secondary" onClick={() => void load()} disabled={loading}>
           {loading ? 'Reading catalog…' : hasRun ? 'Re-check' : 'Check my products'}
@@ -191,7 +187,7 @@ export default function ProductReadinessPanel() {
       {loading && (
         <div className="flex items-center gap-2 px-3 py-4 text-[12.5px] text-surface-500">
           <Loader2 size={14} className="animate-spin" />
-          Reading your live catalog from Shopify…
+          Reading catalog…
         </div>
       )}
 
@@ -207,8 +203,7 @@ export default function ProductReadinessPanel() {
 
       {!loading && !error && !data && (
         <p className="px-3 py-3.5 text-[12.5px] leading-[1.5] text-surface-600">
-          Nothing checked yet. This reads your live catalog from Shopify and runs the same three product
-          checks an audit runs, then ranks every product worst-first. Press the button when you want it.
+          Not checked yet.
         </p>
       )}
 
@@ -216,8 +211,8 @@ export default function ProductReadinessPanel() {
         // A store with no products is not a failure, and is never shown as 0% ready.
         <p className="px-3 py-3.5 text-[12.5px] leading-[1.5] text-surface-600">
           {data.summary.unpublished > 0
-            ? `None of this store’s ${data.summary.unpublished.toLocaleString()} products are published to the online store, so no assistant can reach one to assess.`
-            : 'This store has no products yet, so there is nothing to assess.'}
+            ? 'No published products to assess.'
+            : 'No products yet.'}
         </p>
       )}
 
@@ -227,7 +222,7 @@ export default function ProductReadinessPanel() {
             <MetricTile
               label="Average readiness"
               value={data.summary.averageScore === null ? '—' : `${data.summary.averageScore}%`}
-              detail={`across ${data.summary.analyzed.toLocaleString()} products`}
+              detail={`${data.summary.analyzed.toLocaleString()} products`}
               tone={
                 data.summary.averageScore !== null && data.summary.averageScore >= 80
                   ? 'success'
@@ -236,9 +231,9 @@ export default function ProductReadinessPanel() {
                     : 'critical'
               }
             />
-            <MetricTile label="Critical" value={data.summary.critical.toLocaleString()} detail="an agent cannot act on these" tone={data.summary.critical > 0 ? 'critical' : 'neutral'} />
-            <MetricTile label="Needs work" value={data.summary.needsWork.toLocaleString()} detail="usable but incomplete" tone={data.summary.needsWork > 0 ? 'warning' : 'neutral'} />
-            <MetricTile label="Ready" value={data.summary.healthy.toLocaleString()} detail="pass all three checks" tone={data.summary.healthy > 0 ? 'success' : 'neutral'} />
+            <MetricTile label="Critical" value={data.summary.critical.toLocaleString()} tone={data.summary.critical > 0 ? 'critical' : 'neutral'} />
+            <MetricTile label="Needs work" value={data.summary.needsWork.toLocaleString()} tone={data.summary.needsWork > 0 ? 'warning' : 'neutral'} />
+            <MetricTile label="Ready" value={data.summary.healthy.toLocaleString()} tone={data.summary.healthy > 0 ? 'success' : 'neutral'} />
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5 border-t border-surface-100 px-3 py-1.5">
@@ -290,12 +285,11 @@ export default function ProductReadinessPanel() {
               unknown, not "all of them", and this never implies otherwise. */}
           <p className="border-t border-surface-100 px-3 py-1.5 text-[11px] leading-[1.5] text-surface-500">
             {data.summary.available === null
-              ? `${data.summary.analyzed.toLocaleString()} products assessed. Shopify did not report a catalog total, so the share of your catalog this covers is unknown.`
+              ? `${data.summary.analyzed.toLocaleString()} products assessed; catalog total unknown.`
               : `${data.summary.analyzed.toLocaleString()} of ${data.summary.exact === false ? 'at least ' : ''}${data.summary.available.toLocaleString()} products assessed.`}
-            {data.summary.truncated && ' The catalog is larger than one read returns, so this covers the products read.'}
+            {data.summary.truncated && ' Catalog only partly read.'}
             {/* Stated, so a total below Shopify's own count is explained rather than a mystery. */}
-            {data.summary.unpublished > 0 && ` ${data.summary.unpublished.toLocaleString()} draft, archived or unpublished ${data.summary.unpublished === 1 ? 'product was' : 'products were'} left out — no shopper or assistant can reach ${data.summary.unpublished === 1 ? 'it' : 'them'}.`}
-            {' '}Readiness is the share of three checks passed — agent can act on it, agent can match it, description answers buying questions. Each verdict is the same one its sub-pillar page shows.
+            {data.summary.unpublished > 0 && ` ${data.summary.unpublished.toLocaleString()} unpublished left out.`}
           </p>
         </>
       )}

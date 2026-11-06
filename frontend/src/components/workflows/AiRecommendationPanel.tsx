@@ -68,10 +68,10 @@ export default function AiRecommendationPanel({ findingId }: Props) {
         setModel(result.model);
       } else {
         // Never surface a provider error verbatim — the deterministic advice above still stands.
-        setMessage('AI enhancement is unavailable right now. The recommendation above still applies.');
+        setMessage('AI enhancement is unavailable right now.');
       }
     } catch {
-      setMessage('AI enhancement is unavailable right now. The recommendation above still applies.');
+      setMessage('AI enhancement is unavailable right now.');
     } finally {
       setPending(false);
     }
@@ -96,7 +96,7 @@ export default function AiRecommendationPanel({ findingId }: Props) {
             <span className="font-semibold">Next step: </span>{ai.suggestedAction}
           </p>
           <p className="mt-1.5 text-[10.5px] text-surface-400">
-            Advisory only — Rankvora AI has not changed anything on your store.
+            Advisory only. Nothing was changed on your store.
           </p>
         </div>
       )}
@@ -113,12 +113,7 @@ export default function AiRecommendationPanel({ findingId }: Props) {
 
         {statusKnown && !available && (
           <span className="text-[10.5px] text-surface-500">
-            Not available on this server right now — the recommendation above still applies.
-          </span>
-        )}
-        {statusKnown && available && !ai && !pending && (
-          <span className="text-[10.5px] text-surface-400">
-            Rewrites the advice above for your store{model ? ` · ${model}` : ''}
+            Not available right now.
           </span>
         )}
       </div>

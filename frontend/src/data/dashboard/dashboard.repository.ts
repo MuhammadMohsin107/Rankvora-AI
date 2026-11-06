@@ -227,7 +227,7 @@ export async function fetchDashboardData(): Promise<DashboardData> {
       statusLabel: overallStatus.statusLabel,
       description: measured
         ? describeAudit(issues, pillars)
-        : 'No audit data available yet. Run an audit to measure your store.',
+        : 'No audit data yet.',
       trend: scoreTrendDir,
       trendValue,
       measured,

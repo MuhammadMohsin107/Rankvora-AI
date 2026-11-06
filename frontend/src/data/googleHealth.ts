@@ -98,37 +98,37 @@ function describe(state: GoogleHealthState, input: HealthInput): { summary: stri
   switch (state) {
     case 'unconfigured':
       return {
-        summary: `Not available on this server. Google sign-in is not configured, so ${product} cannot be read.`,
-        nextStep: 'An administrator needs to add the Google OAuth client ID and secret to the server environment and restart the API.',
+        summary: 'Google sign-in is not configured on this server.',
+        nextStep: 'An administrator must add the Google OAuth client ID and secret.',
       };
     case 'not_connected':
       return {
-        summary: `No Google account is connected, so nothing is being read from ${product}.`,
-        nextStep: `Connect Google from the ${panel} on this page.`,
+        summary: 'No Google account connected.',
+        nextStep: `Connect Google in the ${panel}.`,
       };
     case 'scope_missing':
       return {
-        summary: 'Google is connected, but this grant was made before Analytics access was added, so it cannot read Analytics.',
-        nextStep: 'Reconnect Google from the Google Analytics panel and approve Analytics access.',
+        summary: 'This Google grant does not include Analytics access.',
+        nextStep: 'Reconnect Google and approve Analytics access.',
       };
     case 'failing':
       return {
-        summary: `Not working. Google refused the last ${product} read, so no current data is coming in.`,
-        nextStep: 'Resolve the problem Google reported, then run the test read again. If access was revoked, reconnect Google.',
+        summary: `Google refused the last ${product} read.`,
+        nextStep: 'Fix the problem Google reported, then test again. If access was revoked, reconnect.',
       };
     case 'no_property':
       return {
-        summary: `Google is connected, but no ${propertyNoun} is chosen yet, so there is nothing to read.`,
-        nextStep: `Choose the property in the ${panel} on this page.`,
+        summary: `No ${propertyNoun} chosen.`,
+        nextStep: `Choose a property in the ${panel}.`,
       };
     case 'unverified':
       return {
-        summary: `Set up, but no data has been read from ${product} yet, so it is not confirmed to be working.`,
-        nextStep: 'Run a test read to fetch live data from Google now.',
+        summary: `No data read from ${product} yet.`,
+        nextStep: 'Run a test read.',
       };
     case 'working':
       return {
-        summary: `Working. Google answered the last ${product} read on ${formatReadTime(input.lastSyncedAt)}.`,
+        summary: `Last read ${formatReadTime(input.lastSyncedAt)}.`,
         nextStep: null,
       };
   }
@@ -141,42 +141,42 @@ function describe(state: GoogleHealthState, input: HealthInput): { summary: stri
 function checksFor(input: HealthInput): HealthCheck[] {
   const steps: Array<{ label: string; passed: boolean; pass: string; fail: string; failOutcome?: HealthCheck['outcome'] }> = [
     {
-      label: 'Google sign-in available on this server',
+      label: 'Google sign-in available',
       passed: input.configured,
-      pass: 'Google OAuth credentials are configured.',
-      fail: 'Google OAuth credentials are not configured on the server.',
+      pass: 'Configured.',
+      fail: 'Not configured on the server.',
     },
     {
       label: 'Google account connected',
       passed: input.connected,
-      pass: input.account ? `Connected as ${input.account}.` : 'Connected. Google did not share the account email.',
-      fail: 'No Google account is connected to this store.',
+      pass: input.account ? `Connected as ${input.account}.` : 'Connected.',
+      fail: 'No Google account connected.',
     },
     ...(input.provider === 'analytics'
       ? [{
-          label: 'Analytics read access granted',
+          label: 'Analytics access granted',
           passed: input.scopeGranted,
-          pass: 'The grant includes read-only Analytics access.',
-          fail: 'This grant was made before Analytics access was added. Reconnect Google to include it.',
+          pass: 'Read-only access granted.',
+          fail: 'Reconnect Google to include Analytics access.',
         }]
       : []),
     {
       label: 'Google accepts the connection',
       passed: !input.lastError,
-      pass: 'No refusal from Google on record.',
+      pass: 'No refusal on record.',
       fail: input.lastError ?? '',
     },
     {
       label: 'Property chosen',
       passed: Boolean(input.property),
       pass: input.property ?? '',
-      fail: 'No property is chosen, so there is nothing to read yet.',
+      fail: 'No property chosen.',
     },
     {
-      label: 'Live data read from Google',
+      label: 'Live data read',
       passed: Boolean(input.lastSyncedAt),
-      pass: `Last successful read ${formatReadTime(input.lastSyncedAt)}.`,
-      fail: 'No successful read yet. Run a test read to confirm it works.',
+      pass: `Last read ${formatReadTime(input.lastSyncedAt)}.`,
+      fail: 'No read yet. Run a test read.',
       failOutcome: 'pending',
     },
   ];

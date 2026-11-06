@@ -21,7 +21,6 @@ export interface IntegrationRecord {
   id: string;
   group: string;
   name: string;
-  description: string;
   status: IntegrationDisplayStatus;
   detail: string;
   lastSynced: string;
@@ -54,7 +53,6 @@ function toIntegrationRecord(row: IntegrationRow): IntegrationRecord {
     id: row.provider,
     group: catalog.group,
     name: catalog.name,
-    description: catalog.description,
     status: statusToDisplay[row.status],
     detail: row.accountDetail ?? (row.status === 'not_connected' ? 'No account connected' : 'Connected account'),
     lastSynced: formatLastSynced(row.lastSyncedAt),
@@ -85,7 +83,6 @@ export async function fetchIntegrations(): Promise<IntegrationRecord[]> {
       id: catalog.provider,
       group: catalog.group,
       name: catalog.name,
-      description: catalog.description,
       status: 'Not Connected' as const,
       detail: 'No account connected',
       lastSynced: 'Never synced',
@@ -154,7 +151,7 @@ export function overlayConnectorHealth(records: IntegrationRecord[], health: Con
         ...record,
         status: 'Needs Attention',
         badge: { label: 'Status unavailable', tone: 'warning' },
-        detail: 'Could not check whether this connection is working.',
+        detail: 'Could not check this connection.',
       };
     }
 

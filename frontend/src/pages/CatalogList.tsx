@@ -194,9 +194,8 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
     return (
       <AppPage heading={config.navLabel}>
       <div className="page-shell space-y-2.5 pt-3" aria-busy="true" aria-label={`Loading ${config.nouns}`}>
-        {/* The page's one line of context and its chips; the title is in the page frame (AppPage). */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="skeleton h-3 w-72" />
+        {/* The page's chips; the title is in the page frame (AppPage). */}
+        <div className="flex items-center justify-end gap-2">
           <div className="skeleton h-7 w-64 rounded-lg" />
         </div>
         <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -228,7 +227,6 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
         <div className={`${cardClass} flex flex-col items-center p-6 text-center`}>
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-600"><Radar size={18} /></span>
           <h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">{config.emptyTitle}</h2>
-          <p className="mt-1 max-w-sm text-[12.5px] leading-[1.5] text-surface-500">{config.emptyBody}</p>
           <RunAuditButton onComplete={() => { void load(true); void loadMoves(); }} />
         </div>
       </div>
@@ -243,7 +241,7 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
         <div className={`${cardClass} flex flex-col items-center p-6 text-center`}>
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-critical-50 text-critical-600"><AlertCircle size={18} /></span>
           <h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">{config.errorTitle}</h2>
-          <p className="mt-1 max-w-sm text-[12.5px] leading-[1.5] text-surface-500">{errorMessage ?? 'The latest audit could not be read.'} Your results are unaffected.</p>
+          {errorMessage && <p className="mt-1 max-w-sm text-[12.5px] leading-[1.5] text-surface-500">{errorMessage}</p>}
           <Button variant="primary" onClick={() => void load(true)} className="mt-3">Retry</Button>
         </div>
       </div>
@@ -262,7 +260,6 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
   const currentPage = Math.min(page, pageCount - 1);
   const from = currentPage * PAGE_SIZE;
   const pageRows = visible.slice(from, from + PAGE_SIZE);
-  const withImages = catalog.items.filter((item) => item.imageSrc).length;
   const unavailable = catalog.checksUnavailable.length;
   const issues = dashboard?.priorityIssues ?? [];
   const activeIssue = move ? issues.find((candidate) => candidate.route === move.route && candidate.title === move.title) ?? null : null;
@@ -275,8 +272,7 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
       secondaryActions={[{ label: 'Reload', onClick: () => { void load(true); void loadMoves(); }, accessibilityLabel: `Reload ${config.nouns} from the latest audit` }]}
     >
     <div className="page-shell space-y-2.5 pt-3">
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-        <p className="page-subtitle min-w-0">{config.overviewSubtitle}</p>
+      <div className="flex lg:justify-end">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           {catalog.lastAnalyzed && (
             <span className="meta-chip">
@@ -308,9 +304,6 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
           {unavailable > 0 && (
             <p><span className="font-semibold text-warning-700">Not included this time:</span> {catalog.checksUnavailable.map((check) => `${check.label} (${check.reason.replace(/\.$/, '')})`).join('; ')}.</p>
           )}
-          <p>Each check keeps a sample of its rows per audit, flagged {config.nouns} first, so on a large store a {config.noun} can be missing from a check that passed it — it then shows fewer checks, never a pass it did not get.</p>
-          <p>Photos are the images the audit read from Shopify: {withImages.toLocaleString()} of {catalog.items.length.toLocaleString()} {config.nouns} have one recorded. A {config.noun} without one shows a plain box, never a stock image. “Last updated” is when Shopify last recorded a change to the {config.noun}; it appears after the next audit.</p>
-          <p>Checks passed is the share of the checks that recorded a {config.noun} that it passed — a count, not a weighted score. Critical means a check’s finding for that {config.noun} is rated critical; any other failing check is a warning.</p>
         </div>
       )}
 
@@ -363,9 +356,9 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
             <div className="flex items-center gap-2 border-b border-info-100 bg-info-50 px-3 py-1.5 text-[12px] text-info-700">
               <Info size={14} className="flex-shrink-0 text-info-600" aria-hidden="true" />
               <p className="min-w-0 flex-1">
-                <span className="font-semibold">Filtered view</span> — showing {base.length.toLocaleString()} {base.length === 1 ? config.noun : config.nouns} with the issue “{move.title}”
+                <span className="font-semibold">Filtered</span> — {base.length.toLocaleString()} {base.length === 1 ? config.noun : config.nouns} · “{move.title}”
                 {activeIssue && activeIssue.affectedCount > base.length && (
-                  <span className="text-info-700"> ({activeIssue.affectedCount.toLocaleString()} store-wide; the rest are outside this audit’s sample)</span>
+                  <span className="text-info-700"> ({activeIssue.affectedCount.toLocaleString()} store-wide)</span>
                 )}
               </p>
               <Button variant="ghost" onClick={clearMove} accessibilityLabel="Clear the filter" icon="x" />
@@ -384,9 +377,9 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
             {visible.length === 0 ? (
               <p className="px-3 py-8 text-center text-[12px] text-surface-500">
                 {catalog.items.length === 0
-                  ? config.noRowsBody
+                  ? `No ${config.nouns} in the latest audit.`
                   : move && base.length === 0
-                    ? `None of the ${config.nouns} in this audit’s sample carry this issue.`
+                    ? `No ${config.nouns} with this issue.`
                     : `No ${config.nouns} match this filter.`}
               </p>
             ) : (

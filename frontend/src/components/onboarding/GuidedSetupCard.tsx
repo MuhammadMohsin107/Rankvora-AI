@@ -63,8 +63,8 @@ export default function GuidedSetupCard() {
   const improveFirst = answers.priorityPillars.filter(isPillarVisible).map((key) => PILLAR_LABELS[key] ?? key);
 
   const rows: Array<{ label: string; value: string | null }> = [
-    { label: 'Store name in reports', value: answers.organizationName },
-    { label: 'Brand name in titles', value: answers.brandName },
+    { label: 'Store name', value: answers.organizationName },
+    { label: 'Brand name', value: answers.brandName },
     // Every industry the merchant chose, joined — not the first one.
     { label: 'Industry', value: answers.industries.length > 0 ? answers.industries.join(', ') : null },
     { label: 'Priority markets', value: answers.targetCountries.length > 0 ? answers.targetCountries.join(', ') : null },
@@ -87,7 +87,6 @@ export default function GuidedSetupCard() {
   return (
     <SettingsCard
       title="Guided setup"
-      description="The answers Rankvora AI works from, and what your store can do because of them."
       footer={
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-[11.5px] text-surface-500">
@@ -95,7 +94,7 @@ export default function GuidedSetupCard() {
               ? `Completed ${new Date(snapshot.completedAt).toLocaleDateString()}.`
               : outstanding.length > 0
                 ? `${outstanding.join(', ')} outstanding.`
-                : 'Everything required is answered. Finish setup to confirm it.'}
+                : 'Ready to finish.'}
           </p>
           <Button variant="secondary" onClick={() => navigate('/onboarding')}>
             {snapshot.completedAt ? 'Review answers' : 'Continue setup'}
@@ -156,7 +155,7 @@ export default function GuidedSetupCard() {
       </div>
 
       <div className="mt-3">
-        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-500">What your store can do</p>
+        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-surface-500">Capabilities</p>
         <CapabilityList capabilities={snapshot.capabilities} compact />
       </div>
     </SettingsCard>

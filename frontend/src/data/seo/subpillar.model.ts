@@ -180,13 +180,13 @@ export function describeIssueUnits(units: Array<{ unit: string; flagged: number;
 export interface RelatedArea {
   label: string;
   href: string;
-  hint: string;
+  hint?: string;
 }
 
 export interface SubPillarAnalysis {
   slug: string;
   title: string;
-  description: string;
+  description?: string;
   /** Enables the reusable test-safe bulk-fix workflow on supported sub-pillars only. */
   supportsBulkFix?: boolean;
   /** Selects the validation adapter used by the shared workflow. */

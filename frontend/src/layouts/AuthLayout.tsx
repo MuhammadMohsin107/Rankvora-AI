@@ -70,11 +70,6 @@ export default function AuthLayout({ title, subtitle, children, footer }: AuthLa
                 <h2 className="mt-7 text-balance text-[clamp(26px,2.35vw,40px)] font-extrabold uppercase leading-[1.08] tracking-[-0.01em] text-[color:var(--auth-panel-ink)]">
                   Uncover every growth bottleneck. Know precisely what to fix for maximum revenue.
                 </h2>
-                <p className="mt-6 text-[15px] leading-[1.65] text-[color:var(--auth-panel-muted)]">
-                  Rankvora AI provides an automated, comprehensive diagnostic of your Shopify storefront. It
-                  detects revenue leaks, conversion inhibitors, and technical issues. We don&apos;t just find
-                  problems, we deliver actionable, prioritized fix plans.
-                </p>
               </div>
 
               <div className="ml-auto hidden xl:block">

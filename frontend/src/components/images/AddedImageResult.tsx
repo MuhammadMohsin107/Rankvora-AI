@@ -14,7 +14,7 @@ const POLL_MS = 2_000;
  * once its status is READY. While Shopify is still processing it the card says so and keeps asking;
  * a FAILED status is shown with Shopify's reasons.
  */
-export default function AddedImageResult({ result, productTitle, source, onAddAnother, onSettled }: {
+export default function AddedImageResult({ result, productTitle, onAddAnother, onSettled }: {
   result: AttachResult;
   productTitle: string;
   source: 'upload' | 'ai';
@@ -81,16 +81,16 @@ export default function AddedImageResult({ result, productTitle, source, onAddAn
                 ? `Image added to “${productTitle}”`
                 : gaveUp
                   ? 'Shopify is still processing the image'
-                  : 'Image uploaded — Shopify is processing it…'}
+                  : 'Shopify is processing the image…'}
           </p>
           <p className="mt-0.5 text-surface-700">
             {failed
-              ? (outcome.errors.length > 0 ? outcome.errors.join(' · ') : 'Shopify reported the image as failed without giving a reason. Try a different image.')
+              ? (outcome.errors.length > 0 ? outcome.errors.join(' · ') : 'Try a different image.')
               : ready
-                ? `It is live on the product in your store${imageCount !== null ? `, which now has ${imageCount} ${imageCount === 1 ? 'image' : 'images'}` : ''}. ${source === 'ai' ? 'The picture was drawn by AI from the product’s title and description.' : ''}`.trim()
+                ? (imageCount !== null ? `The product now has ${imageCount} ${imageCount === 1 ? 'image' : 'images'}.` : '')
                 : gaveUp
-                  ? 'It has been added to the product and will appear once Shopify finishes. You can close this panel; nothing more is needed.'
-                  : 'The product page will show it as soon as Shopify says it is ready.'}
+                  ? 'It will appear once Shopify finishes.'
+                  : ''}
           </p>
         </div>
       </div>

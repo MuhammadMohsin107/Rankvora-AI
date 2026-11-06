@@ -100,7 +100,7 @@ function PanelBody({ onClose, initialProductId, onImageAdded }: {
     let live = true;
     fetchImageCapabilities()
       .then((value) => { if (live) setCapabilities(value); })
-      .catch((error) => { if (live) setCapabilityError(error instanceof ApiError ? error.message : 'Could not check what Rankvora AI can do for this store.'); });
+      .catch((error) => { if (live) setCapabilityError(error instanceof ApiError ? error.message : 'Could not check this store’s permissions.'); });
     return () => { live = false; };
   }, []);
 
@@ -200,9 +200,6 @@ function PanelBody({ onClose, initialProductId, onImageAdded }: {
               <ImagePlus size={17} className="text-brand-600" aria-hidden="true" />
               Add product images
             </h2>
-            <p className="mt-0.5 text-[12px] text-surface-500">
-              Products in your store with no image, read live from Shopify. Upload a photo or draw one with AI, then add it to the product.
-            </p>
           </div>
           <button
             ref={closeRef}
@@ -275,14 +272,14 @@ function PanelBody({ onClose, initialProductId, onImageAdded }: {
                     <CheckCircle2 size={18} aria-hidden="true" />
                   </span>
                   <p className="mt-2.5 text-[13px] font-semibold text-surface-900">
-                    {query ? `No product without an image matches “${query}”` : scanned === 0 ? 'Your store has no products yet' : 'Every product has an image'}
+                    {query ? `No match for “${query}”` : scanned === 0 ? 'No products yet' : 'Every product has an image'}
                   </p>
                   <p className="mx-auto mt-1 max-w-[16rem] text-[11.5px] leading-[1.5] text-surface-500">
                     {query
                       ? 'Try fewer letters, or clear the search.'
                       : scanned === 0
-                        ? 'Add products in Shopify, then come back.'
-                        : `All ${scanned.toLocaleString()} products Shopify listed have at least one image.`}
+                        ? 'Add products in Shopify.'
+                        : `${scanned.toLocaleString()} products checked.`}
                   </p>
                 </div>
               )}
@@ -349,7 +346,6 @@ function PanelBody({ onClose, initialProductId, onImageAdded }: {
               <div className="flex h-full min-h-[18rem] flex-col items-center justify-center px-6 py-10 text-center">
                 <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-100 text-surface-400"><Package size={22} aria-hidden="true" /></span>
                 <p className="mt-3 text-[14px] font-semibold text-surface-900">Choose a product</p>
-                <p className="mt-1 max-w-xs text-[12px] leading-[1.5] text-surface-500">Pick a product from the list to upload a photo for it or draw one with AI.</p>
               </div>
             )}
 
@@ -391,7 +387,7 @@ function PanelBody({ onClose, initialProductId, onImageAdded }: {
                       {subject.images.length > 0 && (
                         <div className="mt-2">
                           <Banner tone="info">
-                            <s-text>This product already has {subject.images.length === 1 ? 'an image' : 'images'} in Shopify — it may have been added since your last analysis. A new image will be added alongside.</s-text>
+                            <s-text>This product already has {subject.images.length === 1 ? 'an image' : 'images'}. A new one will be added alongside.</s-text>
                           </Banner>
                         </div>
                       )}

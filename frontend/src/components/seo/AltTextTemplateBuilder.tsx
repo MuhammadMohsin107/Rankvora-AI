@@ -19,7 +19,7 @@ import {
   type AutoFormat,
 } from '../../data/seo/altText.repository';
 import { ApiError } from '../../lib/api';
-import { card, cardHeader, cardTitle, eyebrow } from './subpillar/tone';
+import { card, cardHeader, cardTitle } from './subpillar/tone';
 import Button from '../../components/polaris/Button';
 import Banner from '../polaris/Banner';
 
@@ -172,8 +172,7 @@ export default function AltTextTemplateBuilder() {
       <section className={`${card} overflow-hidden`} aria-labelledby="alt-template-title">
         <div className={`${cardHeader} flex flex-wrap items-center justify-between gap-2`}>
           <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-            <p className={eyebrow}>Configuration</p>
-            <h2 id="alt-template-title" className={cardTitle}>Alt-Text Template Builder</h2>
+            <h2 id="alt-template-title" className={cardTitle}>Alt-text template</h2>
           </div>
           <TypeTabs active={contentType} onSelect={selectContentType} />
         </div>
@@ -282,10 +281,7 @@ export default function AltTextTemplateBuilder() {
                 onChange={(event) => update({ skipExisting: event.target.checked })}
                 className="mt-0.5 h-3.5 w-3.5 cursor-pointer rounded border-surface-300 text-brand-600 focus:ring-brand-500"
               />
-              <span className="min-w-0">
-                <span className="block text-[12px] font-medium text-surface-800">Skip images that already have alt text</span>
-                <span className="block text-[10.5px] leading-[1.4] text-surface-500">Existing merchant-written alt text is preserved, never overwritten.</span>
-              </span>
+              <span className="min-w-0 text-[12px] font-medium text-surface-800">Skip images that already have alt text</span>
             </label>
 
             <label className="flex cursor-pointer items-start gap-2">
@@ -295,10 +291,7 @@ export default function AltTextTemplateBuilder() {
                 onChange={(event) => update({ removeDuplicateWords: event.target.checked })}
                 className="mt-0.5 h-3.5 w-3.5 cursor-pointer rounded border-surface-300 text-brand-600 focus:ring-brand-500"
               />
-              <span className="min-w-0">
-                <span className="block text-[12px] font-medium text-surface-800">Remove duplicate words</span>
-                <span className="block text-[10.5px] leading-[1.4] text-surface-500">Drops a repeated word, keeping connecting words like "and" and "the".</span>
-              </span>
+              <span className="min-w-0 text-[12px] font-medium text-surface-800">Remove duplicate words</span>
             </label>
 
             {/* Disabled, with the reason stated. A toggle the merchant could switch on that quietly
@@ -320,9 +313,7 @@ export default function AltTextTemplateBuilder() {
                       webhooks to hear about an upload, and a media-specific mutation, since alt
                       text is not written through productUpdate like the SEO fields are. Stating
                       the wrong reason for a correct limitation is its own kind of inaccuracy. */}
-                  Not available yet — this needs Shopify media webhooks to hear about an upload, and
-                  image alt text is written through a different Shopify mutation than the SEO fields
-                  Rankvora AI already saves. Your template is stored and ready for when it lands.
+                  Not available yet.
                 </span>
               </span>
             </div>
@@ -330,7 +321,7 @@ export default function AltTextTemplateBuilder() {
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-surface-100 pt-2.5">
             <p className="text-[10.5px] leading-[1.4] text-surface-500">
-              Saving stores this template only. Nothing is written to your Shopify store.
+              Saving does not change your store.
             </p>
             <div className="flex items-center gap-2">
               {justSaved && !saving && (

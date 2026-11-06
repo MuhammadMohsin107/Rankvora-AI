@@ -62,23 +62,23 @@ function describe(state: PageSpeedHealthState, status: PageSpeedStatus): { summa
   switch (state) {
     case 'no_storefront':
       return {
-        summary: 'No storefront to measure. PageSpeed Insights measures your live public store, and no Shopify store is connected yet.',
-        nextStep: 'Connect your Shopify store in the panel above. Nothing needs to be set up for PageSpeed itself.',
+        summary: 'No store connected to measure.',
+        nextStep: 'Connect your Shopify store above.',
       };
     case 'never_measured':
       return {
-        summary: `Ready to measure ${status.storefrontUrl}. No measurement has been taken yet, so no Core Web Vitals are known for this store.`,
-        nextStep: 'Run a measurement. Google loads your storefront on an emulated phone and desktop, which takes up to a minute.',
+        summary: `Ready to measure ${status.storefrontUrl}.`,
+        nextStep: 'Run a measurement. It takes up to a minute.',
       };
     case 'failing':
       return {
         // Google's own reason, already written for the merchant by the service that caught it.
         summary: `The last measurement did not complete. ${status.lastError}`,
-        nextStep: 'Resolve the problem above, then run the measurement again.',
+        nextStep: 'Fix the problem above, then measure again.',
       };
     case 'working':
       return {
-        summary: `Working. Google measured ${status.storefrontUrl} on ${formatReadTime(status.lastMeasuredAt)}.`,
+        summary: `Last measured ${formatReadTime(status.lastMeasuredAt)}.`,
         nextStep: null,
       };
   }
@@ -93,22 +93,22 @@ function describe(state: PageSpeedHealthState, status: PageSpeedStatus): { summa
 function checksFor(state: PageSpeedHealthState, status: PageSpeedStatus) {
   return sequentialChecks([
     {
-      label: 'Public storefront to measure',
+      label: 'Storefront available',
       passed: Boolean(status.storefrontUrl),
       pass: status.storefrontUrl ?? '',
-      fail: 'No Shopify store is connected, so there is no storefront to measure.',
+      fail: 'No Shopify store connected.',
     },
     {
-      label: 'Google completed the last measurement',
+      label: 'Last measurement completed',
       passed: !status.lastError,
-      pass: 'No failure from Google on record.',
+      pass: 'No failure on record.',
       fail: status.lastError ?? '',
     },
     {
       label: 'Storefront measured',
       passed: Boolean(status.lastMeasuredAt),
       pass: `Last measured ${formatReadTime(status.lastMeasuredAt)}.`,
-      fail: 'No measurement has been taken yet. Run one to get real Core Web Vitals.',
+      fail: 'Not measured yet.',
       // Not-yet-run is not a fault. It is the step that has not happened.
       failOutcome: 'pending' as const,
     },

@@ -10,7 +10,6 @@ import { sortByCell, type SubPillarAnalysis } from '../subpillar.model';
 export const metaDescriptionsAnalysis: SubPillarAnalysis = {
   slug: 'meta-descriptions',
   title: 'Meta Descriptions',
-  description: 'Check that every page earns its click with a unique, well-sized description in the search snippet.',
   summary: '',
   healthChip: '',
   totals: {
@@ -59,9 +58,9 @@ export const metaDescriptionsAnalysis: SubPillarAnalysis = {
     ],
   },
   relatedAreas: [
-    { label: 'Title Tags', href: '/seo/title-tags', hint: 'The other half of the search snippet' },
-    { label: 'Canonicals & Duplicates', href: '/seo/canonicals', hint: 'Where duplicate snippets originate' },
-    { label: 'Sitemap & Indexability', href: '/seo/sitemap', hint: 'Whether these pages can rank at all' },
+    { label: 'Title Tags', href: '/seo/title-tags' },
+    { label: 'Canonicals & Duplicates', href: '/seo/canonicals' },
+    { label: 'Sitemap & Indexability', href: '/seo/sitemap' },
   ],
   lastAnalyzed: '',
 };

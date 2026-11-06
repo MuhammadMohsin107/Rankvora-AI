@@ -125,7 +125,7 @@ export default function LinkScanPanel() {
       setLastCompleted(result.lastCompleted);
       setProblem(null);
     } catch (error) {
-      setProblem(error instanceof ApiError ? error.message : 'Rankvora AI could not check on the link scan.');
+      setProblem(error instanceof ApiError ? error.message : 'The link scan could not be loaded.');
     } finally {
       setLoaded(true);
     }
@@ -178,7 +178,7 @@ export default function LinkScanPanel() {
     } catch (error) {
       // A scan that is already running (started from another tab, or after an audit) is followed, not an error.
       if (error instanceof ApiError && error.code === 'LINK_SCAN_IN_PROGRESS') await refresh();
-      else setProblem(error instanceof ApiError ? error.message : 'The link scan could not be started. Please try again.');
+      else setProblem(error instanceof ApiError ? error.message : 'The scan could not be started. Try again.');
     } finally {
       setStarting(false);
     }
@@ -230,13 +230,13 @@ export default function LinkScanPanel() {
   const tiles = useMemo(() => {
     if (!summary) return [];
     return [
-      { label: 'Pages loaded', value: summary.pagesCrawled, note: 'every page of the store', onClick: undefined },
-      { label: 'Links found', value: summary.linksFound, note: `${number(summary.urlsChecked)} different addresses checked`, onClick: undefined },
-      { label: 'Broken — your store', value: brokenInternal, note: 'links to your own pages', tone: brokenInternal > 0 ? 'critical' : 'good', onClick: () => choose('broken', 'internal') },
-      { label: 'Broken — other sites', value: brokenExternal, note: 'links to other websites', tone: brokenExternal > 0 ? 'critical' : 'good', onClick: () => choose('broken', 'external') },
-      { label: 'Redirected', value: summary.internal.redirect + summary.external.redirect, note: 'work after a redirect', onClick: () => choose('redirect', 'all') },
-      { label: 'Could not check', value: summary.internal.blocked + summary.internal.unverified + summary.internal.skipped + summary.external.blocked + summary.external.unverified + summary.external.skipped, note: 'sites that refused the check', onClick: () => choose('unverified', 'all') },
-    ] as Array<{ label: string; value: number; note: string; tone?: 'critical' | 'good'; onClick: (() => void) | undefined }>;
+      { label: 'Pages loaded', value: summary.pagesCrawled, onClick: undefined },
+      { label: 'Links found', value: summary.linksFound, note: `${number(summary.urlsChecked)} addresses checked`, onClick: undefined },
+      { label: 'Broken — your store', value: brokenInternal, tone: brokenInternal > 0 ? 'critical' : 'good', onClick: () => choose('broken', 'internal') },
+      { label: 'Broken — other sites', value: brokenExternal, tone: brokenExternal > 0 ? 'critical' : 'good', onClick: () => choose('broken', 'external') },
+      { label: 'Redirected', value: summary.internal.redirect + summary.external.redirect, onClick: () => choose('redirect', 'all') },
+      { label: 'Could not check', value: summary.internal.blocked + summary.internal.unverified + summary.internal.skipped + summary.external.blocked + summary.external.unverified + summary.external.skipped, onClick: () => choose('unverified', 'all') },
+    ] as Array<{ label: string; value: number; note?: string; tone?: 'critical' | 'good'; onClick: (() => void) | undefined }>;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [summary, brokenInternal, brokenExternal]);
 
@@ -252,8 +252,7 @@ export default function LinkScanPanel() {
     <section aria-label="Complete link scan" className={card}>
       <div className={`${cardHeader} flex flex-wrap items-center justify-between gap-2`}>
         <div className={cardHeadingRow}>
-          <span className={eyebrow}>Complete scan</span>
-          <h2 className={cardTitle}>Every page, every link</h2>
+          <h2 className={cardTitle}>Link scan</h2>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           {shown && !running && <Button variant="ghost" onClick={() => void exportCsv()} loading={exporting} disabled={exporting}>Download spreadsheet</Button>}
@@ -263,22 +262,13 @@ export default function LinkScanPanel() {
       </div>
 
       <div className="space-y-3 p-3.5">
-        <p className="text-[12.5px] leading-[1.55] text-surface-600">
-          Loads every page of your store and checks every link on it — to your own pages and to other websites — so you see
-          every broken link, not a sample. A link is only called broken when the page really is gone; a site that merely refuses
-          an automated check is listed separately.
-        </p>
-
         {problem && <Banner key={problem} tone="critical" onDismiss={() => setProblem(null)}>{problem}</Banner>}
 
         {!loaded && <p className="text-[12.5px] text-surface-500">Loading…</p>}
 
         {loaded && !latest && (
           <div className="rounded-lg border border-dashed border-surface-300 px-4 py-6 text-center">
-            <p className="text-[13px] font-semibold text-surface-900">This store has not been scanned yet</p>
-            <p className="mx-auto mt-1 max-w-md text-[12px] leading-[1.5] text-surface-500">
-              Start a scan to check every link. It runs on its own and you can leave this page while it works.
-            </p>
+            <p className="text-[13px] font-semibold text-surface-900">Not scanned yet</p>
           </div>
         )}
 
@@ -296,16 +286,16 @@ export default function LinkScanPanel() {
                 {latest.summary.internal.broken + latest.summary.external.broken > 0 && ` · ${number(latest.summary.internal.broken + latest.summary.external.broken)} broken`}
               </p>
             )}
-            {shown && <p className="mt-1 text-[11.5px] text-surface-500">The results below are from the scan of {when(shown.finishedAt)} until this one finishes.</p>}
+            {shown && <p className="mt-1 text-[11.5px] text-surface-500">Showing the scan of {when(shown.finishedAt)}.</p>}
           </div>
         )}
 
         {latest && latest.status === 'failed' && (
-          <Banner key={`failed-${latest.id}`} tone="critical" heading="The last link scan did not finish">
-            {latest.error ?? 'The scan stopped before it finished.'}
+          <Banner key={`failed-${latest.id}`} tone="critical" heading="Scan did not finish">
+            {latest.error}
           </Banner>
         )}
-        {latest && latest.status === 'cancelled' && <Banner key={`cancelled-${latest.id}`} tone="info">The last link scan was cancelled.</Banner>}
+        {latest && latest.status === 'cancelled' && <Banner key={`cancelled-${latest.id}`} tone="info">Last scan cancelled.</Banner>}
 
         {shown && summary && (
           <>
@@ -316,8 +306,7 @@ export default function LinkScanPanel() {
 
             {shown.limitReached === 'urls' && (
               <Banner key={`limit-${shown.id}`} tone="warning" heading="Part of your store was not checked">
-                This store has more addresses than one scan covers. The {number(summary.urlsFound)} found first were all checked;
-                the rest were left out, so this list may be missing some broken links.
+                Only the first {number(summary.urlsFound)} addresses were checked.
               </Banner>
             )}
 
@@ -327,7 +316,7 @@ export default function LinkScanPanel() {
                   <>
                     <span className="block text-[10.5px] font-semibold uppercase tracking-[0.08em] text-surface-500">{tile.label}</span>
                     <span className={`mt-0.5 block text-[22px] font-bold leading-tight tabular-nums ${tile.tone === 'critical' ? 'text-critical-700' : tile.tone === 'good' ? 'text-success-700' : 'text-surface-950'}`}>{number(tile.value)}</span>
-                    <span className="block text-[11px] text-surface-500">{tile.note}</span>
+                    {tile.note && <span className="block text-[11px] text-surface-500">{tile.note}</span>}
                   </>
                 );
                 return (
@@ -343,8 +332,8 @@ export default function LinkScanPanel() {
             </ul>
 
             {brokenInternal + brokenExternal === 0 && (
-              <Banner key={`clean-${shown.id}`} tone="success" heading="No broken links found">
-                Every one of the {number(summary.urlsChecked)} addresses linked from your {number(summary.pagesCrawled)} pages answered.
+              <Banner key={`clean-${shown.id}`} tone="success" heading="No broken links">
+                All {number(summary.urlsChecked)} addresses answered.
               </Banner>
             )}
 
@@ -485,10 +474,10 @@ function LinkRowView({ row, expanded, sources, onToggle }: RowProps) {
             {sources === 'loading' || sources === undefined ? (
               <p className="text-[12px] text-surface-500">Finding the pages…</p>
             ) : sources === 'error' ? (
-              <p className="text-[12px] text-critical-700">The pages that contain this link could not be loaded.</p>
+              <p className="text-[12px] text-critical-700">The pages could not be loaded.</p>
             ) : (
               <>
-                <p className={eyebrow}>Pages that contain this link</p>
+                <p className={eyebrow}>Found on</p>
                 <ul className="mt-1 space-y-0.5">
                   {sources.sources.map((source) => (
                     <li key={source.page} className="flex flex-wrap items-baseline gap-x-2 text-[12px]">
@@ -499,7 +488,7 @@ function LinkRowView({ row, expanded, sources, onToggle }: RowProps) {
                 </ul>
                 {sources.total > sources.sources.length && (
                   <p className="mt-1 text-[11.5px] text-surface-500">
-                    Showing the first {sources.sources.length} of {number(sources.total)} pages. The spreadsheet names the first three for every link.
+                    Showing {sources.sources.length} of {number(sources.total)} pages.
                   </p>
                 )}
               </>

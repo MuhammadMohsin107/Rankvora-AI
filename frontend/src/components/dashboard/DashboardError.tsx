@@ -16,9 +16,7 @@ export default function DashboardError({ message, onRetry }: Props) {
         <h2 className="text-[15px] font-semibold text-surface-900 mb-2">
           Unable to load dashboard
         </h2>
-        <p className="text-[12.5px] text-surface-500 max-w-md mb-2">
-          {message || 'Something went wrong while fetching your dashboard data. Please try again.'}
-        </p>
+        {message && <p className="text-[12.5px] text-surface-500 max-w-md mb-2">{message}</p>}
         {onRetry && (
           <Button variant="primary" onClick={onRetry}>
             

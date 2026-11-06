@@ -283,7 +283,7 @@ export function Stepper({
 }
 
 /**
- * The step's own heading. One task, named, with a line saying what answering it changes.
+ * The step's own heading. One task, named — with a short line only where the name is not enough.
  *
  * The icon tile is the step's identity and repeats nowhere else on screen, so it carries the number
  * as well on narrow screens — where the rail is gone, it is the only place the step's own mark sits
@@ -299,7 +299,7 @@ export function StepHeader({
   step: number;
   total: number;
   title: string;
-  purpose: string;
+  purpose?: string;
   icon?: LucideIcon;
 }) {
   return (
@@ -317,7 +317,7 @@ export function StepHeader({
           <h1 className="mt-0.5 text-[16px] font-semibold leading-[1.2] tracking-[-0.02em] text-surface-950 sm:text-[17px]">
             {title}
           </h1>
-          <p className="mt-0.5 max-w-2xl text-[12px] leading-[1.45] text-surface-500">{purpose}</p>
+          {purpose && <p className="mt-0.5 max-w-2xl text-[12px] leading-[1.45] text-surface-500">{purpose}</p>}
         </div>
       </div>
     </header>

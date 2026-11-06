@@ -7,10 +7,8 @@ import {
   BarChart3,
   Building2,
   Check,
-  Lock,
   RefreshCw,
   ShieldCheck,
-  Sparkles,
   Store,
   Target,
   type LucideIcon,
@@ -390,7 +388,7 @@ export default function Onboarding() {
     if (unanswered !== null) {
       setStep(unanswered);
       flagMissing(unanswered);
-      setSaveError(`${STEP_META[unanswered - 1].title} still needs an answer before setup can be finished.`);
+      setSaveError(`${STEP_META[unanswered - 1].title} still needs an answer.`);
       return;
     }
 
@@ -448,25 +446,8 @@ export default function Onboarding() {
               <Store size={20} strokeWidth={1.9} aria-hidden="true" />
             </span>
             <h1 className="mt-3.5 text-[18px] font-semibold leading-[1.15] tracking-[-0.02em] text-surface-950 sm:text-[21px]">
-              Connect your Shopify store first
+              Connect Shopify first
             </h1>
-            <p className="mt-2 max-w-xl text-[12.5px] leading-[1.55] text-surface-500 sm:text-[13px]">
-              Guided setup reads your own store to do most of the work for you. Connect Shopify and it takes about
-              two minutes.
-            </p>
-
-            <ul className="mt-4 space-y-2 border-t border-surface-200 pt-4">
-              {[
-                'Your store name, domain, currency and timezone are read for you.',
-                'Industry and keyword suggestions come from your own collections and product types.',
-                'You confirm every answer — nothing is filled in on your behalf.',
-              ].map((line) => (
-                <li key={line} className="flex items-start gap-2.5 text-[12.5px] leading-[1.5] text-surface-600">
-                  <Sparkles size={14} className="mt-[2px] flex-shrink-0 text-brand-500" aria-hidden="true" />
-                  {line}
-                </li>
-              ))}
-            </ul>
 
             <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
               <ActionButton onClick={() => navigate('/integrations')}>
@@ -508,8 +489,7 @@ export default function Onboarding() {
           <div className="flex items-start gap-2 rounded-t-xl border-b border-success-100 bg-success-50 px-3.5 py-1.5 sm:px-5">
             <Check size={15} className="mt-px flex-shrink-0 text-success-700" aria-hidden="true" />
             <p className="text-[12px] leading-[1.45] text-success-700">
-              Setup is complete. Change anything you like — every step stays available, and saving keeps your setup
-              finished.
+              Setup is complete. Edit any step.
             </p>
           </div>
         )}
@@ -572,11 +552,6 @@ export default function Onboarding() {
           </div>
         </footer>
       </Card>
-
-      <p className="mt-2.5 flex items-start justify-center gap-1.5 px-2 text-center text-[11px] leading-[1.45] text-surface-500">
-        <Lock size={12} className="mt-px flex-shrink-0 text-surface-400" aria-hidden="true" />
-        Your answers are saved as you go and only shape your own analysis. Change any of them later in Settings.
-      </p>
     </Frame>
   );
 }

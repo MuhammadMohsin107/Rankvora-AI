@@ -9,10 +9,9 @@ import { cardClass, hairline, pillarColumns } from './scoreTone';
 export default function DashboardSkeleton() {
   return (
     <div className="page-shell space-y-3 pt-3" aria-busy="true" aria-label="Loading dashboard">
-      {/* The row above the data: the page's purpose line and the store's facts. The title and the
-          Re-analyze button are in the page frame (AppPage), so there is nothing to hold their place. */}
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-        <div className="skeleton h-3 w-64" />
+      {/* The row above the data: the store's facts. The title and the Re-analyze button are in the
+          page frame (AppPage), so there is nothing to hold their place. */}
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-end">
         <div className="flex flex-wrap gap-1.5">
           <div className="skeleton h-8 w-60 rounded-lg" />
           <div className="skeleton h-8 w-32 rounded-lg" />

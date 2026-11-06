@@ -61,11 +61,11 @@ export default function WinningMovesPanel({ open, onClose }: Props) {
             </span>
             <div className="min-w-0">
               <h2 id="winning-moves-panel-title" className="text-[15px] font-semibold leading-tight tracking-tight text-surface-950">Winning moves</h2>
-              <p className="text-[11.5px] text-surface-500">
-                {state === 'ready' && data
-                  ? `${data.priorityIssues.length.toLocaleString()} ${data.priorityIssues.length === 1 ? 'move' : 'moves'} to make, most severe first`
-                  : 'Every open fix from your latest analysis'}
-              </p>
+              {state === 'ready' && data && (
+                <p className="text-[11.5px] text-surface-500">
+                  {`${data.priorityIssues.length.toLocaleString()} ${data.priorityIssues.length === 1 ? 'move' : 'moves'}`}
+                </p>
+              )}
             </div>
           </div>
           <button ref={closeRef} type="button" onClick={onClose} className="flex-shrink-0 rounded-md p-1.5 text-surface-400 transition hover:bg-surface-100 hover:text-surface-900" aria-label="Close winning moves">
@@ -93,7 +93,7 @@ export default function WinningMovesPanel({ open, onClose }: Props) {
             </div>
             {score.measured && (
               <p className="mt-1.5 text-[11px] tabular-nums text-surface-500">
-                {score.score >= SCORE_TARGET ? 'On target — keep it there as the catalog changes.' : `${SCORE_TARGET - score.score} pts to the Excellent target of ${SCORE_TARGET}.`}
+                {score.score >= SCORE_TARGET ? 'On target' : `${SCORE_TARGET - score.score} pts to target ${SCORE_TARGET}`}
               </p>
             )}
           </div>
@@ -108,7 +108,6 @@ export default function WinningMovesPanel({ open, onClose }: Props) {
             <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-critical-50 text-critical-600"><AlertCircle size={18} /></span>
               <p className="text-[12.5px] font-semibold text-surface-900">Winning moves could not be loaded</p>
-              <p className="text-[11.5px] text-surface-500">Your results are unaffected.</p>
               <Button variant="primary" onClick={() => void load()} className="mt-1">Retry</Button>
             </div>
           ) : (

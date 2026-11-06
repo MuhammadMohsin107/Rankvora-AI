@@ -34,7 +34,7 @@ export function PillarDashboardSkeleton({ title }: { title: string }) {
  * Shown when the store has no audit for this pillar. Deliberately carries no score, no chart
  * and no placeholder digits — there is nothing measured to show, and saying so is the point.
  */
-export function PillarDashboardEmpty({ title, description }: { title: string; description: string }) {
+export function PillarDashboardEmpty({ title }: { title: string }) {
   return (
     <div>
       <div className="page-shell">
@@ -42,16 +42,11 @@ export function PillarDashboardEmpty({ title, description }: { title: string; de
           <div className="mb-2.5 flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50">
             <Radar size={20} className="text-brand-600" />
           </div>
-          <h2 className="text-[15px] font-semibold text-surface-900">No {title} audit available</h2>
-          <p className="mt-1 mb-3 max-w-md text-[12.5px] leading-[1.5] text-surface-500">{description}</p>
+          <h2 className="mb-3 text-[15px] font-semibold text-surface-900">No {title} audit yet</h2>
           <Button variant="primary" to="/">
             
-            Run an audit to generate real results
+            Run an audit
           </Button>
-          <p className="mt-3 max-w-md text-[11px] leading-[1.45] text-surface-400">
-            Scores appear here only once an audit has measured your store. Nothing on this page is
-            estimated or filled in.
-          </p>
         </div>
       </div>
     </div>
@@ -66,10 +61,7 @@ export function PillarDashboardError({ title, onRetry }: { title: string; onRetr
           <div className="mb-2.5 flex h-10 w-10 items-center justify-center rounded-lg bg-critical-50">
             <AlertCircle size={20} className="text-critical-500" />
           </div>
-          <h2 className="text-[15px] font-semibold text-surface-900">Unable to load {title}</h2>
-          <p className="mt-1 mb-3 max-w-md text-[12.5px] leading-[1.5] text-surface-500">
-            Something went wrong fetching this analysis. Please try again.
-          </p>
+          <h2 className="mb-3 text-[15px] font-semibold text-surface-900">Unable to load {title}</h2>
           <Button variant="primary" onClick={onRetry}>
             
             Try again
@@ -86,8 +78,7 @@ export function SeedDataNotice() {
     <div className="flex items-start gap-2 rounded-md border border-warning-100 bg-warning-50 px-2.5 py-2">
       <AlertCircle size={14} className="mt-px shrink-0 text-warning-600" />
       <p className="text-[12px] leading-[1.45] text-warning-800">
-        <span className="font-semibold">Demo data.</span> This audit is a seeded development
-        fixture, not a measurement of your store.
+        <span className="font-semibold">Demo data.</span> Not a measurement of your store.
       </p>
     </div>
   );

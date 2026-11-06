@@ -61,7 +61,7 @@ function formatPosition(position: number): string {
 function describeLoadFailure(error: unknown): string {
   if (!(error instanceof ApiError)) {
     // fetch() itself rejected: wrong origin, API process down, or no network at all.
-    return 'Could not reach the Rankvora AI API. Check that the backend is running and that the app is pointed at it.';
+    return 'Could not reach the Rankvora AI API.';
   }
 
   // Two different 404s reach here and they have opposite fixes, so the CODE decides rather than
@@ -70,18 +70,18 @@ function describeLoadFailure(error: unknown): string {
   // /api/google existed. The second is an operator's deploy step, not anything a merchant can do.
   if (error.status === 404) {
     return error.code === 'STORE_NOT_FOUND'
-      ? 'This account has no store yet. Create or connect a store first — Search Console is read per store.'
-      : 'This server has no Google Search Console endpoint. The API is running an older build — redeploy and restart it.';
+      ? 'This account has no store yet. Connect a store first.'
+      : 'This server has no Search Console endpoint. Redeploy the API.';
   }
 
   switch (error.status) {
     case 401:
-      return 'Your session has expired. Open Rankvora AI again from your Shopify admin.';
+      return 'Session expired. Reopen Rankvora AI from your Shopify admin.';
     case 503:
-      return 'Google Search Console is not configured on this server yet.';
+      return 'Search Console is not configured on this server.';
     default:
       return error.status >= 500
-        ? `The server could not read the connection state (HTTP ${error.status}). ${error.message}`
+        ? `Server error (HTTP ${error.status}). ${error.message}`
         : error.message;
   }
 }
@@ -96,17 +96,17 @@ function describeLoadFailure(error: unknown): string {
  */
 function describeSiteListFailure(error: unknown): string {
   if (!(error instanceof ApiError)) {
-    return 'Could not reach the Rankvora AI API to list this account’s properties.';
+    return 'Could not reach the Rankvora AI API.';
   }
   switch (error.status) {
     case 401:
-      return 'Google would not accept this connection when listing properties. Reconnect Google, then choose a property.';
+      return 'Google rejected this connection. Reconnect Google.';
     case 403:
       // Account-level, so it is not "no access to that property" — the usual cause is the Search
       // Console API being off for the server's Google Cloud project.
-      return 'Google refused to list this account’s Search Console properties. Check that the Search Console API is enabled for this server’s Google Cloud project.';
+      return 'Google refused to list properties. Check the Search Console API is enabled for this server.';
     case 409:
-      return 'The Google connection ended before the properties could be listed. Connect Google again.';
+      return 'The Google connection ended. Connect again.';
     default:
       return error.message;
   }
@@ -219,8 +219,8 @@ export default function GoogleSearchConsoleCard({ onHealthChange, onDisconnected
     } catch (err) {
       setError(
         err instanceof ApiError && err.status === 503
-          ? 'Google Search Console is not configured on this server yet.'
-          : 'We could not start the Google connection. Please try again.',
+          ? 'Search Console is not configured on this server.'
+          : 'Could not start the Google connection.',
       );
       setBusy(false);
     }
@@ -237,7 +237,7 @@ export default function GoogleSearchConsoleCard({ onHealthChange, onDisconnected
       setError(
         err instanceof ApiError && [400, 401, 403, 409].includes(err.status)
           ? err.message
-          : 'We could not read that property. Please try again.',
+          : 'Could not read that property.',
       );
     } finally {
       // The status the selection returned predates the read that followed it: a success stamped a
@@ -263,7 +263,7 @@ export default function GoogleSearchConsoleCard({ onHealthChange, onDisconnected
       setPerformance(null);
       disconnected = true;
     } catch {
-      setError('We could not disconnect right now. Please try again.');
+      setError('Could not disconnect.');
     } finally {
       setBusy(false);
       onHealthChangeRef.current?.();
@@ -293,13 +293,7 @@ export default function GoogleSearchConsoleCard({ onHealthChange, onDisconnected
           <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-surface-100 text-surface-700">
             <Search size={17} aria-hidden="true" />
           </span>
-          <div className="min-w-0">
-            <h3 className="text-[12.5px] font-bold text-surface-950">Google Search Console</h3>
-            <p className="mt-0.5 text-[11.5px] leading-[1.4] text-surface-500">
-              The only source for what actually happened in search — which queries brought people in,
-              how often pages were shown, and where they ranked.
-            </p>
-          </div>
+          <h3 className="min-w-0 self-center text-[12.5px] font-bold text-surface-950">Google Search Console</h3>
         </div>
 
         {/* Was a green "Connected" the moment Google consent completed — before a property was chosen
@@ -333,8 +327,7 @@ export default function GoogleSearchConsoleCard({ onHealthChange, onDisconnected
       {/* ── Not configured: an operator problem, not a merchant one ─── */}
       {status && !status.configured && (
         <p className="mt-2 rounded-md bg-surface-50 px-2.5 py-2 text-[11.5px] leading-[1.4] text-surface-600">
-          Not available on this server yet — Google OAuth credentials have not been configured. No
-          Connect button is shown because there is nothing behind it.
+          Google sign-in is not configured on this server.
         </p>
       )}
 
@@ -342,8 +335,7 @@ export default function GoogleSearchConsoleCard({ onHealthChange, onDisconnected
       {status?.configured && !status.connected && (
         <div className="mt-2.5 border-t border-surface-100 pt-2.5">
           <p className="text-[11.5px] leading-[1.4] text-surface-500">
-            Rankvora AI requests read-only access. It can read your search performance and cannot change
-            anything in Search Console.
+            Read-only access. Rankvora AI cannot change anything in Search Console.
           </p>
           <div className="mt-2">
             <Button onClick={() => void handleConnect()} disabled={busy}>
@@ -360,14 +352,10 @@ export default function GoogleSearchConsoleCard({ onHealthChange, onDisconnected
               above rows that looked exactly like the read-only fields elsewhere on this page, so
               the badge said "Setup incomplete" while the screen appeared to be reporting a property
               that was already in use — and the one action left was invisible. */}
-          <p className="text-[12px] font-semibold text-surface-800">One step left — choose the property for this store</p>
-          <p className="mt-0.5 text-[11.5px] leading-[1.4] text-surface-500">
-            {/* Never chosen automatically: an account with several verified sites would otherwise
-                have another domain's traffic reported as this store's. */}
-            Connected as {status.googleEmail ?? 'your Google account'}. Rankvora AI will not pick for
-            you — on an account with several verified sites that would report another domain's
-            traffic as this store's. Select one below to finish setup.
-          </p>
+          {/* Never chosen automatically: an account with several verified sites would otherwise
+              have another domain's traffic reported as this store's. */}
+          <p className="text-[12px] font-semibold text-surface-800">Choose a property</p>
+          <p className="mt-0.5 text-[11.5px] leading-[1.4] text-surface-500">Connected as {status.googleEmail ?? 'your Google account'}.</p>
 
           {sitesError ? (
             // The listing failed. Saying "no verified properties" here would invent Google's
@@ -381,13 +369,12 @@ export default function GoogleSearchConsoleCard({ onHealthChange, onDisconnected
           ) : !sitesLoaded ? (
             <p className="mt-2 flex items-center gap-1.5 text-[11.5px] text-surface-500">
               <Loader2 size={12} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
-              Reading the properties on this Google account…
+              Loading properties…
             </p>
           ) : sites.length === 0 ? (
             // Google answered, and the answer was none. Only reachable once a list came back.
             <p className="mt-2 text-[11.5px] leading-[1.4] text-surface-500">
-              This Google account has no verified Search Console properties. Verify your domain in
-              Search Console first, then{' '}
+              No verified properties. Verify your domain in Search Console, then{' '}
               <Button variant="ghost" onClick={() => void loadSites()}>check again</Button>.
             </p>
           ) : (
@@ -477,8 +464,7 @@ export default function GoogleSearchConsoleCard({ onHealthChange, onDisconnected
               {performance.totals.impressions === 0 && (
                 // A real zero, said plainly. Not an error, and not dressed up as one.
                 <p className="mt-2 text-[11.5px] leading-[1.4] text-surface-500">
-                  Google recorded no impressions for this property in this period. That is the real
-                  figure, not a connection problem.
+                  No impressions in this period.
                 </p>
               )}
 

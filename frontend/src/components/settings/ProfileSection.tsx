@@ -95,12 +95,9 @@ export default function ProfileSection({ profile, workspace, errors, onChange }:
       </section>
 
       {/* ── Editable details ────────────────────────────────────────── */}
-      <SettingsCard
-        title="Personal information"
-        description="Shown across your Rankvora AI workspace."
-      >
+      <SettingsCard title="Personal information">
         <div className="grid gap-2 sm:grid-cols-2">
-          <Field label="Full name" htmlFor="fullName" error={errors.fullName} hint="Used across your Rankvora AI workspace.">
+          <Field label="Full name" htmlFor="fullName" error={errors.fullName}>
             <TextInput
               id="fullName"
               value={profile.fullName}
@@ -115,7 +112,6 @@ export default function ProfileSection({ profile, workspace, errors, onChange }:
             label="Email address"
             htmlFor="email"
             error={errors.email}
-            hint="Your contact address in Rankvora AI. Shopify signs you in, and Rankvora AI sends no email."
           >
             <TextInput
               id="email"
@@ -128,7 +124,7 @@ export default function ProfileSection({ profile, workspace, errors, onChange }:
             />
           </Field>
 
-          <Field label="Job title" htmlFor="jobTitle" hint="Optional. Helps tailor recommendations.">
+          <Field label="Job title" htmlFor="jobTitle">
             <TextInput
               id="jobTitle"
               value={profile.jobTitle}
@@ -148,7 +144,6 @@ export default function ProfileSection({ profile, workspace, errors, onChange }:
               </span>
               <span className="text-[12.5px] font-semibold text-surface-700">{profile.role}</span>
             </div>
-            <p className="mt-1 text-[11.5px] leading-[1.45] text-surface-500">Roles are assigned by the workspace owner.</p>
           </div>
         </div>
       </SettingsCard>

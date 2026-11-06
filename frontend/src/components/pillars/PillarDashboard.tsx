@@ -30,7 +30,7 @@ import Button from '../../components/polaris/Button';
  * `rounded-xl` here and `rounded-2xl` there, a 104px score ring beside a 96px one — because a
  * change made on one page had no way to reach the other four.
  *
- * A pillar now supplies only what genuinely differs: its key, its name, its icon and its copy.
+ * A pillar now supplies only what genuinely differs: its key, its name and its icon.
  * Everything structural lives here, so the five pages cannot disagree again.
  *
  * DATA IS UNCHANGED. This calls the same fetchPillarDashboard(pillar) each page already called,
@@ -45,18 +45,6 @@ export interface PillarDashboardProps {
   title: string;
   /** Pillar mark shown beside the title. */
   icon: LucideIcon;
-  /** One line under the title. Page copy — never a measurement. */
-  description: string;
-  /** Sub-pillar id → one-line description. Page copy, keyed by the route slug. */
-  areaDescriptions: Record<string, string>;
-  /**
-   * Closing line in the Health card, in the pillar's own language. Optional: a line printed under
-   * every audit whatever it found is a claim about no audit in particular, so a pillar with nothing
-   * true to say for every store says nothing.
-   */
-  healthNote?: string;
-  /** Shown when the store has no audit for this pillar yet. */
-  emptyDescription: string;
   /** Optional per-pillar KPI icons. The labels are fixed; only the glyphs vary. */
   kpiIcons?: Record<string, { icon: LucideIcon; accent: KpiAccent }>;
   /**
@@ -179,15 +167,14 @@ function IssueRow({ lead, title, detail, onReview }: { lead: React.ReactNode; ti
 /**
  * Card shell for the four list panels, so their headers cannot drift apart.
  *
- * `headerRight`, when given, replaces the plain hint line — used only by Priority Issues, whose
- * header is the severity filter rather than a sentence.
+ * `headerRight` sits beside the title — used only by Priority Issues, for its severity filter.
  */
-function ListCard({ title, hint, headerRight, children, className = '', scroll = false }: { title: string; hint: string; headerRight?: React.ReactNode; children: React.ReactNode; className?: string; scroll?: boolean }) {
+function ListCard({ title, headerRight, children, className = '', scroll = false }: { title: string; headerRight?: React.ReactNode; children: React.ReactNode; className?: string; scroll?: boolean }) {
   return (
     <div className={`flex flex-col overflow-hidden rounded-lg border border-surface-200 bg-surface-0 shadow-sm ${className}`}>
       <div className="flex flex-shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-1.5 border-b border-surface-200 px-3 py-2">
         <h2 className="section-title">{title}</h2>
-        {headerRight ?? <p className="meta-text">{hint}</p>}
+        {headerRight}
       </div>
       {/* `scroll`: the card is as tall as the room it is given and the rows scroll inside it, from
           their first row to their last — `min-h-0` is what lets a flex child shrink below its content
@@ -207,10 +194,6 @@ export default function PillarDashboard({
   pillar,
   title,
   icon: Icon,
-  description,
-  areaDescriptions,
-  healthNote,
-  emptyDescription,
   kpiIcons = defaultKpiIcons,
   extraPanels,
 }: PillarDashboardProps) {
@@ -258,7 +241,7 @@ export default function PillarDashboard({
   if (state === 'empty') {
     return (
       <AppPage heading={title}>
-        <PillarDashboardEmpty title={title} description={emptyDescription} />
+        <PillarDashboardEmpty title={title} />
         {extraPanels ? <div className="page-shell section-stack pb-8">{extraPanels}</div> : null}
       </AppPage>
     );
@@ -308,7 +291,7 @@ export default function PillarDashboard({
     >
       <div className="page-shell section-stack">
         {/* ── Summary band ──────────────────────────────────────────
-            One band. The pillar's mark, what it covers and its score are the facts; the blurred accent
+            One band. The pillar's mark, how many areas it covers and its score are the facts; the blurred accent
             glows that used to sit behind them were decoration measured in inches. The title and the
             action are in the page frame. The store name, its address and "Last analyzed" are gone from
             here — removed at the merchant's request. */}
@@ -322,8 +305,6 @@ export default function PillarDashboard({
                 {data.areas.length} areas monitored
               </span>
             </div>
-
-            <p className="page-subtitle">{description}</p>
           </div>
 
           <div className="flex flex-shrink-0 items-center gap-3 lg:border-l lg:border-surface-100 lg:pl-3">
@@ -359,10 +340,7 @@ export default function PillarDashboard({
             Four across on a laptop, so even an 11-area pillar is three rows rather than six. */}
         <div ref={areasRef} className="scroll-mt-3">
           <div className="section-head">
-            <div>
-              <h2 className="section-title">{title} Areas</h2>
-              <p className="section-subtitle">Health and optimization opportunities across each area.</p>
-            </div>
+            <h2 className="section-title">{title} Areas</h2>
             <span className="meta-text tabular-nums">{data.areas.length} sub-pillars</span>
           </div>
 
@@ -397,9 +375,6 @@ export default function PillarDashboard({
                     <p className="mt-1.5 text-[12px] text-surface-400">No audit data yet</p>
                   )}
 
-                  {/* line-clamp rather than a min-height: cards align on their own because the copy
-                      is capped at two lines, without reserving space when it is one. */}
-                  <p className="mt-1.5 line-clamp-2 text-[11px] leading-[1.4] text-surface-500">{areaDescriptions[area.id] ?? ''}</p>
 
                   <div className="mt-2 flex items-center justify-between gap-2 border-t border-surface-100 pt-1.5 text-[10.5px]">
                     <span className="truncate text-surface-500">
@@ -424,7 +399,6 @@ export default function PillarDashboard({
           <div ref={issuesRef} className="relative scroll-mt-3 lg:col-span-2 lg:min-h-[24rem]">
           <ListCard
             title="Priority Issues"
-            hint="Ordered by severity — start at the top."
             headerRight={<SeverityChips counts={data.counts} total={data.issues.length} active={issueFilter} onChange={setIssueFilter} />}
             scroll
             className="lg:absolute lg:inset-0"
@@ -432,8 +406,8 @@ export default function PillarDashboard({
             {filteredIssues.length === 0 ? (
               <p className="px-3 py-6 text-center text-[12.5px] text-surface-500">
                 {sortedIssues.length === 0
-                  ? `No open ${title.toLowerCase()} issues in the latest audit.`
-                  : `No ${issueFilter} issues right now.`}
+                  ? 'No open issues'
+                  : `No ${issueFilter} issues`}
               </p>
             ) : (
               filteredIssues.map((issue) => (
@@ -455,7 +429,6 @@ export default function PillarDashboard({
 
           <div className="rounded-lg border border-surface-200 bg-surface-0 p-3 shadow-sm">
             <h2 className="section-title">{title} Health</h2>
-            <p className="section-subtitle">Issue counts from the latest audit of your store.</p>
             <div className="mt-2 space-y-1.5">
               {([
                 ['Critical Issues', data.counts.critical, 'bg-critical-500'],
@@ -471,7 +444,6 @@ export default function PillarDashboard({
                 </div>
               ))}
             </div>
-            {healthNote && <p className="mt-2.5 border-t border-surface-100 pt-2 text-[11px] leading-[1.45] text-surface-500">{healthNote}</p>}
           </div>
         </div>
 
@@ -479,7 +451,7 @@ export default function PillarDashboard({
             recommendation engine, so this ranks what the audit actually found rather than
             inventing a second list beside it. */}
         <div className="grid gap-3 lg:grid-cols-2">
-          <ListCard title="Quick Wins" hint="Highest-severity findings first.">
+          <ListCard title="Quick Wins">
             {sortedIssues.slice(0, 4).map((issue, index) => (
               <IssueRow
                 key={issue.id}
@@ -495,7 +467,7 @@ export default function PillarDashboard({
             ))}
           </ListCard>
 
-          <ListCard title="Areas Needing Attention" hint="Lowest scoring measured areas.">
+          <ListCard title="Needs Attention">
             {attentionAreas.map((area) => (
               <div key={area.id} className="flex items-center gap-2 px-3 py-1.5">
                 <ChevronRight size={13} className="flex-shrink-0 text-surface-300" />

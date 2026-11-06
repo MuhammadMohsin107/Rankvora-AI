@@ -38,19 +38,15 @@ export interface CatalogKindConfig {
   listPath: string;
   /** Matches what a finding counted ("11 of 12 products"), to tell a move about this kind. */
   nounPattern: RegExp;
-  overviewSubtitle: string;
   /** The tab that shows every item: "All products". */
   allTab: string;
   searchPlaceholder: string;
   /** Column heading of the list. */
   column: string;
   emptyTitle: string;
-  emptyBody: string;
-  noRowsBody: string;
   /** One item's page. */
   errorTitle: string;
   notFoundTitle: string;
-  notFoundBody: string;
   resultTitle: string;
   /** How the detail page is sectioned. */
   sections: CatalogSectionConfig[];
@@ -108,16 +104,12 @@ const KIND_CONFIGS: Record<CatalogKind, CatalogKindConfig> = {
     navLabel: 'Products',
     listPath: '/products',
     nounPattern: /product/i,
-    overviewSubtitle: 'Stay on top of your catalog’s health — review what each product is missing, then open it to fix.',
     allTab: 'All products',
     searchPlaceholder: 'Search products',
     column: 'Product',
     emptyTitle: 'No product results yet',
-    emptyBody: 'Once an audit has run, every product it checked appears here with what it is missing. Nothing on this page is estimated.',
-    noRowsBody: 'The latest audit recorded no product rows. Run an audit once your store has products.',
     errorTitle: 'Unable to load products',
     notFoundTitle: 'Product not in the latest audit',
-    notFoundBody: 'The latest audit did not record this product. It may have been removed, or fallen outside the checks’ sample on a large catalog.',
     resultTitle: 'Product checks passed',
     // The product's checks, grouped the way a store-health app's product page groups them.
     sections: [
@@ -126,7 +118,7 @@ const KIND_CONFIGS: Record<CatalogKind, CatalogKindConfig> = {
       { id: 'media', title: 'Media', checks: ['seo/image-alt-text', 'content/media-richness'] },
       { id: 'organization', title: 'Product organization', checks: [] },
       { id: 'offer', title: 'Options & offers', checks: ['cro/options', 'cro/subscription'] },
-      { id: 'ai', title: 'AI visibility & structured data', checks: ['ai-discovery/agentic-attrs', 'ai-discovery/feed', 'ai-discovery/answerable-qa'] },
+      { id: 'ai', title: 'AI visibility', checks: ['ai-discovery/agentic-attrs', 'ai-discovery/feed', 'ai-discovery/answerable-qa'] },
     ],
     fieldChecks: ['content/product-descriptions'],
   },
@@ -144,16 +136,12 @@ const KIND_CONFIGS: Record<CatalogKind, CatalogKindConfig> = {
     navLabel: 'Collections',
     listPath: '/collections',
     nounPattern: /collection/i,
-    overviewSubtitle: 'Stay on top of your collections’ health — review what each one is missing, then open it to fix.',
     allTab: 'All collections',
     searchPlaceholder: 'Search collections',
     column: 'Collection',
     emptyTitle: 'No collection results yet',
-    emptyBody: 'Once an audit has run, every collection it checked appears here with what it is missing. Nothing on this page is estimated.',
-    noRowsBody: 'The latest audit recorded no collection rows. Run an audit once your store has collections.',
     errorTitle: 'Unable to load collections',
     notFoundTitle: 'Collection not in the latest audit',
-    notFoundBody: 'The latest audit did not record this collection. It may have been removed, or fallen outside the checks’ sample on a large store.',
     resultTitle: 'Collection checks passed',
     sections: [
       { id: 'basic', title: 'Description', checks: ['content/collection-descriptions'] },
@@ -175,16 +163,12 @@ const KIND_CONFIGS: Record<CatalogKind, CatalogKindConfig> = {
     navLabel: 'Blog articles',
     listPath: '/blog-articles',
     nounPattern: /article|post/i,
-    overviewSubtitle: 'Stay on top of your blog’s health — review what each article is missing or has let go stale, then open it to fix.',
     allTab: 'All articles',
     searchPlaceholder: 'Search articles',
     column: 'Article',
     emptyTitle: 'No blog article results yet',
-    emptyBody: 'Once an audit has run, every blog article it checked appears here with what it is missing. Nothing on this page is estimated.',
-    noRowsBody: 'The latest audit recorded no blog article rows. Run an audit once your store has blog articles.',
     errorTitle: 'Unable to load blog articles',
     notFoundTitle: 'Article not in the latest audit',
-    notFoundBody: 'The latest audit did not record this article. It may have been removed, or fallen outside the checks’ sample on a large blog.',
     resultTitle: 'Article checks passed',
     sections: [
       { id: 'freshness', title: 'Freshness', checks: ['content/blog-freshness'] },

@@ -123,10 +123,9 @@ export default function Dashboard() {
           the next scan is. */}
       <SetupStatusCard />
       {/* The page's title and its main action are in the page frame (AppPage). What is left is the
-          store's own facts, on ONE row with the page's purpose: every line above the data is a line of
-          data pushed below the fold. */}
-      <div className="flex flex-col gap-2 motion-safe:animate-fade-in lg:flex-row lg:items-center lg:justify-between">
-        <p className="min-w-0 truncate text-[12px] text-surface-500">What is healthy, what changed, and what to fix next.</p>
+          store's own facts, on ONE row: every line above the data is a line of data pushed below the
+          fold. */}
+      <div className="flex flex-col gap-2 motion-safe:animate-fade-in lg:flex-row lg:items-center lg:justify-end">
 
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           {/* Store identity: the name and address the backend holds for this store. A store with

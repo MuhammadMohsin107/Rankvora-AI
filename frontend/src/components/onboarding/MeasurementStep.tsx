@@ -22,10 +22,8 @@ import { fetchPageSpeedStatus, type PageSpeedStatus } from '../../data/pagespeed
 /**
  * ─── Step 4 · Measurement sources ────────────────────────────────────
  *
- * OPTIONAL, and built so that skipping is never the wrong answer. Every source says what it
- * unlocks and — just as plainly — what still works without it, because "connect Search Console or
- * your audit is incomplete" would be untrue: the technical audit runs without it, and the only
- * thing missing is the search-performance data nobody has read yet.
+ * OPTIONAL, and built so that skipping is never the wrong answer: the technical audit runs without
+ * any of these sources. The step's header says so, in one line.
  *
  * A source that is not connected is shown as available to connect, never as a fault in the store.
  * Nothing on this screen is red for being unconnected.
@@ -44,28 +42,21 @@ function describeError(error: unknown): string {
   return error instanceof ApiError ? error.message : 'Something went wrong. Please try again.';
 }
 
-const REASSURANCE =
-  'None of this is needed for your first analysis. Connect what you have now, or skip it — a skipped source shows up as “not measured yet” on your dashboard, never as a problem with your store.';
-
 /**
  * Pop-ups already shown during this page load. The step is mounted afresh every time the merchant
  * arrives on it, so without this, going Back and Continue would replay the same messages.
  */
 const announced = new Set<string>();
 
-/** One source: what it is, what it unlocks, what happens without it, and the state it is in. */
+/** One source: what it is and the state it is in. */
 function SourceCard({
   icon: Icon,
   title,
-  unlocks,
-  ifSkipped,
   status,
   children,
 }: {
   icon: LucideIcon;
   title: string;
-  unlocks: string;
-  ifSkipped: string;
   /** A short state chip: 'Connected', 'Not connected', 'No account needed'. Never alarming. */
   status: { label: string; tone: 'good' | 'neutral' };
   children?: ReactNode;
@@ -90,16 +81,6 @@ function SourceCard({
               {status.label}
             </span>
           </div>
-          <dl className="mt-1.5 space-y-0.5 text-[12px] leading-[1.5]">
-            <div className="flex gap-1.5">
-              <dt className="flex-shrink-0 font-semibold text-surface-700">Unlocks</dt>
-              <dd className="text-surface-600">{unlocks}</dd>
-            </div>
-            <div className="flex gap-1.5">
-              <dt className="flex-shrink-0 font-semibold text-surface-700">If skipped</dt>
-              <dd className="text-surface-600">{ifSkipped}</dd>
-            </div>
-          </dl>
           {children && <div className="mt-2.5">{children}</div>}
         </div>
       </div>
@@ -125,18 +106,14 @@ export default function MeasurementStep({ notice }: MeasurementStepProps) {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const dismissToast = useCallback((id: string) => setToasts((current) => current.filter((toast) => toast.id !== id)), []);
 
-  // What is worth saying once — Google just connected, and that none of this is required — leaves
-  // by itself instead of sitting in the step. A failed connection is not in this list: it is
+  // What is worth saying once — Google just connected — leaves by itself instead of sitting in the
+  // step. A failed connection is not in this list: it is
   // something to act on, so it stays inline below.
   useEffect(() => {
     const next: ToastMessage[] = [];
     if (notice && notice.tone !== 'error' && !announced.has(notice.message)) {
       announced.add(notice.message);
       next.push({ id: 'google-outcome', tone: notice.tone, message: notice.message });
-    }
-    if (!announced.has(REASSURANCE)) {
-      announced.add(REASSURANCE);
-      next.push({ id: 'optional-step', tone: 'info', message: REASSURANCE });
     }
     if (next.length > 0) setToasts((current) => [...current, ...next]);
   }, [notice]);
@@ -225,9 +202,9 @@ export default function MeasurementStep({ notice }: MeasurementStepProps) {
   const loading = google.state === 'loading' || analytics.state === 'loading' || pagespeed.state === 'loading';
 
   /** A connect / set-up-later pair, or the quiet fold-away once "later" was chosen. */
-  const connectActions = (key: string, label: string, note?: string) =>
+  const connectActions = (key: string, label: string) =>
     later[key] ? (
-      <QuietNote>Skipped for now. Connect any time from Integrations — your analysis does not need it.</QuietNote>
+      <QuietNote>Skipped for now.</QuietNote>
     ) : (
       <div className="flex flex-wrap items-center gap-2">
         <ActionButton onClick={() => void connect()} loading={busy === 'connect'}>
@@ -236,7 +213,6 @@ export default function MeasurementStep({ notice }: MeasurementStepProps) {
         <ActionButton variant="ghost" onClick={() => setLater((previous) => ({ ...previous, [key]: true }))}>
           Set up later
         </ActionButton>
-        {note && <span className="text-[11.5px] text-surface-500">{note}</span>}
       </div>
     );
 
@@ -256,8 +232,6 @@ export default function MeasurementStep({ notice }: MeasurementStepProps) {
           <SourceCard
             icon={Search}
             title="Google Search Console"
-            unlocks="Search queries, clicks, impressions, average position and supported indexing checks."
-            ifSkipped="Your technical SEO audit still runs. Search performance shows as not measured."
             status={
               google.state !== 'ready'
                 ? { label: 'Status unavailable', tone: 'neutral' }
@@ -285,7 +259,7 @@ export default function MeasurementStep({ notice }: MeasurementStepProps) {
                     />
                   </div>
                 )}
-                {!googleConnected && connectActions('gsc', 'Connect Google', 'One sign-in covers Search Console and Analytics.')}
+                {!googleConnected && connectActions('gsc', 'Connect Google')}
               </>
             )}
           </SourceCard>
@@ -293,8 +267,6 @@ export default function MeasurementStep({ notice }: MeasurementStepProps) {
           <SourceCard
             icon={BarChart3}
             title="Google Analytics"
-            unlocks="Sessions attributed to referrals, including ones identifiable as coming from AI assistants."
-            ifSkipped="Everything else still runs. Referral measurement shows as not measured."
             status={
               analytics.state !== 'ready'
                 ? { label: 'Status unavailable', tone: 'neutral' }
@@ -329,8 +301,8 @@ export default function MeasurementStep({ notice }: MeasurementStepProps) {
                 )}
                 {/* Connected before Analytics support existed: the Google grant lacks the GA4 scope. */}
                 {analytics.value.connected && !analytics.value.scopeGranted &&
-                  connectActions('ga4', 'Allow Analytics', 'Reconnect Google once to include Analytics.')}
-                {!analytics.value.connected && connectActions('ga4', 'Connect Google', 'Uses the same Google sign-in as Search Console.')}
+                  connectActions('ga4', 'Allow Analytics')}
+                {!analytics.value.connected && connectActions('ga4', 'Connect Google')}
               </>
             )}
           </SourceCard>
@@ -338,27 +310,23 @@ export default function MeasurementStep({ notice }: MeasurementStepProps) {
           <SourceCard
             icon={Gauge}
             title="Performance measurement"
-            unlocks="Lab diagnostics for your storefront and field measurements where Google has them."
-            ifSkipped="Not applicable — there is nothing to connect. It runs on your public storefront."
             status={{ label: 'No account needed', tone: 'neutral' }}
           >
             <QuietNote>
               {pagespeed.state !== 'ready'
-                ? 'Performance status could not be read right now.'
+                ? 'Status unavailable.'
                 : pagespeed.value.storefrontUrl
-                  ? `Measures ${pagespeed.value.storefrontUrl}${pagespeed.value.keyed ? '.' : ', using Google’s shared quota — a measurement can occasionally be rate-limited and is then reported as not measured.'}`
-                  : 'Measures your public storefront once your store is connected.'}
+                  ? `Measures ${pagespeed.value.storefrontUrl}`
+                  : 'Measures your public storefront.'}
             </QuietNote>
           </SourceCard>
 
           <SourceCard
             icon={ShoppingBag}
             title="Google Merchant Center"
-            unlocks="Product feed status, availability and identifier coverage."
-            ifSkipped="Nothing changes."
             status={{ label: 'Coming later', tone: 'neutral' }}
           >
-            <QuietNote>Not available yet. It will be offered here and on Integrations when it is.</QuietNote>
+            <QuietNote>Not available yet.</QuietNote>
           </SourceCard>
         </ul>
       )}

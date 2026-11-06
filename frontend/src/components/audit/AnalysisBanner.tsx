@@ -66,12 +66,12 @@ export default function AnalysisBanner() {
   if (running) {
     return (
       <div role="status" aria-live="polite" aria-label="Analysis in progress" className="px-4 pt-3 md:px-6">
-        <s-banner key="running" tone="info" heading="Analysis in progress — Rankvora AI is analyzing your store">
+        <s-banner key="running" tone="info" heading="Analysis in progress">
           <s-stack gap="small-300">
             {/* The job's own account of what it is reading, with real counts. Before the first step
                 reports there is nothing more to say than that it is starting. */}
             <s-text>
-              {stage ?? 'Starting the analysis'} · You can keep using Rankvora AI. Results update when it finishes.
+              {stage ?? 'Starting the analysis'}
               {progress > 0 ? ` (${progress}%)` : ''}
             </s-text>
             {/* The bar is the job's progress and nothing else: it appears once the job has reported some. */}
@@ -102,7 +102,7 @@ export default function AnalysisBanner() {
   if (showComplete) {
     return (
       <div role="status" aria-live="polite" className="px-4 pt-3 md:px-6">
-        <DismissibleBanner key="complete" tone="success" heading="Analysis complete — your results are up to date." onDismiss={() => setShowComplete(false)} />
+        <DismissibleBanner key="complete" tone="success" heading="Analysis complete" onDismiss={() => setShowComplete(false)} />
       </div>
     );
   }

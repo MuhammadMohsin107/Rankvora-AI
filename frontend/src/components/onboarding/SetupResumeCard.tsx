@@ -55,9 +55,6 @@ export default function SetupResumeCard() {
 
   const total = required.length;
   const done = total - outstanding.length;
-  const outstandingNames = outstanding
-    .map((entry) => STEP_META[entry.step - 1]?.title)
-    .filter((title): title is string => Boolean(title));
 
   const resume = async () => {
     setOpening(true);
@@ -81,16 +78,11 @@ export default function SetupResumeCard() {
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-            <h2 className="text-[13px] font-bold tracking-tight text-surface-950">Finish setting up Rankvora AI</h2>
+            <h2 className="text-[13px] font-bold tracking-tight text-surface-950">Finish setup</h2>
             <span className="text-[11px] font-semibold tabular-nums text-brand-700">
               {done} of {total} done
             </span>
           </div>
-          <p className="mt-1 max-w-2xl text-[11.5px] leading-[1.5] text-surface-600">
-            {done > 0
-              ? `Still to go: ${outstandingNames.join(', ')}.`
-              : `${total} short steps — ${outstandingNames.join(', ')} — so your analysis is judged against your real business, not a generic store.`}
-          </p>
 
           {/* Progress and the step names are ONE control, not a bar above a separate list: each
               step owns its own segment and sits under it. `flex-1` with a floor width lets the five

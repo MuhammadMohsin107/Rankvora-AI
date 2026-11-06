@@ -29,7 +29,6 @@ export function liveOnlyConfig(
   pillarLabel: string,
   key: string,
   title: string,
-  description: string,
   analyzedLabel: string,
 ): GenericSubPillarConfig {
   return {
@@ -37,7 +36,6 @@ export function liveOnlyConfig(
     pillarLabel,
     key,
     title,
-    description,
     // Replaced by the audit. `statusLabel` is blank rather than the band a score of 0 would fall
     // into — "Critical" for a store that has simply not been audited would be a lie of omission.
     score: 0,

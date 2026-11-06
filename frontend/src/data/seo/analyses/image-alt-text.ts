@@ -10,7 +10,6 @@ import { sortByCell, type SubPillarAnalysis } from '../subpillar.model';
 export const imageAltTextAnalysis: SubPillarAnalysis = {
   slug: 'image-alt-text',
   title: 'Image Alt Text',
-  description: 'Check that every meaningful image describes itself for assistive technology and image search.',
   supportsBulkFix: true,
   /**
    * Values come from the merchant's saved alt-text template, not from a model.
@@ -70,9 +69,9 @@ export const imageAltTextAnalysis: SubPillarAnalysis = {
     sorts: [sortByCell('name', 'Sort: product'), sortByCell('length', 'Sort: alt-text length')],
   },
   relatedAreas: [
-    { label: 'Schema / JSON-LD', href: '/seo/schema', hint: 'Structured data for product imagery' },
-    { label: 'Title Tags', href: '/seo/title-tags', hint: 'How these pages describe themselves' },
-    { label: 'Internal Links & 404s', href: '/seo/internal-links', hint: 'How these pages are reached' },
+    { label: 'Schema / JSON-LD', href: '/seo/schema' },
+    { label: 'Title Tags', href: '/seo/title-tags' },
+    { label: 'Internal Links & 404s', href: '/seo/internal-links' },
   ],
   lastAnalyzed: '',
 };

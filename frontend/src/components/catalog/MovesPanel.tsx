@@ -92,7 +92,7 @@ export default function MovesPanel({ kind, state, issues, score, active, onSelec
         <>
           <div className="border-b border-surface-200/70 px-3.5 py-3">
             <p className="text-[14px] font-semibold text-surface-950">
-              {issues.length.toLocaleString()} {issues.length === 1 ? 'move' : 'moves'} to make
+              {issues.length.toLocaleString()} {issues.length === 1 ? 'move' : 'moves'}
             </p>
             {score && tone && (
               <>
@@ -106,7 +106,7 @@ export default function MovesPanel({ kind, state, issues, score, active, onSelec
                 </div>
                 {score.measured && (
                   <p className="mt-1.5 text-[11.5px] font-medium tabular-nums text-success-700">
-                    {score.score >= SCORE_TARGET ? 'On target — keep it there' : `${SCORE_TARGET - score.score} pts to the ${SCORE_TARGET} target`}
+                    {score.score >= SCORE_TARGET ? 'On target' : `${SCORE_TARGET - score.score} pts to target ${SCORE_TARGET}`}
                   </p>
                 )}
               </>
@@ -140,7 +140,6 @@ export default function MovesPanel({ kind, state, issues, score, active, onSelec
               <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
                 <CheckCircle2 size={20} className="text-success-600" aria-hidden="true" />
                 <p className="text-[12.5px] font-semibold text-surface-900">No open moves</p>
-                <p className="text-[11.5px] text-surface-500">The latest analysis left nothing outstanding here.</p>
               </div>
             ) : (
               <ul className="divide-y divide-surface-200/60">

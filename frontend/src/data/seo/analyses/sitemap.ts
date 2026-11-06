@@ -10,7 +10,6 @@ import { sortByCell, type SubPillarAnalysis } from '../subpillar.model';
 export const sitemapAnalysis: SubPillarAnalysis = {
   slug: 'sitemap',
   title: 'Sitemap & Indexability',
-  description: 'Confirm the pages you want ranking are submitted, crawlable and actually indexed.',
   summary: '',
   healthChip: '',
   totals: {
@@ -49,9 +48,9 @@ export const sitemapAnalysis: SubPillarAnalysis = {
     sorts: [sortByCell('length', 'Sort: HTTP status', 'desc'), sortByCell('url', 'Sort: endpoint')],
   },
   relatedAreas: [
-    { label: 'Canonicals & Duplicates', href: '/seo/canonicals', hint: 'Which URL should be indexed' },
-    { label: 'Handles & Redirects', href: '/seo/handles-redirects', hint: 'Redirected URLs still in the sitemap' },
-    { label: 'Internal Links & 404s', href: '/seo/internal-links', hint: 'How crawlers discover these pages' },
+    { label: 'Canonicals & Duplicates', href: '/seo/canonicals' },
+    { label: 'Handles & Redirects', href: '/seo/handles-redirects' },
+    { label: 'Internal Links & 404s', href: '/seo/internal-links' },
   ],
   lastAnalyzed: '',
 };

@@ -10,7 +10,6 @@ import { sortByCell, type SubPillarAnalysis } from '../subpillar.model';
 export const canonicalsAnalysis: SubPillarAnalysis = {
   slug: 'canonicals',
   title: 'Canonicals & Duplicates',
-  description: 'Make sure every page consolidates its ranking signals onto one preferred URL.',
   // Nothing here is a field Rankvora AI can write: a canonical tag is theme markup, and a duplicate
   // page is resolved by deleting or redirecting it in Shopify. Offering row selection and a
   // "Generate fixes" editor would open a workflow the server has no way to apply.
@@ -59,9 +58,9 @@ export const canonicalsAnalysis: SubPillarAnalysis = {
     sorts: [sortByCell('name', 'Sort: name'), sortByCell('pageType', 'Sort: page type')],
   },
   relatedAreas: [
-    { label: 'Handles & Redirects', href: '/seo/handles-redirects', hint: 'Where duplicate URLs are created' },
-    { label: 'Sitemap & Indexability', href: '/seo/sitemap', hint: 'Which of these URLs are indexable' },
-    { label: 'Title Tags', href: '/seo/title-tags', hint: 'Duplicate titles often follow duplicate URLs' },
+    { label: 'Handles & Redirects', href: '/seo/handles-redirects' },
+    { label: 'Sitemap & Indexability', href: '/seo/sitemap' },
+    { label: 'Title Tags', href: '/seo/title-tags' },
   ],
   lastAnalyzed: '',
 };

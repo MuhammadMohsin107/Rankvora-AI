@@ -33,11 +33,11 @@ import { SelectField, TextField } from '../polaris/fields';
 const DEFAULT_PATH = '/';
 
 function describeFailure(error: unknown): string {
-  if (!(error instanceof ApiError)) return 'Could not reach the Rankvora AI API. Check that the backend is running.';
+  if (!(error instanceof ApiError)) return 'Could not reach the Rankvora AI API.';
   if (error.status === 404 && error.code !== 'STORE_NOT_FOUND') {
-    return 'This server has no bot-test endpoint. The API is running an older build — redeploy and restart it.';
+    return 'This server has no bot-test endpoint. Redeploy the API.';
   }
-  if (error.status === 401) return 'Your session has expired. Open Rankvora AI again from your Shopify admin.';
+  if (error.status === 401) return 'Session expired. Reopen Rankvora AI from your Shopify admin.';
   return error.message;
 }
 
@@ -97,14 +97,10 @@ export default function BotTestPanel() {
   return (
     <section className={cardClass} aria-labelledby="bot-test-title">
       <div className="border-b border-surface-100 px-3 py-2">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-surface-500">Diagnostic</p>
-        <h2 id="bot-test-title" className="mt-1 flex items-center gap-1.5 text-[15px] font-semibold tracking-tight text-surface-950">
+        <h2 id="bot-test-title" className="flex items-center gap-1.5 text-[15px] font-semibold tracking-tight text-surface-950">
           <Bot size={15} className="text-brand-500" />
           Test as a bot
         </h2>
-        <p className="mt-1 text-[12px] leading-[1.45] text-surface-500">
-          Fetches one of your pages with a crawler’s real User-Agent and shows exactly what it receives.
-        </p>
       </div>
 
       <div className="flex flex-wrap items-end gap-2.5 px-3 py-2.5">
@@ -177,10 +173,10 @@ export default function BotTestPanel() {
             ok={result.robots.allowed}
             label={result.robots.allowed ? 'robots.txt allows this crawler' : 'robots.txt blocks this crawler'}
             detail={[
-              result.robots.fetched ? 'Read from your live robots.txt.' : 'robots.txt could not be fetched, so the spec default (allow) was applied.',
+              result.robots.fetched ? '' : 'robots.txt could not be fetched; default (allow) applied.',
               result.robots.hasSpecificGroup
-                ? `A rule group names ${result.bot.name} exactly.`
-                : `No group names ${result.bot.name}; it falls through to the “*” rules, so a rule meant for another bot can change this.`,
+                ? `Rule group names ${result.bot.name}.`
+                : `No group names ${result.bot.name}; “*” rules apply.`,
               result.robots.crawlDelaySeconds !== null ? `Crawl-delay: ${result.robots.crawlDelaySeconds}s.` : '',
             ].filter(Boolean).join(' ')}
           />
@@ -189,7 +185,7 @@ export default function BotTestPanel() {
             // null = could not be measured, which is neither a pass nor a fail. Never inferred
             // from a substituted status code.
             ok={result.response.status === null ? null : result.response.status >= 200 && result.response.status < 300}
-            label="What your server returned"
+            label="Server response"
             detail={
               result.response.error
                 ? result.response.error
@@ -201,8 +197,7 @@ export default function BotTestPanel() {
             <div className="flex items-start gap-2 border-t border-surface-100 bg-warning-50 px-3 py-2">
               <ShieldAlert size={14} className="mt-0.5 flex-shrink-0 text-warning-700" />
               <p className="text-[12px] leading-[1.45] text-warning-800">
-                Your storefront is password protected. This crawler received the password page, not your content — and so
-                does every other bot, right now.
+                Storefront is password protected. Crawlers receive the password page.
               </p>
             </div>
           )}
@@ -216,7 +211,7 @@ export default function BotTestPanel() {
                   What {result.bot.name} can read
                 </p>
                 <p className="text-[11px] tabular-nums text-surface-500">
-                  {result.content.textLength.toLocaleString()} characters of visible text
+                  {result.content.textLength.toLocaleString()} characters
                 </p>
               </div>
               {result.content.title && (

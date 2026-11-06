@@ -69,7 +69,7 @@ export default function GenerateTab({ product, ai, canWrite, onBusyChange, onAdd
       setDrafts((current) => [...current, { ...draft, key }].slice(-MAX_DRAFTS));
       setSelectedKey(key);
     } catch (error) {
-      setFailure(asFailure(error, 'The image could not be drawn. Please try again.'));
+      setFailure(asFailure(error, 'The image could not be drawn. Try again.'));
     } finally {
       setGenerating(false);
       onBusyChange(false);
@@ -86,7 +86,7 @@ export default function GenerateTab({ product, ai, canWrite, onBusyChange, onAdd
       setAdded(result);
       onAdded(result);
     } catch (error) {
-      setFailure(asFailure(error, 'The image could not be added. Please try again.'));
+      setFailure(asFailure(error, 'The image could not be added. Try again.'));
     } finally {
       setApplying(false);
       onBusyChange(false);
@@ -107,10 +107,7 @@ export default function GenerateTab({ product, ai, canWrite, onBusyChange, onAdd
   // The server's own answer to "can it draw at all". Nothing is offered that would only fail.
   if (!ai.configured) {
     return (
-      <Banner tone="warning" heading="AI image generation needs an updated AI key">
-        <s-text>
-          No AI key that can generate images is set up on this server yet, so no picture can be drawn. Uploading a photo from your computer still works.
-        </s-text>
+      <Banner tone="warning" heading="AI images are not set up">
         {ai.reason && <s-text>{ai.reason}</s-text>}
       </Banner>
     );
@@ -122,11 +119,11 @@ export default function GenerateTab({ product, ai, canWrite, onBusyChange, onAdd
   return (
     <div className="space-y-3">
       <section className="rounded-lg border border-surface-200 bg-surface-50/70 px-3 py-2.5" aria-label="What the picture is based on">
-        <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-surface-500">The picture is drawn from</p>
+        <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-surface-500">Drawn from</p>
         <p className="mt-1 text-[13px] font-semibold text-surface-950">{product.title}</p>
         {descriptionExcerpt
           ? <p className="mt-0.5 text-[12px] leading-[1.5] text-surface-600">{descriptionExcerpt}</p>
-          : <p className="mt-0.5 text-[12px] italic text-surface-500">This product has no description in Shopify, so the picture is drawn from its title alone.</p>}
+          : <p className="mt-0.5 text-[12px] italic text-surface-500">No description in Shopify.</p>}
         {(product.productType || product.vendor || product.tags.length > 0) && (
           <p className="mt-1.5 flex flex-wrap gap-1">
             {product.productType && <span className="meta-chip">Type: <span className="font-medium text-surface-800">{product.productType}</span></span>}
@@ -150,8 +147,8 @@ export default function GenerateTab({ product, ai, canWrite, onBusyChange, onAdd
       {generating && (
         <div className="flex aspect-square max-h-72 w-full flex-col items-center justify-center rounded-xl border border-surface-200 bg-surface-50 text-center" role="status" aria-live="polite">
           <Loader2 size={26} className="animate-spin text-brand-600 motion-reduce:animate-none" aria-hidden="true" />
-          <p className="mt-2.5 text-[13px] font-semibold text-surface-900">Drawing from the title and description…</p>
-          <p className="mt-0.5 max-w-xs text-[11.5px] text-surface-500">This usually takes 10–40 seconds. You can keep this panel open.</p>
+          <p className="mt-2.5 text-[13px] font-semibold text-surface-900">Drawing…</p>
+          <p className="mt-0.5 max-w-xs text-[11.5px] text-surface-500">Usually 10–40 seconds.</p>
         </div>
       )}
 
@@ -188,7 +185,7 @@ export default function GenerateTab({ product, ai, canWrite, onBusyChange, onAdd
           )}
 
           <Banner tone="info">
-            <s-text>This is an AI drawing of what the words describe, not a photo of your product. Check that it matches what you sell before adding it to the store.</s-text>
+            <s-text>An AI drawing, not a photo of your product. Check it before adding.</s-text>
           </Banner>
 
           <TextField id="ai-alt" label="Alt text" value={alt} onChange={(next) => setAlt(next.slice(0, 512))} disabled={busy} />
@@ -204,17 +201,14 @@ export default function GenerateTab({ product, ai, canWrite, onBusyChange, onAdd
       <div className="flex flex-wrap gap-2">
         {selected && (
           <Button loading={applying} variant="primary" onClick={() => void apply()} disabled={busy || !canWrite || alt.trim() === ''} className="flex-1">
-            {applying ? 'Adding to your store…' : 'Add this image to the product in Shopify'}
+            {applying ? 'Adding to your store…' : 'Add to product in Shopify'}
           </Button>
         )}
         <Button variant={selected ? 'secondary' : 'primary'} onClick={() => void generate()} disabled={busy} loading={generating} className={selected ? undefined : 'flex-1'}>
           {generating ? 'Drawing…' : selected ? 'Regenerate' : 'Generate image with AI'}
         </Button>
       </div>
-      {selected && !canWrite && <p className="text-[11.5px] text-surface-500">Adding images is switched off for this store — see the notice above.</p>}
-      {drafts.length > 0 && drafts.length >= MAX_DRAFTS && (
-        <p className="text-[11px] text-surface-400">The panel keeps the last {MAX_DRAFTS} pictures; drawing another replaces the oldest.</p>
-      )}
+      {selected && !canWrite && <p className="text-[11.5px] text-surface-500">Adding images is switched off for this store.</p>}
     </div>
   );
 }

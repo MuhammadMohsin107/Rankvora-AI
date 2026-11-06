@@ -312,7 +312,7 @@ export const REQUIRED_FIELD_MESSAGE: Record<RequiredField, string> = {
   brandName: 'Enter the brand name to use in your page titles.',
   industries: 'Choose at least one industry your store sells in.',
   contentLanguage: 'Choose the language your content is written in.',
-  priorityPillars: 'Choose at least one area to improve first. Every area is still analysed.',
+  priorityPillars: 'Choose at least one area to improve first.',
   automationConsent: 'Choose how changes to your store are approved.',
 };
 
@@ -343,19 +343,15 @@ export function firstUnansweredStep(draft: StepPayload): number | null {
 }
 
 // ─── Step metadata ───────────────────────────────────────────────────
-// Titles and the one-line purpose shown in the stepper and page header. Copy, not data.
+// Titles shown in the stepper and page header, with a short line only where the title alone would
+// leave the merchant unsure what the step asks of them. Copy, not data.
 
-export const STEP_META: Array<{ step: number; title: string; purpose: string; optional?: boolean }> = [
-  { step: 1, title: 'Confirm your store', purpose: 'Check what Shopify told us, and say which markets matter most.' },
-  { step: 2, title: 'Your business', purpose: 'Your brand, what you sell and the language your content is written in.' },
-  { step: 3, title: 'Priorities', purpose: 'What to improve first. Every area is still analysed — this decides what leads.' },
-  {
-    step: 4,
-    title: 'Measurement',
-    purpose: 'Connect the sources that show how you perform. Your first analysis runs without them.',
-    optional: true,
-  },
-  { step: 5, title: 'Permissions & monitoring', purpose: 'How changes are approved, what to leave alone and when to re-scan.' },
+export const STEP_META: Array<{ step: number; title: string; purpose?: string; optional?: boolean }> = [
+  { step: 1, title: 'Confirm your store' },
+  { step: 2, title: 'Your business' },
+  { step: 3, title: 'Priorities' },
+  { step: 4, title: 'Measurement', purpose: 'Optional — your first analysis runs without it.', optional: true },
+  { step: 5, title: 'Permissions & monitoring' },
 ];
 
 /**
@@ -364,17 +360,9 @@ export const STEP_META: Array<{ step: number; title: string; purpose: string; op
  * offer — one that claimed to fill things in for the merchant would describe a feature that does
  * not exist.
  */
-export const AUTOMATION_CONSENT_OPTIONS: Array<{ value: AutomationConsent; label: string; description: string }> = [
-  {
-    value: 'ask',
-    label: 'Review every change before publishing',
-    description: 'Rankvora AI prepares drafts. Nothing reaches your store until you approve that specific change. Recommended.',
-  },
-  {
-    value: 'none',
-    label: 'Never publish — recommendations only',
-    description: 'Rankvora AI reports issues and shows you how to fix them. It writes nothing to your store.',
-  },
+export const AUTOMATION_CONSENT_OPTIONS: Array<{ value: AutomationConsent; label: string }> = [
+  { value: 'ask', label: 'Review every change before publishing' },
+  { value: 'none', label: 'Never publish — recommendations only' },
 ];
 
 /** How a stored consent reads on screen, including the legacy value setup no longer offers. */

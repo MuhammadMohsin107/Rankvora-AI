@@ -40,13 +40,13 @@ function shortPath(url: string): string {
 
 function describeFailure(error: unknown): { message: string; actionable: boolean } {
   if (!(error instanceof ApiError)) {
-    return { message: 'Could not reach the Rankvora AI API. Check that the backend is running.', actionable: false };
+    return { message: 'Could not reach the Rankvora AI API.', actionable: false };
   }
   switch (error.code) {
     case 'GOOGLE_NOT_CONNECTED':
-      return { message: 'Connect Google Search Console on the Integrations page to read what Google has indexed.', actionable: true };
+      return { message: 'Connect Google Search Console on the Integrations page.', actionable: true };
     case 'GSC_SITE_NOT_SELECTED':
-      return { message: 'Choose which Search Console property this store reports on, on the Integrations page.', actionable: true };
+      return { message: 'Choose a Search Console property on the Integrations page.', actionable: true };
     case 'GSC_INSPECTION_QUOTA':
     case 'GSC_ACCESS_DENIED':
     case 'SITEMAP_EMPTY':
@@ -57,9 +57,9 @@ function describeFailure(error: unknown): { message: string; actionable: boolean
       break;
   }
   if (error.status === 404) {
-    return { message: 'This server has no index-coverage endpoint. The API is running an older build — redeploy and restart it.', actionable: false };
+    return { message: 'This server has no index-coverage endpoint. Redeploy the API.', actionable: false };
   }
-  if (error.status === 401) return { message: 'Your session has expired. Open Rankvora AI again from your Shopify admin.', actionable: false };
+  if (error.status === 401) return { message: 'Session expired. Reopen Rankvora AI from your Shopify admin.', actionable: false };
   return { message: error.message, actionable: false };
 }
 
@@ -80,7 +80,7 @@ function ResultRow({ result }: { result: InspectedUrl }) {
         {/* Google's wording, verbatim. "Crawled — currently not indexed" is the single most useful
             sentence this feature surfaces, and paraphrasing it would lose the distinction. */}
         <span className="text-[12px] text-surface-600">
-          {result.error ?? result.coverageState ?? 'Google returned no coverage state.'}
+          {result.error ?? result.coverageState ?? 'No coverage state returned.'}
         </span>
       </td>
       <td className="px-3 py-1.5 whitespace-nowrap text-[11.5px] tabular-nums text-surface-500">
@@ -119,14 +119,10 @@ export default function IndexCoveragePanel() {
     <section className={cardClass} aria-labelledby="index-coverage-title">
       <div className="flex flex-wrap items-start justify-between gap-2.5 border-b border-surface-100 px-3 py-2">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-surface-500">Google</p>
-          <h2 id="index-coverage-title" className="mt-1 flex items-center gap-1.5 text-[15px] font-semibold tracking-tight text-surface-950">
+          <h2 id="index-coverage-title" className="flex items-center gap-1.5 text-[15px] font-semibold tracking-tight text-surface-950">
             <Search size={15} className="text-brand-500" />
             Index coverage
           </h2>
-          <p className="mt-1 text-[12px] leading-[1.45] text-surface-500">
-            Asks Google, URL by URL, whether it has actually indexed pages from your sitemap.
-          </p>
         </div>
         <div className="flex items-center gap-2">
           {data && <StatusBadge label={data.siteUrl} tone="neutral" />}
@@ -139,7 +135,7 @@ export default function IndexCoveragePanel() {
       {running && (
         <div className="flex items-center gap-2 px-3 py-4 text-[12.5px] text-surface-500">
           <Loader2 size={14} className="animate-spin" />
-          Asking Google about {DEFAULT_SAMPLE} of your URLs…
+          Inspecting {DEFAULT_SAMPLE} URLs…
         </div>
       )}
 
@@ -164,8 +160,7 @@ export default function IndexCoveragePanel() {
 
       {!running && !failure && !data && (
         <p className="px-3 py-3.5 text-[12.5px] leading-[1.5] text-surface-600">
-          Nothing has been inspected yet. Each URL costs one unit of your own Search Console quota
-          (Google allows roughly 2,000 a day), so Rankvora AI only asks when you press the button.
+          Not inspected yet. Each URL uses one unit of your Search Console quota.
         </p>
       )}
 
@@ -177,12 +172,12 @@ export default function IndexCoveragePanel() {
             <MetricTile
               label="Indexed in sample"
               value={data.sampledIndexRate === null ? '—' : formatPercent(data.sampledIndexRate)}
-              detail={data.sampledIndexRate === null ? 'no inspection succeeded' : `${data.indexedCount} of ${data.inspectedCount - data.errorCount} answered`}
+              detail={data.sampledIndexRate === null ? 'none answered' : `${data.indexedCount} of ${data.inspectedCount - data.errorCount} answered`}
               tone={data.sampledIndexRate === null ? 'neutral' : data.sampledIndexRate >= 0.8 ? 'success' : data.sampledIndexRate >= 0.5 ? 'warning' : 'critical'}
             />
-            <MetricTile label="Not indexed" value={String(data.notIndexedCount)} detail="of the inspected sample" tone={data.notIndexedCount > 0 ? 'warning' : 'neutral'} />
-            <MetricTile label="URLs in sitemap" value={data.sitemapUrlCount.toLocaleString()} detail="the population sampled" />
-            <MetricTile label="Could not inspect" value={String(data.errorCount)} detail="excluded from the rate" tone={data.errorCount > 0 ? 'warning' : 'neutral'} />
+            <MetricTile label="Not indexed" value={String(data.notIndexedCount)} tone={data.notIndexedCount > 0 ? 'warning' : 'neutral'} />
+            <MetricTile label="URLs in sitemap" value={data.sitemapUrlCount.toLocaleString()} />
+            <MetricTile label="Could not inspect" value={String(data.errorCount)} tone={data.errorCount > 0 ? 'warning' : 'neutral'} />
           </div>
 
           <div className="border-t border-surface-100 overflow-x-auto">
@@ -202,9 +197,8 @@ export default function IndexCoveragePanel() {
 
           {data.isSample && (
             <p className="border-t border-surface-100 px-3 py-1.5 text-[11px] leading-[1.5] text-surface-500">
-              This is a <span className="font-medium text-surface-700">sample</span> of{' '}
-              {data.inspectedCount} URLs spread across all {data.sitemapUrlCount.toLocaleString()} in your sitemap — not a
-              whole-catalogue figure. Inspecting every URL would exhaust your daily Search Console quota.
+              A <span className="font-medium text-surface-700">sample</span> of{' '}
+              {data.inspectedCount} of {data.sitemapUrlCount.toLocaleString()} sitemap URLs.
             </p>
           )}
         </>

@@ -135,11 +135,11 @@ export default function NonSeoSubPillarPage() {
   if (state === 'loading') return <AppPage heading={config.title}><SubPillarSkeleton /></AppPage>;
   // "Not audited yet" is a first-run state, not a failure — the page must not imply a fault,
   // and must not fill its layout with numbers to compensate.
-  if (state === 'empty') return <AppPage heading={config.title}><div className="mx-auto max-w-2xl py-10"><div className={`${card} flex flex-col items-center p-6 text-center`}><Radar size={18} className="text-brand-600" /><h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">No {config.title} audit available</h2>{implemented === false
-    ? <p className="mt-1 max-w-md text-[12.5px] leading-[1.5] text-surface-500">Rankvora AI does not measure this check yet, so running an audit will not populate this page. Support for it is still being built.</p>
-    : <><p className="mt-1 max-w-sm text-[12.5px] leading-[1.5] text-surface-500">Run an audit to generate real results for this check. Nothing on this page is estimated.</p><RunAuditButton /></>}</div></div></AppPage>;
+  if (state === 'empty') return <AppPage heading={config.title}><div className="mx-auto max-w-2xl py-10"><div className={`${card} flex flex-col items-center p-6 text-center`}><Radar size={18} className="text-brand-600" /><h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">No {config.title} audit yet</h2>{implemented === false
+    ? <p className="mt-1 max-w-md text-[12.5px] leading-[1.5] text-surface-500">Rankvora AI does not measure this check yet.</p>
+    : <RunAuditButton />}</div></div></AppPage>;
 
-  if (state === 'error' || !data) return <AppPage heading={config.title}><div className="mx-auto max-w-2xl py-10"><div className={`${card} flex flex-col items-center p-6 text-center`}><AlertCircle size={18} className="text-critical-600" /><h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">Unable to load {config.title} analysis</h2><Button variant="primary" onClick={() => load()} className="mt-3">Retry</Button></div></div></AppPage>;
+  if (state === 'error' || !data) return <AppPage heading={config.title}><div className="mx-auto max-w-2xl py-10"><div className={`${card} flex flex-col items-center p-6 text-center`}><AlertCircle size={18} className="text-critical-600" /><h2 className="mt-2.5 text-[15px] font-semibold text-surface-900">Unable to load {config.title}</h2><Button variant="primary" onClick={() => load()} className="mt-3">Retry</Button></div></div></AppPage>;
 
   /**
    * ─── The check ran, and could not measure anything ─────────────────
@@ -158,9 +158,8 @@ export default function NonSeoSubPillarPage() {
     return (
       <AppPage heading={config.title} primaryAction={reanalyzeAction}>
         <div className="page-shell">
-          {/* One line of context and when the audit last ran: the title and Re-analyze are in the page frame. */}
-          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
-            <p className="page-subtitle min-w-0">{data.description}</p>
+          {/* When the audit last ran: the title and Re-analyze are in the page frame. */}
+          <div className="flex sm:justify-end">
             <span className="meta-chip flex-shrink-0">
               <Clock3 size={12} className="text-surface-400" aria-hidden="true" />
               Last analyzed <span className="font-medium text-surface-800">{data.lastAnalyzed}</span>
@@ -171,11 +170,10 @@ export default function NonSeoSubPillarPage() {
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-100 text-surface-500">
               <Radar size={16} aria-hidden="true" />
             </span>
-            <h2 className="mt-2 text-[14px] font-semibold text-surface-900">Not measured on the latest audit</h2>
+            <h2 className="mt-2 text-[14px] font-semibold text-surface-900">Not measured</h2>
             <p className="mt-1 max-w-xl text-[12.5px] leading-[1.5] text-surface-600">
-              {data.unavailableReason ?? 'Rankvora AI could not measure this check for your store.'}
+              {data.unavailableReason ?? 'This check could not be measured.'}
             </p>
-            <p className="mt-1.5 text-[11px] text-surface-400">No score is shown, because nothing was scored.</p>
             {data.requiredScope && <GrantShopifyAccess scope={data.requiredScope} />}
           </div>
 
@@ -239,10 +237,9 @@ export default function NonSeoSubPillarPage() {
       ]}
     >
       <div className="page-shell">
-        {/* NO in-page breadcrumb and NO second title: the page frame carries the area's name. One line of
-            context and when the audit last ran, on a single row. */}
-        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="page-subtitle min-w-0">{data.description}</p>
+        {/* NO in-page breadcrumb, NO second title and NO subtitle: the page frame carries the area's
+            name. What is left is when the audit last ran. */}
+        <div className="flex sm:justify-end">
           <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
             {/* A seeded fixture is never passed off as a measurement of the merchant's store. */}
             {data.source === 'seed' && (
@@ -272,8 +269,7 @@ export default function NonSeoSubPillarPage() {
             <FindingsList
               findings={data.findings}
               onInvestigate={(finding) => setInvestigation({ finding, rows: [] })}
-              emptyTitle={`Excellent — no ${data.title} issues`}
-              emptyBody="Nothing was flagged in the latest analysis."
+              emptyTitle="No issues found"
             />
           </div>
 
@@ -301,7 +297,7 @@ export default function NonSeoSubPillarPage() {
             <p className={eyebrow}>Recommendation</p>
             <div className="mt-1.5 flex flex-col gap-2 rounded-md border border-brand-100 bg-brand-50/60 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-[12.5px] leading-[1.5] text-surface-700">
-                {leadFinding?.recommendation ?? `No ${data.title} issues were flagged in the latest analysis — review the evidence to confirm coverage.`}
+                {leadFinding?.recommendation ?? 'No issues flagged.'}
               </p>
               {/*
                 With a finding, this filters to the rows that caused it. With none, it filters to

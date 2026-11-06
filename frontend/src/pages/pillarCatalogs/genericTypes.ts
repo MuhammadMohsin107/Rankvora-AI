@@ -16,7 +16,6 @@ export interface GenericSubPillarConfig {
   pillarLabel: string;
   key: string;
   title: string;
-  description: string;
   score: number;
   statusLabel: string;
   analyzedLabel: string;

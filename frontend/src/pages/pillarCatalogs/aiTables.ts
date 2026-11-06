@@ -77,7 +77,7 @@ export const aiTables: Record<string, GenericSubPillarDetails> = {
     'Product',
   ),
   'ai-discovery/indexing-freshness': details(
-    'Crawler Access & Change Signals',
+    'Crawler Access & Freshness',
     'Which named crawlers robots.txt admits, what your server answers them, and how fresh your sitemap claims to be.',
     'Search by crawler or signal…',
     'Signal',

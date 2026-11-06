@@ -91,7 +91,7 @@ export default function UploadTab({ product, limits, canWrite, onBusyChange, onA
       setPhase({ name: 'choose' });
       if (error instanceof ApiError && error.code === 'ABORTED') return;
       setSendError({
-        message: error instanceof ApiError ? error.message : 'The image could not be added. Please try again.',
+        message: error instanceof ApiError ? error.message : 'The image could not be added. Try again.',
         code: error instanceof ApiError ? error.code : undefined,
       });
     } finally {
@@ -130,7 +130,7 @@ export default function UploadTab({ product, limits, canWrite, onBusyChange, onA
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
             <UploadCloud size={20} aria-hidden="true" />
           </span>
-          <p className="mt-2.5 text-[13px] font-semibold text-surface-900">Drop a product photo here</p>
+          <p className="mt-2.5 text-[13px] font-semibold text-surface-900">Drop a photo here</p>
           <p className="mt-0.5 text-[11.5px] text-surface-500">
             {acceptedTypesLabel(limits)} · up to {formatBytes(limits.maxBytes)} · up to {limits.maxSide} × {limits.maxSide} px
           </p>
@@ -173,7 +173,6 @@ export default function UploadTab({ product, limits, canWrite, onBusyChange, onA
           value={alt}
           onChange={(next) => setAlt(next.slice(0, 512))}
           disabled={sending}
-          details="Describes the photo for shoppers who cannot see it, and for search engines. It starts as the product’s name — say what the photo shows."
         />
       )}
 
@@ -202,11 +201,11 @@ export default function UploadTab({ product, limits, canWrite, onBusyChange, onA
 
       {picked && (
         <Button loading={sending} variant="primary" onClick={() => void send()} disabled={sending || !canWrite || alt.trim() === ''} fullWidth>
-          {sending ? 'Adding to your store…' : 'Add this image to the product in Shopify'}
+          {sending ? 'Adding to your store…' : 'Add to product in Shopify'}
         </Button>
       )}
       {picked && !canWrite && (
-        <p className="text-[11.5px] text-surface-500">Adding images is switched off for this store — see the notice above.</p>
+        <p className="text-[11.5px] text-surface-500">Adding images is switched off for this store.</p>
       )}
     </div>
   );

@@ -31,7 +31,7 @@ export const ANALYSIS_STAGES: AnalysisStage[] = [
   { key: 'catalog', label: 'Reading catalog', from: 0, to: 52 },
   { key: 'urls', label: 'Discovering URLs', from: 52, to: 67 },
   { key: 'pages', label: 'Analyzing pages', from: 67, to: 88 },
-  { key: 'measurements', label: 'Collecting available measurements', from: 88, to: 96 },
+  { key: 'measurements', label: 'Collecting measurements', from: 88, to: 96 },
   { key: 'findings', label: 'Preparing findings', from: 96, to: 100 },
 ];
 

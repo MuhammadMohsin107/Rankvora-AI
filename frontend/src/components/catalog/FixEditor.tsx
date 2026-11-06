@@ -31,16 +31,16 @@ function aiDraftingAvailable(): Promise<boolean> {
 }
 
 const REASON_TEXT: Record<string, string> = {
-  disabled: 'AI drafting is turned off on this server — write the value yourself.',
-  not_configured: 'AI drafting is not set up on this server yet — write the value yourself.',
-  not_fixable: 'This field cannot be drafted for this item — write the value yourself.',
-  nothing_to_fix: 'There is nothing left to draft for this item — write the value yourself.',
+  disabled: 'AI drafting is turned off.',
+  not_configured: 'AI drafting is not set up yet.',
+  not_fixable: 'This field cannot be drafted.',
+  nothing_to_fix: 'Nothing left to draft.',
 };
 
 const REAUDIT_TEXT: Record<string, string> = {
-  queued: ' A fresh audit is running — your scores update when it finishes.',
-  'already-running': ' An audit is already running and will pick this up.',
-  failed: ' The follow-up audit could not be started — run one from the dashboard to update your scores.',
+  queued: ' Scores update when the audit finishes.',
+  'already-running': ' The running audit will pick this up.',
+  failed: ' Run an audit to update your scores.',
 };
 
 interface FixEditorProps {
@@ -72,7 +72,7 @@ export default function FixEditor({ rowId, findingId, label, current, suggested,
   const [busy, setBusy] = useState<'saving' | 'drafting' | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Why a draft was not put in the box. Not an error of the merchant's: the box still holds what it
-  // held, and that is said plainly beside the reason.
+  // held.
   const [draftNote, setDraftNote] = useState<string | null>(null);
   const [saved, setSaved] = useState<{ reaudit: string } | null>(null);
   const [aiReady, setAiReady] = useState(false);
@@ -103,10 +103,10 @@ export default function FixEditor({ rowId, findingId, label, current, suggested,
         setProposalId(proposal.id);
       } else {
         const skip = result.skipped.find((candidate) => `${candidate.resourceType}:${candidate.resourceId}` === rowId);
-        setDraftNote(skip?.reason ?? (result.unavailableReason ? REASON_TEXT[result.unavailableReason] : undefined) ?? 'Nothing could be drafted for this — write the value yourself.');
+        setDraftNote(skip?.reason ?? (result.unavailableReason ? REASON_TEXT[result.unavailableReason] : undefined) ?? 'Nothing could be drafted.');
       }
     } catch {
-      setDraftNote('Drafting is unavailable right now. You can write the value yourself.');
+      setDraftNote('Drafting is unavailable right now.');
     } finally {
       setBusy(null);
     }
@@ -140,7 +140,7 @@ export default function FixEditor({ rowId, findingId, label, current, suggested,
       setError(
         failure instanceof ApiError && [400, 403, 409, 429, 502].includes(failure.status)
           ? failure.message
-          : 'We could not save this change to your store. Please try again.',
+          : 'Could not save. Please try again.',
       );
     } finally {
       setBusy(null);
@@ -196,7 +196,7 @@ export default function FixEditor({ rowId, findingId, label, current, suggested,
       )}
       {draftNote && (
         <p className="text-[12px] leading-[1.5] text-warning-700" role="status">
-          {draftNote} The box above is unchanged.
+          {draftNote}
         </p>
       )}
       {error && <p className="text-[12px] leading-[1.5] text-critical-700" role="alert">{error}</p>}

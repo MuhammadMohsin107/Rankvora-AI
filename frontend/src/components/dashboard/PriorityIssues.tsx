@@ -133,9 +133,6 @@ export default function PriorityIssues({ issues, heading = 'Priority issues', he
             <p className="text-[12.5px] font-semibold text-surface-900">
               {filter === 'all' ? 'No open issues' : `No ${severityTone[filter].label.toLowerCase()} issues`}
             </p>
-            <p className="text-[11.5px] text-surface-500">
-              {filter === 'all' ? 'The latest analysis left nothing outstanding.' : 'Nothing in this severity right now.'}
-            </p>
           </div>
         ) : (
           <ul className="divide-y divide-surface-200/60">

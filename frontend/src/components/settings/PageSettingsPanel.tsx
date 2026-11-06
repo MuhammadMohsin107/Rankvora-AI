@@ -52,7 +52,6 @@ function renderField(field: PageSettingField, value: PageSettingValue, onChange:
         <ToggleRow
           id={field.key}
           label={field.label}
-          description={field.description ?? 'Toggle the generated schema behavior for this page.'}
           checked={Boolean(value)}
           onChange={(next) => onChange(next)}
         />
@@ -66,7 +65,7 @@ function renderField(field: PageSettingField, value: PageSettingValue, onChange:
 
   if (field.type === 'select') {
     return (
-      <Field key={field.key} label={field.label} htmlFor={field.key} hint={field.description} className="py-2">
+      <Field key={field.key} label={field.label} htmlFor={field.key} className="py-2">
         <div className="flex items-center justify-between gap-2">
           <span className="rounded border border-surface-200 bg-surface-50 px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-[0.1em] text-surface-500">
             {field.source}
@@ -97,9 +96,9 @@ function renderField(field: PageSettingField, value: PageSettingValue, onChange:
           value={inputValue}
           placeholder={field.placeholder}
           // A text area has no length limit of its own to lean on here, so the limit is held by cutting
-          // anything past it; the count is shown with the field's description.
+          // anything past it; the count is shown under the field.
           onChange={(next) => onChange(typeof field.maxLength === 'number' ? next.slice(0, field.maxLength) : next)}
-          details={[field.description, typeof field.maxLength === 'number' ? `${inputValue.length}/${field.maxLength}` : null].filter(Boolean).join(' · ')}
+          details={typeof field.maxLength === 'number' ? `${inputValue.length}/${field.maxLength}` : undefined}
         />
       </div>
     );
@@ -108,7 +107,7 @@ function renderField(field: PageSettingField, value: PageSettingValue, onChange:
   return (
     <div key={field.key} className="py-2">
       {sourceChip}
-      <Field label={field.label} htmlFor={field.key} hint={field.description}>
+      <Field label={field.label} htmlFor={field.key}>
         <TextInput
           id={field.key}
           type={field.type === 'url' ? 'url' : 'text'}
@@ -143,14 +142,7 @@ export default function PageSettingsPanel({
         className="relative flex h-full w-full max-w-2xl flex-col border-l border-surface-200 bg-surface-0 shadow-2xl"
       >
         <header className="flex items-start justify-between gap-3 border-b border-surface-200 px-4 py-3">
-          <div>
-            {/* "Settings", not "Client settings": the merchant reading this panel IS the client,
-                so the qualifier only ever described the audience to ourselves. Backend and
-                database identifiers are unchanged — this is a label. */}
-            <p className="eyebrow">Settings</p>
-            <h2 id="page-settings-title" className="mt-0.5 text-[15px] font-semibold text-surface-950">{definition.title}</h2>
-            <p className="mt-0.5 text-[11.5px] leading-[1.45] text-surface-500">{definition.description}</p>
-          </div>
+          <h2 id="page-settings-title" className="text-[15px] font-semibold text-surface-950">{definition.title}</h2>
           <Button variant="ghost" icon="x" onClick={onClose} accessibilityLabel="Close page settings" />
         </header>
 
@@ -160,7 +152,6 @@ export default function PageSettingsPanel({
             <section key={section.id} className={`${settingsCard} overflow-hidden`}>
               <div className="border-b border-surface-200 px-3 py-2">
                 <h3 className="card-title">{section.title}</h3>
-                {section.description && <p className="mt-0.5 text-[11.5px] leading-[1.45] text-surface-500">{section.description}</p>}
               </div>
               <div className="px-3 py-2">
                 {section.fields.map((field) => renderField(field, values[field.key], (next) => onChange(field.key, next)))}
