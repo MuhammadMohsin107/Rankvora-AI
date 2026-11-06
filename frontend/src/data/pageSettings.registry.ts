@@ -282,7 +282,7 @@ Object.assign(subPillarSettingsRegistry, {
  * not move. The other three had no entry at all and fell back to the Schema / JSON-LD panel, with
  * its "Rankvora AI Store" and example.com placeholders, on pages about crawlers and IndexNow.
  * AI Discovery's real inputs — the IndexNow key and the tracked questions — live in
- * Settings → AI Discovery, where the checks actually read them. */
+ * the AI Discovery page, where the checks actually read them. */
 const WITHOUT_SETTINGS = new Set([
   'canonicals',
   'handles-redirects',

@@ -778,7 +778,7 @@ export function writeIsPermitted(consent: string | null): { allowed: boolean; re
       // Names the answer back to the merchant and where to change it, so the refusal is actionable
       // rather than a door with no handle.
       reason:
-        'Your setup answer is "Never change my store", so Rankvora AI writes nothing to your catalogue. Change it in Settings → Guided setup → Goals and permission to act if you want to apply fixes.',
+        'Your setup answer is "Never change my store", so Rankvora AI writes nothing to your catalogue. Change it in guided setup, under Goals and permission to act, if you want to apply fixes.',
     };
   }
   return { allowed: true, reason: '' };

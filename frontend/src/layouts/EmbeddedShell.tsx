@@ -35,7 +35,6 @@ const NAV_LINKS: NavLinkItem[] = [
   { to: '/reports', label: 'Reports' },
   // The header's bell is gone with the header, and the notifications page was reached from it.
   { to: '/notifications', label: 'Notifications' },
-  { to: '/settings', label: 'Settings' },
 ];
 
 export default function EmbeddedShell({ children }: { children: ReactNode }) {

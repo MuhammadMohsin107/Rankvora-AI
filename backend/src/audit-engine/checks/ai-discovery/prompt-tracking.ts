@@ -76,7 +76,7 @@ function assess(query: SnapshotPromptQuery): Assessment {
       detail: 'Not checked yet',
       // Not "the next scheduled run": scheduled analysis is a per-store setting that may be off,
       // and then no run is scheduled at all. What is always true is stated instead.
-      recommendation: 'This question has not been asked yet. Every audit asks it once, or press Check all now in Settings → AI Discovery to ask it straight away.',
+      recommendation: 'This question has not been asked yet. Every audit asks it once, or press Check all now on the AI Discovery page to ask it straight away.',
       rate: null,
       samples: 0,
       mentions: 0,
@@ -160,7 +160,7 @@ export const promptTrackingCheck: AuditCheck = {
     if (tracked.length === 0) {
       return unavailableResult(
         'prompt-tracking',
-        'No questions are being tracked for this store. Add the questions your shoppers actually ask in Settings → AI Discovery — Rankvora AI will not invent them, because a made-up question would measure Rankvora AI’s guess rather than your visibility.',
+        'No questions are being tracked for this store. Add the questions your shoppers actually ask on the AI Discovery page — Rankvora AI will not invent them, because a made-up question would measure Rankvora AI’s guess rather than your visibility.',
       );
     }
 
@@ -272,7 +272,7 @@ export const promptTrackingCheck: AuditCheck = {
         resolutionType: 'settings',
         problem: `${formatCount(gathering.length)} tracked ${gathering.length === 1 ? 'question has' : 'questions have'} fewer than ${MIN_SAMPLES} recorded answers, so no mention rate is reported for ${gathering.length === 1 ? 'it' : 'them'} yet.`,
         why: 'An assistant’s answer varies between runs, so a rate from one or two answers is chance, not a pattern. These questions are left out of the score until they have enough real answers.',
-        recommendation: 'Nothing to fix. Every audit asks each question once; press Check all now in Settings → AI Discovery to add answers sooner.',
+        recommendation: 'Nothing to fix. Every audit asks each question once; press Check all now on the AI Discovery page to add answers sooner.',
         evidence: gathering.map((entry) => `"${entry.query.query}": ${entry.assessment.detail}.`),
         evidenceRows: rows.filter((row) => gathering.some((entry) => row.id === `query:${entry.query.id}`)),
         details: { issueType: NEEDS_WORK, notChecked: true },

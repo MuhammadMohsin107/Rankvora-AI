@@ -18,7 +18,6 @@ import CatalogList from './pages/CatalogList';
 import CatalogDetail from './pages/CatalogDetail';
 import Integrations from './pages/Integrations';
 import Reports from './pages/Reports';
-import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
 import NotFound from './pages/NotFound';
 import OpenFromShopify from './pages/auth/OpenFromShopify';
@@ -101,8 +100,6 @@ function AuthenticatedApp() {
           <Route path="/blog-articles/:itemId" element={<CatalogDetail key="article" kind="article" />} />
           <Route path="/integrations" element={<Integrations />} />
           <Route path="/reports" element={<Reports />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/settings/:section" element={<Settings />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/seo" element={<SeoDashboard />} />
           {/* /seo/schema used to be served by a bespoke page that rendered a hard-coded score,

@@ -79,7 +79,7 @@ export const indexNowCheck: AuditCheck = {
     if (!key) {
       return unavailableResult(
         'indexnow',
-        'IndexNow is not configured in Rankvora AI for this store, so its readiness has not been measured. Add your IndexNow key in Settings → AI Discovery and the next audit checks that the key file is published and matching.',
+        'IndexNow is not configured in Rankvora AI for this store, so its readiness has not been measured. Add your IndexNow key on the AI Discovery page and the next audit checks that the key file is published and matching.',
       );
     }
 
@@ -87,7 +87,7 @@ export const indexNowCheck: AuditCheck = {
     if (!KEY_PATTERN.test(key)) {
       return unavailableResult(
         'indexnow',
-        'The IndexNow key saved for this store is not valid hexadecimal, so Rankvora AI did not request a key file. Replace it in Settings → AI Discovery.',
+        'The IndexNow key saved for this store is not valid hexadecimal, so Rankvora AI did not request a key file. Replace it on the AI Discovery page.',
       );
     }
 

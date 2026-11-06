@@ -3,7 +3,6 @@
 // it) so repository files can map these into the page-facing contracts
 // (DashboardData etc.) without re-declaring the shape.
 
-import type { ShopifyStoreFacts } from './settings.config';
 
 export interface AuditRow {
   id: number;
@@ -161,7 +160,7 @@ export interface UserRow {
   email: string;
   jobTitle: string | null;
   role: string;
-  /** ISO timestamp — the account's creation date, shown as "Member since" on Settings → Profile. */
+  /** ISO timestamp — the account's creation date, . */
   createdAt: string;
   notifyAnalysisComplete: boolean;
   notifyCriticalIssues: boolean;
@@ -192,4 +191,15 @@ export interface StoreRow {
   respectRobots: boolean;
   /** What Shopify last reported for this store. Null until a shop has been read. */
   shopifyProfile: ShopifyStoreFacts | null;
+}
+
+/** What Shopify last reported for the connected shop — see backend store-profile.service.ts. */
+export interface ShopifyStoreFacts {
+  shopDomain: string;
+  name: string | null;
+  url: string | null;
+  country: string | null;
+  currency: string | null;
+  timezone: string | null;
+  readAt: string;
 }

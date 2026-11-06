@@ -18,13 +18,13 @@ export function fetchCurrentUser(): Promise<UserRow> {
   return cached;
 }
 
-/** Notifies mounted components (Header/Sidebar) when the user changes, e.g. after a Settings save. */
+/** Notifies mounted components (Header/Sidebar) when the user changes, e.g. after sign-in. */
 export function subscribeCurrentUser(listener: Listener): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
 
-/** Called by settings.repository after a successful PUT so cached identity stays current. */
+/** Replaces the cached identity, so mounted components show the user the server last returned. */
 export function updateCachedUser(user: UserRow): void {
   cached = Promise.resolve(user);
   listeners.forEach((listener) => listener(user));

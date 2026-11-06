@@ -54,7 +54,6 @@ const routeLabels: Record<string, string> = {
   'blog-articles': 'Blog articles',
   integrations: 'Integrations',
   reports: 'Reports',
-  settings: 'Settings',
   notifications: 'Notifications',
 };
 

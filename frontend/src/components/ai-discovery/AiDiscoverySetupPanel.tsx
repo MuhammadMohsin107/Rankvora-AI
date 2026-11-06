@@ -15,11 +15,12 @@ import {
   type GeneratedFile,
   type PromptQuery,
 } from '../../data/aiDiscovery.repository';
-import { Field, SettingsCard, TextInput } from './SettingsPrimitives';
+import { Field, SettingsCard, TextInput } from '../settings/SettingsPrimitives';
 import Button from '../../components/polaris/Button';
 
 /**
- * ─── Settings · AI Discovery ─────────────────────────────────────────
+ * ─── AI Discovery · setup ────────────────────────────────────────────
+ * The last panel of the AI Discovery dashboard (it lived in Settings until that page was removed).
  * Where the merchant supplies the two things the AI Discovery pillar cannot discover on its own,
  * and where the generated agent files are previewed.
  *
@@ -28,6 +29,9 @@ import Button from '../../components/polaris/Button';
  * prefilled suggestion apart from something they already configured — and in the prompt-tracking
  * case a suggested question would go on to be measured and reported as their visibility.
  */
+
+/** The panel's element id — PromptTrendPanel scrolls to it when it has nothing to chart. */
+export const AI_DISCOVERY_SETUP_ID = 'ai-discovery-setup';
 
 /** "1 policy", "3 policies" — every count on this page is read by a person. */
 function countOf(count: number, one: string, many: string): string {
@@ -183,7 +187,7 @@ function PromptQueryRow({
   );
 }
 
-export default function AiDiscoverySection() {
+export default function AiDiscoverySetupPanel() {
   const [settings, setSettings] = useState<AiDiscoverySettings | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
@@ -200,7 +204,7 @@ export default function AiDiscoverySection() {
       setSettings(await fetchAiDiscoverySettings());
       setState('ready');
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Settings could not be loaded.');
+      setError(cause instanceof Error ? cause.message : 'Setup could not be loaded.');
       setState('error');
     }
   }, []);
@@ -226,7 +230,7 @@ export default function AiDiscoverySection() {
   if (state === 'error' || !settings) {
     return (
       <div className="rounded-lg border border-critical-200 bg-critical-50 px-3 py-2 text-[12px] text-critical-800">
-        {error ?? 'Settings could not be loaded.'}
+        {error ?? 'Setup could not be loaded.'}
       </div>
     );
   }
@@ -235,7 +239,7 @@ export default function AiDiscoverySection() {
   const keyUrl = indexNow.indexNowKey ? `/${indexNow.indexNowKey}.txt` : null;
 
   return (
-    <div className="space-y-3">
+    <div id={AI_DISCOVERY_SETUP_ID} className="scroll-mt-3 space-y-3">
       {error && (
         <div className="flex items-start gap-1.5 rounded-lg border border-critical-200 bg-critical-50 px-3 py-2 text-[12px] text-critical-800">
           <AlertCircle size={14} className="mt-0.5 shrink-0" />

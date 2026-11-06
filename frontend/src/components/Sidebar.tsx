@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
   Search,
@@ -9,14 +9,13 @@ import {
   Sparkles,
   Puzzle,
   BarChart3,
-  Settings,
   PanelLeftClose,
   PanelLeftOpen,
   X,
 } from 'lucide-react';
 import { pillarList, pillarRoutes } from '../data/pillarMeta';
 import { fetchCurrentUser, initialsFor, subscribeCurrentUser } from '../data/user.repository';
-import { planInfo } from '../data/settings.config';
+import { planInfo } from '../data/plan';
 import { CATALOG_KIND_LIST } from '../data/catalogKinds';
 import { KIND_ICON } from './catalog/CatalogBits';
 import type { UserRow } from '../data/api.types';
@@ -66,7 +65,6 @@ const storeLinks: GroupLink[] = CATALOG_KIND_LIST.map((config) => {
 const utilityLinks = [
   { id: 'integrations', label: 'Integrations', icon: <Puzzle size={16} strokeWidth={2} /> },
   { id: 'reports', label: 'Reports', icon: <BarChart3 size={16} strokeWidth={2} /> },
-  { id: 'settings', label: 'Settings', icon: <Settings size={16} strokeWidth={2} /> },
 ];
 
 function SidebarGroup({ label, links, isCollapsed, onClose }: { label: string; links: GroupLink[]; isCollapsed: boolean; onClose: () => void }) {
@@ -97,7 +95,6 @@ function SidebarGroup({ label, links, isCollapsed, onClose }: { label: string; l
 }
 
 export default function Sidebar({ isOpen, isCollapsed, onClose, onToggleCollapse }: SidebarProps) {
-  const navigate = useNavigate();
   const [user, setUser] = useState<UserRow | null>(null);
 
   useEffect(() => {
@@ -257,15 +254,10 @@ export default function Sidebar({ isOpen, isCollapsed, onClose, onToggleCollapse
 
         {/* User Profile Bottom Area */}
         <div className={`flex-shrink-0 border-t border-surface-200 ${isCollapsed ? 'p-2' : 'p-2'}`}>
-          <button
-            onClick={() => { navigate('/settings'); onClose(); }}
-            className={`flex cursor-pointer items-center gap-2 rounded-md py-1.5 transition-all duration-200 group hover:bg-surface-200/50 w-full ${isCollapsed ? 'justify-center px-2' : 'px-2'}`}
-          >
+          <div className={`flex w-full items-center gap-2 py-1.5 ${isCollapsed ? 'justify-center px-2' : 'px-2'}`}>
             <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border border-surface-300 bg-surface-100 text-surface-900">
               <span className="text-[10.5px] font-bold">{user ? initialsFor(user.fullName) : '··'}</span>
             </div>
-            {/* text-left: a <button> centres its text by default, which floated the name away from
-                the avatar instead of sitting beside it like the logo and nav labels do. */}
             <div className={`flex-1 min-w-0 text-left ${isCollapsed ? 'lg:sr-only' : ''}`}>
               <p className="truncate text-[12px] font-semibold text-surface-900">
                 {user?.fullName ?? 'Loading…'}
@@ -274,7 +266,7 @@ export default function Sidebar({ isOpen, isCollapsed, onClose, onToggleCollapse
                 {planInfo.name} Plan
               </p>
             </div>
-          </button>
+          </div>
         </div>
       </aside>
     </>

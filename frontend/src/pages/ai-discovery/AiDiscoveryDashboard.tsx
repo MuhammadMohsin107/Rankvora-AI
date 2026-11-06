@@ -5,6 +5,7 @@ import IndexCoveragePanel from '../../components/ai-discovery/IndexCoveragePanel
 import BotTestPanel from '../../components/ai-discovery/BotTestPanel';
 import PromptTrendPanel from '../../components/ai-discovery/PromptTrendPanel';
 import ProductReadinessPanel from '../../components/ai-discovery/ProductReadinessPanel';
+import AiDiscoverySetupPanel from '../../components/ai-discovery/AiDiscoverySetupPanel';
 
 /**
  * /ai-discovery — the AI Discovery pillar dashboard.
@@ -40,6 +41,8 @@ export default function AiDiscoveryDashboard() {
           <IndexCoveragePanel />
           <PromptTrendPanel />
           <BotTestPanel />
+          {/* What the merchant supplies: the IndexNow key, the tracked questions, the agent files. */}
+          <AiDiscoverySetupPanel />
         </div>
       }
     />

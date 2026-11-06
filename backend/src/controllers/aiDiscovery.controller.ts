@@ -135,7 +135,7 @@ async function requireStoreOrigin(req: Request): Promise<{ storeId: number; orig
     const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
     return { storeId: store.id, origin: url.origin };
   } catch {
-    throw new ApiError(409, `“${raw}” is not a URL Rankvora AI can request. Correct it in Settings → Store.`, 'STORE_URL_INVALID');
+    throw new ApiError(409, `“${raw}” is not a URL Rankvora AI can request.`, 'STORE_URL_INVALID');
   }
 }
 

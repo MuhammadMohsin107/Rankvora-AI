@@ -89,7 +89,6 @@ describe('the page frame', () => {
     'src/pages/Dashboard.tsx',
     'src/pages/Integrations.tsx',
     'src/pages/Reports.tsx',
-    'src/pages/Settings.tsx',
     'src/pages/Notifications.tsx',
     'src/pages/NotFound.tsx',
     'src/pages/CatalogList.tsx',

@@ -26,7 +26,7 @@ describe('automation consent decides whether Rankvora AI may write', () => {
     // The refusal names their own answer back to them and where to change it. A bare "not
     // permitted" is a door with no handle.
     assert.match(verdict.reason, /Never change my store/);
-    assert.match(verdict.reason, /Settings/);
+    assert.match(verdict.reason, /guided setup/);
   });
 
   it('allows a write the merchant approved fix by fix', () => {

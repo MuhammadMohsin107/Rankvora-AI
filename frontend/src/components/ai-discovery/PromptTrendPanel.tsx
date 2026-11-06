@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AlertCircle, Loader2, MessageSquare } from 'lucide-react';
 import { fetchPromptHistory, type PromptHistory } from '../../data/aiDiscovery.repository';
 import { ApiError } from '../../lib/api';
+import { AI_DISCOVERY_SETUP_ID } from './AiDiscoverySetupPanel';
 import { cardClass } from '../dashboard/scoreTone';
 import { Button, MetricTile, StatusBadge } from '../workflows/WorkflowPrimitives';
 
@@ -126,8 +127,16 @@ function TrendChart({ history }: { history: PromptHistory }) {
  */
 function EmptyReason({ history }: { history: PromptHistory }) {
   const line = 'text-[12.5px] leading-[1.5] text-surface-600';
-  // A path segment, not a query string: Settings reads `section` with useParams.
-  const settings = <a href="/settings/ai-discovery" className="font-medium text-brand-600 hover:text-brand-700">Settings → AI Discovery</a>;
+  // The setup panel is further down this same page, so the link scrolls to it.
+  const settings = (
+    <button
+      type="button"
+      onClick={() => document.getElementById(AI_DISCOVERY_SETUP_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+      className="font-medium text-brand-600 hover:text-brand-700"
+    >
+      Prompt tracking
+    </button>
+  );
 
   if (!history.aiConfigured) {
     return (
@@ -141,7 +150,7 @@ function EmptyReason({ history }: { history: PromptHistory }) {
   if (history.queries.length === 0) {
     return (
       <p className={line}>
-        No questions tracked yet. Add them under {settings}.
+        No questions tracked yet. Add them in {settings} below.
       </p>
     );
   }
@@ -149,14 +158,14 @@ function EmptyReason({ history }: { history: PromptHistory }) {
   if (history.queries.every((query) => !query.active)) {
     return (
       <p className={line}>
-        All tracked questions are paused. Resume one under {settings}.
+        All tracked questions are paused. Resume one in {settings} below.
       </p>
     );
   }
 
   return (
     <p className={line}>
-      No answers recorded in the last {history.days} days. Run a check under {settings}.
+      No answers recorded in the last {history.days} days. Run a check in {settings} below.
     </p>
   );
 }
