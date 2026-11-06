@@ -17,8 +17,6 @@ import SeoSubPillarRoute from './pages/seo/SeoSubPillarRoute';
 import CatalogList from './pages/CatalogList';
 import CatalogDetail from './pages/CatalogDetail';
 import Integrations from './pages/Integrations';
-import Reports from './pages/Reports';
-import Notifications from './pages/Notifications';
 import NotFound from './pages/NotFound';
 import OpenFromShopify from './pages/auth/OpenFromShopify';
 import RequireAuth from './components/auth/RequireAuth';
@@ -99,8 +97,6 @@ function AuthenticatedApp() {
           <Route path="/collections/:itemId" element={<CatalogDetail key="collection" kind="collection" />} />
           <Route path="/blog-articles/:itemId" element={<CatalogDetail key="article" kind="article" />} />
           <Route path="/integrations" element={<Integrations />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/notifications" element={<Notifications />} />
           <Route path="/seo" element={<SeoDashboard />} />
           {/* /seo/schema used to be served by a bespoke page that rendered a hard-coded score,
               three invented findings and fourteen fabricated evidence rows without ever calling

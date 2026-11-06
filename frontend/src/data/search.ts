@@ -61,8 +61,6 @@ const STATIC_PAGES: Destination[] = [
   { title: 'Collections', detail: 'Every collection the latest audit checked, with what it is missing', to: '/collections', keywords: ['collection', 'category', 'categories', 'catalog'] },
   { title: 'Blog articles', detail: 'Every blog article the latest audit checked, with what it is missing', to: '/blog-articles', keywords: ['blog', 'article', 'articles', 'post', 'posts', 'content'] },
   { title: 'Integrations', detail: 'Shopify, Search Console, Analytics and PageSpeed', to: '/integrations', keywords: ['connect', 'shopify', 'google', 'api', 'pagespeed'] },
-  { title: 'Reports', detail: 'How your scores have moved over time', to: '/reports', keywords: ['history', 'trend', 'export', 'csv'] },
-  { title: 'Notifications', detail: 'Everything Rankvora AI has told you', to: '/notifications', keywords: ['alerts', 'bell'] },
   { title: 'Guided setup', detail: 'Review or change your setup answers', to: '/onboarding', keywords: ['onboarding', 'wizard', 'setup'] },
 ];
 
@@ -201,7 +199,7 @@ export async function searchFindings(query: string, limit = 5): Promise<FindingS
  */
 export function defaultDestinations(limit = 6): SearchResult[] {
   const shortlist = [
-    ...STATIC_PAGES.filter((page) => ['/', '/integrations', '/reports'].includes(page.to)),
+    ...STATIC_PAGES.filter((page) => ['/', '/integrations'].includes(page.to)),
     // The pillar dashboards, not their sub-pillars: twenty-eight rows is a menu, not a suggestion.
     ...PILLAR_PAGES.filter((page) => page.to.split('/').length === 2),
   ];

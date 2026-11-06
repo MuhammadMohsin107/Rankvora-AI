@@ -64,7 +64,6 @@ const storeLinks: GroupLink[] = CATALOG_KIND_LIST.map((config) => {
 // Bottom utility links
 const utilityLinks = [
   { id: 'integrations', label: 'Integrations', icon: <Puzzle size={16} strokeWidth={2} /> },
-  { id: 'reports', label: 'Reports', icon: <BarChart3 size={16} strokeWidth={2} /> },
 ];
 
 function SidebarGroup({ label, links, isCollapsed, onClose }: { label: string; links: GroupLink[]; isCollapsed: boolean; onClose: () => void }) {

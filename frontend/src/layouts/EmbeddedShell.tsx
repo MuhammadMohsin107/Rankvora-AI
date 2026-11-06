@@ -32,9 +32,6 @@ const NAV_LINKS: NavLinkItem[] = [
   ...pillarList.map((pillar) => ({ to: pillarRoutes[pillar.key], label: pillar.label })),
   ...CATALOG_KIND_LIST.map((config) => ({ to: config.listPath, label: config.navLabel })),
   { to: '/integrations', label: 'Integrations' },
-  { to: '/reports', label: 'Reports' },
-  // The header's bell is gone with the header, and the notifications page was reached from it.
-  { to: '/notifications', label: 'Notifications' },
 ];
 
 export default function EmbeddedShell({ children }: { children: ReactNode }) {

@@ -915,9 +915,6 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
               />
             ))}
           </div>
-          <p className="mt-1.5 text-[11.5px] leading-[1.45] text-surface-500">
-            Shown in your notification bell.
-          </p>
         </FormSection>
       </FormGrid>
     </div>

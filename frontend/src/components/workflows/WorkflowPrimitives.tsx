@@ -30,7 +30,7 @@ export function MetricTile({ label, value, detail, tone = 'neutral' }: { label: 
     critical: 'border-surface-200',
     info: 'border-surface-200',
   }[tone];
-  // ~64px tall instead of ~86px. Five of these sit above the data on Reports and
+  // ~64px tall instead of ~86px. Several of these sit above the data on
   // Integrations, so every pixel here is paid five times before the customer sees a finding.
   return (
     <div className={`rounded-lg border bg-surface-0 px-2.5 py-2 shadow-[0_8px_24px_-20px_rgba(15,23,42,0.45)] ${toneClass}`}>

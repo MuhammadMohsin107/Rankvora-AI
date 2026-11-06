@@ -88,8 +88,6 @@ describe('the page frame', () => {
   const pages = [
     'src/pages/Dashboard.tsx',
     'src/pages/Integrations.tsx',
-    'src/pages/Reports.tsx',
-    'src/pages/Notifications.tsx',
     'src/pages/NotFound.tsx',
     'src/pages/CatalogList.tsx',
     'src/pages/CatalogDetail.tsx',

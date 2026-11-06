@@ -1,17 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bell, ChevronDown, Menu, Moon, Search, Sun } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { ChevronDown, Menu, Moon, Search, Sun } from 'lucide-react';
 import Breadcrumbs from './Breadcrumbs';
 import HeaderSearch from './HeaderSearch';
-import {
-  formatNotificationTime,
-  iconForNotification,
-  markAllNotificationsRead,
-  markNotificationRead,
-  notificationTarget,
-  useNotifications,
-  type NotificationRecord,
-} from '../data/notifications';
 import { fetchCurrentUser, initialsFor, subscribeCurrentUser } from '../data/user.repository';
 import { useTheme } from '../context/ThemeContext';
 import type { UserRow } from '../data/api.types';
@@ -29,27 +19,13 @@ interface HeaderProps {
  * submission back up through this component would only give two places to hold one string.
  */
 export default function Header({ onMenuClick }: HeaderProps) {
-  const navigate = useNavigate();
   const { theme, toggle } = useTheme();
   const headerRef = useRef<HTMLElement>(null);
   const [user, setUser] = useState<UserRow | null>(null);
-  const [openMenu, setOpenMenu] = useState<'notifications' | 'profile' | null>(null);
+  const [openMenu, setOpenMenu] = useState<'profile' | null>(null);
   /** Phone only: whether the icon has expanded into the field. Irrelevant from `sm` up, where the
    * field is always present. */
   const [searchOpen, setSearchOpen] = useState(false);
-  // Shared with the /notifications page. The bell used to keep its own array and its own count,
-  // so marking everything read on that page left this badge showing the old number.
-  const { items, unreadCount, status: notificationStatus, error: notificationError } = useNotifications();
-  /**
-   * THE BELL SHOWS UNREAD ONLY.
-   *
-   * It listed read ones too, which is why the panel could say "0 unread" above four notifications
-   * — nothing ever left it, so a merchant who had dealt with everything still saw a full list and
-   * no way to clear it. Reading one now removes it from here; the archive lives on
-   * /notifications, where it can also be deleted for good.
-   */
-  const notifications = items.filter((notification) => !notification.isRead);
-
   useEffect(() => {
     let mounted = true;
     fetchCurrentUser()
@@ -74,23 +50,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
     };
   }, []);
 
-  const toggleMenu = (menu: 'notifications' | 'profile') => {
+  const toggleMenu = (menu: 'profile') => {
     setOpenMenu((current) => (current === menu ? null : menu));
-  };
-
-  /**
-   * Opens the page the notification is about — the dashboard's priority issues, the pillar that moved, the
-   * audit that finished.
-   *
-   * It used to go to /notifications for every one of them: the full list of the same notices,
-   * reached by clicking out of a panel already showing them, and the one page in the app that can
-   * do nothing about any of them. Reading it still goes through the shared store, which rolls the
-   * optimistic change back and surfaces the reason if the request fails.
-   */
-  const openNotification = (notification: NotificationRecord) => {
-    setOpenMenu(null);
-    void markNotificationRead(notification.id);
-    navigate(notificationTarget(notification));
   };
 
   return (
@@ -153,63 +114,6 @@ export default function Header({ onMenuClick }: HeaderProps) {
           >
             {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
           </button>
-
-          {/* Notifications */}
-          <button
-            onClick={() => toggleMenu('notifications')}
-            aria-expanded={openMenu === 'notifications'}
-            className="relative p-1.5 text-surface-400 hover:text-surface-700 hover:bg-surface-100 rounded-md transition-colors active:scale-[0.98]"
-            aria-label="Notifications"
-          >
-            <Bell size={17} />
-            {/* Capped, because a three-digit count does not fit the badge. The exact number is in
-                the panel header and on /notifications. */}
-            {unreadCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-critical-500 px-1 text-[9px] font-bold leading-none text-white ring-2 ring-white">{unreadCount > 99 ? '99+' : unreadCount}</span>}
-          </button>
-
-          {openMenu === 'notifications' && (
-            <div className="absolute right-0 top-10 z-50 w-[min(340px,calc(100vw-2rem))] overflow-hidden rounded-xl border border-surface-200 bg-surface-0 shadow-xl" role="dialog" aria-label="Notifications">
-              <div className="flex items-center justify-between border-b border-surface-200 px-3 py-2">
-                <div><h2 className="text-[13px] font-semibold text-surface-900">Notifications</h2><p className="text-[11px] text-surface-500">{unreadCount} unread</p></div>
-                <button type="button" onClick={() => void markAllNotificationsRead()} disabled={unreadCount === 0} className="text-[11px] font-semibold text-brand-600 transition-colors hover:text-brand-700 disabled:cursor-not-allowed disabled:text-surface-300">Mark all as read</button>
-              </div>
-              {/* A failed write is said out loud instead of only reaching the console — the row
-                  has already been rolled back, so silence would leave the customer believing a
-                  change stuck that did not. */}
-              {notificationError && (
-                <p role="alert" className="border-b border-critical-100 bg-critical-50 px-3 py-1.5 text-[11px] text-critical-700">{notificationError}</p>
-              )}
-              <div className="max-h-[min(400px,calc(100vh-7rem))] overflow-y-auto">
-                {/* Before the first load answers — or when it failed — nothing is known, so no empty
-                    state is claimed. The failure itself is the alert above. */}
-                {notifications.length === 0 && items.length === 0 && notificationStatus !== 'ready' && notificationStatus !== 'error' && (
-                  <p className="px-3 py-6 text-center text-[11.5px] text-surface-500">Loading notifications…</p>
-                )}
-                {/* Two different empty states, because they mean different things: nothing has
-                    happened yet, versus everything that happened has been dealt with. Only after a
-                    load that succeeded — or with rows already loaded — is either one true. */}
-                {notifications.length === 0 && (items.length > 0 || notificationStatus === 'ready') && (
-                  <p className="px-3 py-6 text-center text-[11.5px] leading-[1.45] text-surface-500">
-                    {items.length > 0 ? (
-                      "You're all caught up."
-                    ) : (
-                      'Nothing to report yet.'
-                    )}
-                  </p>
-                )}
-                {notifications.map((notification) => {
-                  const Icon = iconForNotification(notification.type, notification.tone);
-                  return <button type="button" key={notification.id} onClick={() => openNotification(notification)} className={`flex w-full gap-2.5 border-b border-surface-100 px-3 py-2 text-left transition-colors hover:bg-surface-50 ${notification.isRead ? 'bg-surface-0' : 'bg-brand-50/40'}`}>
-                    <Icon size={15} className={`mt-0.5 flex-shrink-0 ${notification.isRead ? 'text-surface-400' : 'text-brand-600'}`} />
-                    <span className="min-w-0 flex-1"><span className={`block text-[12px] ${notification.isRead ? 'font-medium text-surface-700' : 'font-semibold text-surface-900'}`}>{notification.title}</span><span className="mt-0.5 block text-[11px] leading-[1.35] text-surface-500">{notification.message}</span><span className="mt-1 block text-[10px] text-surface-400">{formatNotificationTime(notification.createdAt)}</span></span>
-                    {!notification.isRead && <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-brand-500" aria-label="Unread" />}
-                  </button>;
-                })}
-              </div>
-              {/* This used to only close the panel — the one thing its label promised not to do. */}
-              <div className="px-3 py-2 text-center"><button type="button" onClick={() => { setOpenMenu(null); navigate('/notifications'); }} className="text-[11px] font-semibold text-brand-600 hover:text-brand-700">View all notifications</button></div>
-            </div>
-          )}
 
           {/* Divider */}
           <div className="h-5 w-px bg-surface-200 mx-1.5 hidden sm:block" />

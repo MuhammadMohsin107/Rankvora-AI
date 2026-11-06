@@ -53,8 +53,6 @@ const routeLabels: Record<string, string> = {
   collections: 'Collections',
   'blog-articles': 'Blog articles',
   integrations: 'Integrations',
-  reports: 'Reports',
-  notifications: 'Notifications',
 };
 
 /** What one item's page is called in the trail, by the list it belongs to. */

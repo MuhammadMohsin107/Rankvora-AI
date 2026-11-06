@@ -418,7 +418,7 @@ export default function Integrations() {
         <div className="space-y-2">
           <p className="text-[12.5px] leading-[1.45] text-surface-700">
             Rankvora AI will delete its Shopify credentials and stop reading
-            <span className="font-semibold text-surface-900"> {shopify?.shopDomain}</span>. No new audits until you reconnect; past audits and reports are kept.
+            <span className="font-semibold text-surface-900"> {shopify?.shopDomain}</span>. No new audits until you reconnect; past audits are kept.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button variant="danger" onClick={runDisconnect} disabled={busy === 'disconnecting'}>
