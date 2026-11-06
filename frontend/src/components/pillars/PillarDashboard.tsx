@@ -291,9 +291,9 @@ export default function PillarDashboard({
     >
       <div className="page-shell section-stack">
         {/* ── Summary band ──────────────────────────────────────────
-            One band. The pillar's mark, how many areas it covers and its score are the facts; the blurred accent
-            glows that used to sit behind them were decoration measured in inches. The title and the
-            action are in the page frame. The store name, its address and "Last analyzed" are gone from
+            One band. The pillar's mark, its name, how many areas it covers and its score are the facts; the blurred accent
+            glows that used to sit behind them were decoration measured in inches. The name repeats the
+            page frame's title on purpose — the merchant asked for it on the card. The action is in the page frame. The store name, its address and "Last analyzed" are gone from
             here — removed at the merchant's request. */}
         <div className="flex flex-col gap-2.5 rounded-lg border border-surface-200 bg-surface-0 p-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
@@ -301,6 +301,7 @@ export default function PillarDashboard({
               <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-brand-600 text-white">
                 <Icon size={14} strokeWidth={2.2} />
               </span>
+              <p className="text-[14px] font-semibold tracking-tight text-surface-950">{title}</p>
               <span className="inline-flex items-center rounded border border-brand-100 bg-brand-50 px-1.5 py-px text-[10.5px] font-medium text-brand-700">
                 {data.areas.length} areas monitored
               </span>
