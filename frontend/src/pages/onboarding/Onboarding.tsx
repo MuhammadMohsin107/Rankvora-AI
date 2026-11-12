@@ -727,27 +727,27 @@ function StateMark({ tone, children }: { tone: 'brand' | 'warning'; children: Re
 /**
  * What the merchant sees for the one request that decides which step opens.
  *
- * A skeleton of the real layout rather than a spinner on a line: the page it resolves into is an ink
+ * A skeleton of the real layout rather than a spinner on a line: the page it resolves into is a tinted
  * guide beside a sheet, so showing that shape immediately means nothing jumps when the data lands.
  */
 function LoadingFrame({ scrollRef }: { scrollRef: RefObject<HTMLDivElement | null> }) {
   const bar = 'animate-pulse rounded-md bg-surface-200/80 motion-reduce:animate-none';
-  const ink = 'animate-pulse rounded-md bg-white/15 motion-reduce:animate-none';
+  const tint = 'animate-pulse rounded-md bg-brand-100/80 motion-reduce:animate-none';
   return (
     <Frame
       scrollRef={scrollRef}
       rail={
-        <div className="rounded-[22px] bg-[#0d1122] p-7 lg:min-h-[38rem]" aria-hidden="true">
-          <div className={`${ink} h-9 w-36`} />
-          <div className={`${ink} mt-9 h-6 w-48`} />
-          <div className={`${ink} mt-3 h-3.5 w-40`} />
-          <div className={`${ink} mt-8 h-10 w-24`} />
-          <div className={`${ink} mt-4 h-1.5 w-full rounded-full`} />
+        <div className="rounded-[22px] bg-gradient-to-b from-brand-50 via-brand-50/60 to-surface-0 p-7 ring-1 ring-inset ring-brand-100 lg:min-h-[38rem]" aria-hidden="true">
+          <div className={`${tint} h-9 w-36`} />
+          <div className={`${tint} mt-9 h-6 w-48`} />
+          <div className={`${tint} mt-3 h-3.5 w-40`} />
+          <div className={`${tint} mt-8 h-10 w-24`} />
+          <div className={`${tint} mt-4 h-1.5 w-full rounded-full`} />
           <div className="mt-9 space-y-5">
             {[0, 1, 2, 3, 4].map((index) => (
               <div key={index} className="flex items-center gap-4">
-                <div className={`${ink} h-8 w-8 flex-shrink-0 rounded-full`} />
-                <div className={`${ink} h-3.5 flex-1`} style={{ maxWidth: `${140 - index * 10}px` }} />
+                <div className={`${tint} h-8 w-8 flex-shrink-0 rounded-full`} />
+                <div className={`${tint} h-3.5 flex-1`} style={{ maxWidth: `${140 - index * 10}px` }} />
               </div>
             ))}
           </div>

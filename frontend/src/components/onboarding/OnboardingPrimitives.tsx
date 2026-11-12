@@ -21,20 +21,17 @@ import RankvoraLogo from '../auth/RankvoraLogo';
  * Built on the app's surface/brand tokens, so setup follows light and dark mode without a single
  * `dark:` variant.
  *
- * THE LAYOUT. Two surfaces side by side: an ink GUIDE panel (where you are, every step on one line)
- * and a light SHEET (the step itself). The guide is the one dark object on the page, which is what
- * makes it read as "map" against the "form" beside it. It is a FIXED dark surface in both themes, not
- * a token pair: the semantic ramp inverts in dark mode, which turned the panel light under a logo
- * that is white by design. Everything that sits on it uses literal white (at an opacity) for the same
- * reason.
+ * THE LAYOUT. Two light surfaces side by side: a soft lavender GUIDE panel (where you are, every
+ * step on one line) and a white SHEET (the step itself). Both are drawn from theme tokens, so the whole
+ * flow stays light in light mode and follows the theme in dark mode; nothing is hard-coded.
  *
  * THE CONTROLS. Modern "filled" fields: a soft well that lifts to white with a brand ring on focus,
  * 48px tall, with an optional leading icon that warms up when the field does. Choices are tiles with
  * an icon, a plain-language line and a clear selected state; on/off settings are real switches.
  * Required / Optional are quiet words next to the label, never pills.
  *
- * COLOUR, USED SPARINGLY. Brand means "this is chosen" or "this is progress". The one thing a merchant
- * is meant to press is an ink button, the same restraint as the Shopify admin's own primary buttons.
+ * COLOUR, USED SPARINGLY. Brand means "this is chosen", "this is progress" and "press this": one
+ * colour for all three, so the eye is never asked to decode a second accent.
  *
  * `DetectedNote` and `UnavailableNote` keep one promise visible throughout the flow: a suggested
  * value always states where it came from, and a value we could not read says so rather than
@@ -92,18 +89,19 @@ function progressSentence(steps: StepEntry[], completed: number): string {
 // ─── Progress ────────────────────────────────────────────────────────
 
 /**
- * The numbered marker beside a step, drawn for the ink guide.
+ * The numbered marker beside a step.
  *
- * Done is green with a tick; the current step is the one bright disc on the panel; the rest are
- * quiet outlines. Fixed colours, because the panel it sits on is fixed.
+ * Done is green with a tick; the current step is the one filled brand disc, with a soft halo; the
+ * rest are quiet outlines. `text-surface-0` on the filled colours inverts with the theme, so the mark
+ * stays legible in both.
  */
 function StepBadge({ entry, isCurrent }: { entry: StepEntry; isCurrent: boolean }) {
   const tone =
     entry.status === 'complete'
-      ? 'bg-emerald-400 text-[#0d1122]'
+      ? 'bg-success-600 text-surface-0'
       : isCurrent
-        ? 'bg-white text-[#0d1122] shadow-[0_0_0_5px_rgba(255,255,255,0.12)]'
-        : 'text-white/55 ring-1 ring-inset ring-white/25';
+        ? 'bg-brand-600 text-surface-0 shadow-[0_0_0_5px_var(--c-brand-100)]'
+        : 'bg-surface-0 text-surface-500 ring-1 ring-inset ring-surface-300';
 
   return (
     <span
@@ -116,7 +114,7 @@ function StepBadge({ entry, isCurrent }: { entry: StepEntry; isCurrent: boolean 
 }
 
 /** A thin bar that fills with the share of steps done. The width animates; the number does not need to. */
-function ProgressBar({ completed, total, className = '', tone = 'light' }: { completed: number; total: number; className?: string; tone?: 'light' | 'ink' }) {
+function ProgressBar({ completed, total, className = '' }: { completed: number; total: number; className?: string }) {
   const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
   return (
     <div
@@ -125,10 +123,10 @@ function ProgressBar({ completed, total, className = '', tone = 'light' }: { com
       aria-valuemin={0}
       aria-valuemax={total}
       aria-valuenow={completed}
-      className={`h-1.5 w-full overflow-hidden rounded-full ${tone === 'ink' ? 'bg-white/15' : 'bg-surface-200'} ${className}`}
+      className={`h-1.5 w-full overflow-hidden rounded-full bg-brand-100 ${className}`}
     >
       <div
-        className={`h-full rounded-full transition-[width] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none ${tone === 'ink' ? 'bg-indigo-400' : 'bg-brand-600'}`}
+        className="h-full rounded-full bg-brand-600 transition-[width] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none"
         style={{ width: `${percent}%` }}
       />
     </div>
@@ -136,12 +134,13 @@ function ProgressBar({ completed, total, className = '', tone = 'light' }: { com
 }
 
 /**
- * The guide for wide screens: an ink panel holding the brand, how far setup has got, and every step
- * on one vertical line.
+ * The guide for wide screens: a soft lavender panel holding the brand, how far setup has got, and
+ * every step on one vertical line.
  *
- * It is the page's one dark surface, so the sheet beside it stays the thing to act on. The line
- * between the markers fills green as steps are completed, so progress reads as one continuous
- * stroke, and the number at the top says it in the plainest way there is.
+ * It is tinted rather than white, so it reads as the "map" beside the white "form" while staying as
+ * light as the rest of the page. The line between the markers fills green as steps are completed, so
+ * progress reads as one continuous stroke, and the number at the top says it in the plainest way
+ * there is.
  */
 export function StepRail({
   current,
@@ -159,35 +158,32 @@ export function StepRail({
   return (
     <nav
       aria-label="Setup progress"
-      className="relative flex flex-col overflow-hidden rounded-[22px] bg-[#0d1122] p-7 text-white shadow-[0_36px_70px_-40px_var(--c-shadow-lg),0_10px_28px_-16px_var(--c-shadow-md)] lg:min-h-[38rem]"
+      className="relative flex flex-col overflow-hidden rounded-[22px] bg-gradient-to-b from-brand-50 via-brand-50/60 to-surface-0 p-7 shadow-[0_36px_70px_-44px_var(--c-shadow-lg),0_10px_28px_-18px_var(--c-shadow-md)] ring-1 ring-inset ring-brand-100 lg:min-h-[38rem]"
     >
-      {/* Two soft lights and a hairline, so the panel has depth instead of being a flat slab. */}
-      <div aria-hidden="true" className="pointer-events-none absolute -left-16 -top-24 h-64 w-64 rounded-full bg-indigo-500/30 blur-[90px]" />
-      <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 -right-16 h-60 w-60 rounded-full bg-indigo-400/20 blur-[90px]" />
-      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+      {/* A soft light and a hairline, so the panel has a little depth instead of being a flat tint. */}
+      <div aria-hidden="true" className="pointer-events-none absolute -left-16 -top-24 h-64 w-64 rounded-full bg-brand-200/50 blur-[80px]" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-300/70 to-transparent" />
 
       <div className="relative flex flex-1 flex-col">
-        <RankvoraLogo tone="dark" />
+        <RankvoraLogo />
 
         <div className="mt-9">
-          <p className="text-balance text-[22px] font-semibold leading-[1.15] tracking-[-0.03em]">Let’s set up your store</p>
-          <p className="mt-2 text-pretty text-[13px] leading-[1.55] text-white/60">
-            Your answers shape how Rankvora analyses it.
-          </p>
+          <p className="text-balance text-[22px] font-semibold leading-[1.15] tracking-[-0.03em] text-surface-950">Let’s set up your store</p>
+          <p className="mt-2 text-pretty text-[13px] leading-[1.55] text-surface-500">Your answers shape how Rankvora analyses it.</p>
         </div>
 
         <div className="mt-7">
           <div className="flex items-end justify-between gap-3">
-            <p className="text-[44px] font-semibold leading-none tracking-[-0.04em] tabular-nums">
+            <p className="text-[44px] font-semibold leading-none tracking-[-0.04em] tabular-nums text-surface-950">
               {percent}
-              <span className="ml-0.5 text-[20px] font-medium text-white/50">%</span>
+              <span className="ml-0.5 text-[20px] font-medium text-surface-400">%</span>
             </p>
-            <p className="pb-1 text-[12.5px] font-medium tabular-nums text-white/60">
+            <p className="pb-1 text-[12.5px] font-medium tabular-nums text-surface-500">
               {completed} of {steps.length}
             </p>
           </div>
-          <ProgressBar completed={completed} total={steps.length} tone="ink" className="mt-3" />
-          <p className="mt-2.5 text-[12.5px] text-white/60">{progressSentence(steps, completed)}</p>
+          <ProgressBar completed={completed} total={steps.length} className="mt-3" />
+          <p className="mt-2.5 text-[12.5px] text-surface-500">{progressSentence(steps, completed)}</p>
         </div>
 
         <ol className="mb-8 mt-8 flex flex-col">
@@ -202,7 +198,7 @@ export function StepRail({
                   <span
                     aria-hidden="true"
                     className={`absolute left-[15px] top-[38px] h-[calc(100%-30px)] w-px transition-colors duration-500 motion-reduce:transition-none ${
-                      entry.status === 'complete' ? 'bg-emerald-400/80' : 'bg-white/20'
+                      entry.status === 'complete' ? 'bg-success-500' : 'bg-brand-200'
                     }`}
                   />
                 )}
@@ -211,7 +207,7 @@ export function StepRail({
                   disabled={!reachable}
                   onClick={() => reachable && !isCurrent && onJump(entry.step)}
                   aria-current={isCurrent ? 'step' : undefined}
-                  className={`group relative flex w-full items-start gap-4 rounded-xl py-2.5 pr-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1122] ${
+                  className={`group relative flex w-full items-start gap-4 rounded-xl py-2.5 pr-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-brand-50 ${
                     reachable && !isCurrent ? 'cursor-pointer' : isCurrent ? 'cursor-default' : 'cursor-not-allowed'
                   }`}
                 >
@@ -219,12 +215,12 @@ export function StepRail({
                   <span className="min-w-0 pt-0.5">
                     <span
                       className={`block text-[14px] font-semibold leading-tight tracking-[-0.01em] transition-colors ${
-                        isCurrent ? 'text-white' : reachable ? 'text-white/75 group-hover:text-white' : 'text-white/40'
+                        isCurrent ? 'text-surface-950' : reachable ? 'text-surface-700 group-hover:text-surface-950' : 'text-surface-400'
                       }`}
                     >
                       {entry.title}
                     </span>
-                    <span className={`mt-1 block text-[12px] leading-tight ${isCurrent ? 'text-indigo-300' : 'text-white/45'}`}>
+                    <span className={`mt-1 block text-[12px] leading-tight ${isCurrent ? 'text-brand-700' : 'text-surface-500'}`}>
                       {isCurrent && entry.status !== 'complete' ? 'In progress' : statusLabel(entry)}
                     </span>
                   </span>
@@ -234,8 +230,8 @@ export function StepRail({
           })}
         </ol>
 
-        <p className="mt-auto flex items-start gap-2.5 border-t border-white/15 pt-5 text-pretty text-[12.5px] leading-[1.55] text-white/60">
-          <ShieldCheck size={16} strokeWidth={1.8} className="mt-px flex-shrink-0 text-emerald-400" aria-hidden="true" />
+        <p className="mt-auto flex items-start gap-2.5 border-t border-brand-100 pt-5 text-pretty text-[12.5px] leading-[1.55] text-surface-500">
+          <ShieldCheck size={16} strokeWidth={1.8} className="mt-px flex-shrink-0 text-success-600" aria-hidden="true" />
           <span>Rankvora never changes your store without your approval. Your answers save as you move between steps.</span>
         </p>
       </div>
@@ -505,9 +501,9 @@ export function FormSection({
  * Setup's buttons: 48px, the size of a comfortable thumb target, because this is the one thing a
  * merchant is meant to press.
  *
- * The primary is ink (`surface-950`), not the brand colour: brand marks what is chosen and how far
- * along setup is, and a primary action in the same colour would blur the two. The ramp inverts in
- * dark mode, so the same classes give a light button on a dark ground.
+ * The primary is the brand colour: the same one that marks what is chosen and how far along setup
+ * is, so there is a single accent in the whole flow. `text-surface-0` inverts with the theme, which
+ * keeps its label readable on the brand fill in both.
  */
 export function ActionButton({
   children,
@@ -527,7 +523,7 @@ export function ActionButton({
 }) {
   const tone = {
     primary:
-      'bg-surface-950 text-surface-0 shadow-[0_1px_2px_var(--c-shadow-md),inset_0_1px_0_rgba(255,255,255,0.14)] hover:bg-surface-800 hover:shadow-[0_12px_24px_-12px_var(--c-shadow-lg)]',
+      'bg-brand-600 text-surface-0 shadow-[0_1px_2px_var(--c-shadow-md),inset_0_1px_0_rgba(255,255,255,0.2)] hover:bg-brand-500 hover:shadow-[0_14px_26px_-14px_var(--c-brand-600)]',
     secondary:
       'bg-surface-0 text-surface-800 ring-1 ring-inset ring-surface-200 shadow-[0_1px_2px_var(--c-shadow-sm)] hover:bg-surface-50 hover:text-surface-950 hover:ring-surface-300',
     ghost: 'bg-transparent text-surface-600 hover:bg-surface-100 hover:text-surface-950',
@@ -870,7 +866,7 @@ function TileIcon({ icon: Icon, selected, rank }: { icon: LucideIcon; selected: 
         <Icon size={18} strokeWidth={1.8} />
       </span>
       {rank !== undefined && (
-        <span className="absolute -left-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-surface-950 px-1 text-[11px] font-semibold tabular-nums leading-none text-surface-0 ring-2 ring-surface-0">
+        <span className="absolute -left-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1 text-[11px] font-semibold tabular-nums leading-none text-surface-0 ring-2 ring-surface-0">
           {rank}
         </span>
       )}
@@ -1329,7 +1325,7 @@ export function PriorityList({
         const Icon = item.icon;
         return (
           <li key={item.key} className="flex items-center gap-3 px-3.5 py-2.5 sm:gap-3.5 sm:px-4">
-            <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-surface-950 font-mono text-[12px] font-semibold tabular-nums text-surface-0">
+            <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-brand-50 font-mono text-[12px] font-semibold tabular-nums text-brand-700 ring-1 ring-inset ring-brand-100">
               {index + 1}
             </span>
             {Icon && <Icon size={17} strokeWidth={1.8} className="hidden flex-shrink-0 text-surface-400 sm:block" aria-hidden="true" />}
