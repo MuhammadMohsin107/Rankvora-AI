@@ -42,9 +42,11 @@ import {
   fetchOnboarding,
   fetchOnboardingSuggestions,
   firstUnansweredStep,
+  invalidAnswers,
   missingRequired,
   saveOnboardingStep,
   type OnboardingSnapshot,
+  type InvalidField,
   type OnboardingSuggestions,
   type RequiredField,
   type StepPayload,
@@ -178,11 +180,15 @@ export default function Onboarding() {
   const [snapshot, setSnapshot] = useState<OnboardingSnapshot | null>(null);
   const [suggestions, setSuggestions] = useState<OnboardingSuggestions | null>(null);
   const [suggestionsLoading, setSuggestionsLoading] = useState(true);
+  /** True when the request for the store's details failed — the steps then say so and offer a retry. */
+  const [suggestionsFailed, setSuggestionsFailed] = useState(false);
+  /** False once the page has gone, so a late answer is dropped instead of set on an unmounted page. */
+  const alive = useRef(true);
   const [draft, setDraft] = useState<StepPayload>({ step: 1 });
   const [step, setStep] = useState(1);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Partial<Record<RequiredField, string>>>({});
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<RequiredField | InvalidField, string>>>({});
   /** How many times the merchant has been stopped for a missing answer. Drives the scroll below. */
   const [stopCount, setStopCount] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -197,7 +203,7 @@ export default function Onboarding() {
     // field back in the red on the way to a perfectly good answer.
     setFieldErrors((previous) => {
       const remaining = { ...previous };
-      for (const key of Object.keys(changes)) delete remaining[key as RequiredField];
+      for (const key of Object.keys(changes)) delete remaining[key as RequiredField | InvalidField];
       return remaining;
     });
   }, []);
@@ -271,33 +277,41 @@ export default function Onboarding() {
   }, [navigate]);
   /* eslint-enable react-hooks/exhaustive-deps */
 
-  // ── Catalogue-derived suggestions ──────────────────────────────────
-  // Fetched once, in parallel with the merchant reading step 1, so steps 2–4 are ready when they
-  // arrive rather than making them wait on a catalogue read. Shown as suggestions only.
+  // ── The store's details ────────────────────────────────────────────
+  // Read once, in parallel with the merchant reading step 1, so the later steps have their suggestions
+  // ready instead of making the merchant wait on a catalogue read. They are SUGGESTIONS: setup never
+  // depends on them, so a failure does not block anything — but it is not silent either. It is
+  // recorded, the steps say so, and the merchant can ask again without reloading the page.
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+
+  const loadSuggestions = useCallback(async () => {
+    setSuggestionsLoading(true);
+    try {
+      const derived = await fetchOnboardingSuggestions();
+      if (!alive.current) return;
+      setSuggestions(derived);
+      setSuggestionsFailed(false);
+    } catch {
+      if (!alive.current) return;
+      setSuggestions(null);
+      setSuggestionsFailed(true);
+    } finally {
+      if (alive.current) setSuggestionsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!snapshot?.connected) {
       setSuggestionsLoading(false);
       return;
     }
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const derived = await fetchOnboardingSuggestions();
-        if (!cancelled) setSuggestions(derived);
-      } catch {
-        // Suggestions are an accelerant, not a dependency. A failure leaves the fields empty and
-        // the steps say so — it never blocks setup.
-        if (!cancelled) setSuggestions(null);
-      } finally {
-        if (!cancelled) setSuggestionsLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [snapshot?.connected]);
+    void loadSuggestions();
+  }, [snapshot?.connected, loadSuggestions]);
 
   /** Only the current step's fields, so a save can never write across the form. */
   const payloadForStep = (target: number): StepPayload => {
@@ -323,31 +337,44 @@ export default function Onboarding() {
     }
   };
 
-  /** Marks every required answer `target` is missing, and returns them. */
+  /**
+   * Marks, on the step `target`, every required answer that is missing AND every answer that is filled
+   * in but cannot be saved (an address that is not one), and returns the missing ones.
+   */
   const flagMissing = (target: number): RequiredField[] => {
     const missing = missingRequired(target, draft);
-    if (missing.length > 0) {
-      setFieldErrors(Object.fromEntries(missing.map((field) => [field, REQUIRED_FIELD_MESSAGE[field]])));
+    const invalid = invalidAnswers(target, draft);
+    if (missing.length > 0 || Object.keys(invalid).length > 0) {
+      setFieldErrors({ ...Object.fromEntries(missing.map((field) => [field, REQUIRED_FIELD_MESSAGE[field]])), ...invalid });
       setStopCount((count) => count + 1);
     }
     return missing;
   };
 
   /**
-   * Flags what `target` is missing and says so in the action bar. Returns true when it is answered.
+   * Flags what `target` is missing or has wrong and says so in the action bar. Returns true when it is
+   * all in order.
    *
    * Nothing is saved and nothing moves when this fails: the merchant stays exactly where they are,
-   * with the fields they still owe marked.
+   * with the fields that need them marked. An address the server would refuse is caught here, at its
+   * field, rather than after the save with a message in the action bar.
    */
   const requireAnswers = (target: number): boolean => {
     const missing = flagMissing(target);
-    if (missing.length === 0) return true;
+    const invalid = Object.keys(invalidAnswers(target, draft)).length;
+    if (missing.length === 0 && invalid === 0) return true;
 
-    setSaveError(
-      missing.length === 1
-        ? 'One answer is still needed on this step.'
-        : `${missing.length} answers are still needed on this step.`,
-    );
+    if (invalid === 0) {
+      setSaveError(
+        missing.length === 1
+          ? 'One answer is still needed on this step.'
+          : `${missing.length} answers are still needed on this step.`,
+      );
+    } else if (missing.length === 0) {
+      setSaveError(invalid === 1 ? 'Check the highlighted answer on this step.' : 'Check the highlighted answers on this step.');
+    } else {
+      setSaveError(`${missing.length + invalid} answers need attention on this step.`);
+    }
     return false;
   };
 
@@ -517,7 +544,7 @@ export default function Onboarding() {
 
       <Sheet>
         {editing && (
-          <div className="relative flex items-center gap-2 border-b border-success-100 bg-success-50 px-5 py-2.5 sm:px-10">
+          <div className="relative flex items-center gap-2 rounded-t-[22px] border-b border-success-100 bg-success-50 px-5 py-2.5 sm:px-10">
             <Check size={15} className="flex-shrink-0 text-success-700" aria-hidden="true" />
             <p className="text-[12.5px] font-medium leading-[1.45] text-success-700">Setup is complete. Edit any step.</p>
           </div>
@@ -534,6 +561,8 @@ export default function Onboarding() {
             snapshot={snapshot}
             suggestions={suggestions}
             suggestionsLoading={suggestionsLoading}
+            suggestionsFailed={suggestionsFailed}
+            onRetrySuggestions={() => void loadSuggestions()}
             errors={fieldErrors}
             notice={googleNotice}
           />
@@ -698,14 +727,17 @@ const GRAIN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'
 /**
  * The one light raised surface on the page: the step sits on it.
  *
- * `overflow-hidden` clips the corner glow to the rounded edge. It is safe here because the action
- * dock is NOT inside the sheet — the sticky footer is what once forbade it.
+ * It does NOT clip its contents. A drop-down list opens over whatever is below its field, and with
+ * `overflow-hidden` on the sheet the lists of the fields near the bottom were cut off at its edge. The
+ * corner glow is clipped instead, in a layer of its own that is exactly the sheet's size and shape.
  */
 function Sheet({ children }: { children: ReactNode }) {
   return (
-    <div className="relative overflow-hidden rounded-[22px] bg-surface-0 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_36px_70px_-40px_var(--c-shadow-lg),0_10px_28px_-16px_var(--c-shadow-md)] ring-1 ring-inset ring-surface-900/[0.07]">
-      <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-brand-100/70 blur-3xl" />
-      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-300/70 to-transparent" />
+    <div className="relative rounded-[22px] bg-surface-0 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_36px_70px_-40px_var(--c-shadow-lg),0_10px_28px_-16px_var(--c-shadow-md)] ring-1 ring-inset ring-surface-900/[0.07]">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[22px]">
+        <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-brand-100/70 blur-3xl" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-300/70 to-transparent" />
+      </div>
       <div className="relative">{children}</div>
     </div>
   );

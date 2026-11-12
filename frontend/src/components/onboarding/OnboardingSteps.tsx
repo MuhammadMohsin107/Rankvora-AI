@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Boxes,
   CalendarClock,
@@ -25,17 +26,19 @@ import {
   CheckCard,
   Chip,
   ChoiceCard,
+  Combobox,
   DetectedNote,
   FactTile,
+  FetchFailedNote,
   FormField,
   FormGrid,
   FormSection,
   InfoNote,
-  LabelledSelect,
+  MultiCombobox,
   MultiSelectChips,
   PriorityList,
   QuietNote,
-  SelectField,
+  SegmentedControl,
   SuggestionRow,
   TagInput,
   TextArea,
@@ -46,6 +49,7 @@ import {
 import MeasurementStep from './MeasurementStep';
 import {
   AUTOMATION_CONSENT_OPTIONS,
+  FIELD_LIMITS,
   SCAN_HOURS,
   consentLabel,
   countryNames,
@@ -53,7 +57,9 @@ import {
   languageChoices,
   languageLabel,
   normaliseProtectedPath,
+  storefrontAddressProblem,
   type AutomationConsent,
+  type InvalidField,
   type OnboardingSnapshot,
   type OnboardingSuggestions,
   type RequiredField,
@@ -93,12 +99,16 @@ export interface StepProps {
   snapshot: OnboardingSnapshot;
   suggestions: OnboardingSuggestions | null;
   suggestionsLoading: boolean;
+  /** True when the request for the store's details failed, so the step can say so and offer a retry. */
+  suggestionsFailed: boolean;
+  /** Asks for the store's details again. */
+  onRetrySuggestions: () => void;
   /**
    * Required answers the merchant has been stopped on, by field. Only ever populated after they
    * press Continue: a field they have not reached yet is not a mistake, and colouring it red on
    * arrival would tell them they had done something wrong before they had done anything at all.
    */
-  errors: Partial<Record<RequiredField, string>>;
+  errors: Partial<Record<RequiredField | InvalidField, string>>;
   /** The outcome of a Google connection the merchant has just come back from, shown on step 4. */
   notice?: { tone: 'success' | 'error' | 'info'; message: string } | null;
 }
@@ -174,12 +184,15 @@ const ALERT_LABELS: Record<string, string> = { 'No email alerts': 'No alerts' };
 
 // ─── Step 1 · Confirm your store ─────────────────────────────────────
 
-export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoading, errors }: StepProps) {
+export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoading, suggestionsFailed, onRetrySuggestions, errors }: StepProps) {
   const shop = snapshot.detection.shop;
   const countries = draft.targetCountries ?? [];
   const languages = draft.targetLanguages ?? [];
   const available = countryNames();
-  const selectable = available.filter((name) => !countries.includes(name));
+  // The address is checked once the merchant has left the field (so it is not flagged mid-word), and
+  // again, as `errors`, when they press Continue.
+  const [domainTouched, setDomainTouched] = useState(false);
+  const domainProblem = errors.primaryDomain ?? (domainTouched ? (storefrontAddressProblem(draft.primaryDomain) ?? undefined) : undefined);
   const locales = suggestions?.languages ?? null;
   const primaryLocale = locales?.find((locale) => locale.primary) ?? null;
   const content = suggestions?.content ?? null;
@@ -201,9 +214,13 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
   /** A count tile: still reading, read, or honestly not reported. */
   const countValue = (total: { count: number; exact: boolean } | null | undefined): string | null =>
     suggestionsLoading ? 'Reading…' : formatCount(total);
+  // The facts that come from the store-details request: if that request failed, say so, rather than
+  // claiming Shopify chose not to report them.
+  const missing = suggestionsFailed ? 'Couldn’t be loaded' : undefined;
 
   return (
     <div className="space-y-4">
+      {suggestionsFailed && <FetchFailedNote onRetry={onRetrySuggestions} retrying={suggestionsLoading} />}
       {!snapshot.detection.available && snapshot.detection.unavailableReason && (
         <UnavailableNote>{snapshot.detection.unavailableReason}</UnavailableNote>
       )}
@@ -219,16 +236,17 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
               label="Primary language"
               value={suggestionsLoading ? 'Reading…' : primaryLocale ? languageLabel(primaryLocale.locale) : null}
               icon={Languages}
+              missing={missing}
             />
             <FactTile label="Currency" value={shop.currencyCode} icon={CircleDollarSign} />
             <FactTile label="Timezone" value={shop.ianaTimezone} icon={Clock3} />
             <FactTile label="Billing country" value={shop.country} icon={MapPin} />
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <FactTile label="Published products" value={countValue(content?.publishedProducts)} icon={Boxes} />
-            <FactTile label="Published collections" value={countValue(content?.publishedCollections)} icon={Boxes} />
-            <FactTile label="Articles" value={countValue(content?.articles)} icon={Newspaper} />
-            <FactTile label="Pages" value={countValue(content?.pages)} icon={FileText} />
+            <FactTile label="Published products" value={countValue(content?.publishedProducts)} icon={Boxes} missing={missing} />
+            <FactTile label="Published collections" value={countValue(content?.publishedCollections)} icon={Boxes} missing={missing} />
+            <FactTile label="Articles" value={countValue(content?.articles)} icon={Newspaper} missing={missing} />
+            <FactTile label="Pages" value={countValue(content?.pages)} icon={FileText} missing={missing} />
           </div>
           <p className="mt-2.5 text-[12px] leading-[1.45] text-surface-500">
             Articles and pages include unpublished ones.
@@ -260,6 +278,7 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
           <TextField
             id="onboarding-organization"
             icon={Store}
+            maxLength={FIELD_LIMITS.organizationName}
             value={draft.organizationName ?? ''}
             invalid={Boolean(errors.organizationName)}
             onChange={(value) => patch({ organizationName: value })}
@@ -271,6 +290,7 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
           label="Storefront address"
           htmlFor="onboarding-domain"
           badge="optional"
+          error={domainProblem}
           extras={
             shop?.primaryUrl ? (
               <DetectedNote
@@ -294,6 +314,9 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
           <TextField
             id="onboarding-domain"
             icon={Globe2}
+            maxLength={FIELD_LIMITS.primaryDomain}
+            invalid={Boolean(domainProblem)}
+            onBlur={() => setDomainTouched(true)}
             value={draft.primaryDomain ?? ''}
             onChange={(value) => patch({ primaryDomain: value })}
             placeholder="Enter your storefront address"
@@ -307,38 +330,31 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
           error={errors.targetCountries}
           className="md:col-span-2"
           extras={
-            <>
-              {available.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {countries.map((country) => (
-                    <Chip key={country} label={country} onRemove={() => removeCountry(country)} />
-                  ))}
-                  {countries.length === 0 && <QuietNote>No markets chosen yet.</QuietNote>}
-                </div>
-              )}
-              {suggestions?.detectedCountry && (
-                <DetectedNote
-                  action={{
-                    label: `Add ${suggestions.detectedCountry}`,
-                    applied: countries.includes(suggestions.detectedCountry),
-                    onApply: () => addCountry(suggestions.detectedCountry as string),
-                  }}
-                >
-                  Your Shopify billing address is in {suggestions.detectedCountry}.
-                </DetectedNote>
-              )}
-            </>
+            suggestions?.detectedCountry ? (
+              <DetectedNote
+                action={{
+                  label: `Add ${suggestions.detectedCountry}`,
+                  applied: countries.includes(suggestions.detectedCountry),
+                  onApply: () => addCountry(suggestions.detectedCountry as string),
+                }}
+              >
+                Your Shopify billing address is in {suggestions.detectedCountry}.
+              </DetectedNote>
+            ) : null
           }
         >
           {available.length > 0 ? (
-            <SelectField
+            <MultiCombobox
               id="onboarding-country-add"
               icon={MapPin}
-              value=""
-              options={selectable}
-              placeholder="Add a market…"
+              values={countries}
+              options={available}
+              placeholder="Search for a country…"
+              emptyText="No matching country"
+              max={50}
               invalid={Boolean(errors.targetCountries)}
-              onChange={addCountry}
+              onAdd={addCountry}
+              onRemove={removeCountry}
             />
           ) : (
             // `Intl.DisplayNames` is unavailable on some older engines, so there is no list to offer.
@@ -367,13 +383,12 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
             badge="optional"
             className="md:col-span-2"
           >
-            <SelectField
+            <SegmentedControl
               id="onboarding-primary-market"
-              icon={MapPin}
+              label="Primary market"
               value={draft.primaryMarket ?? ''}
-              options={countries}
-              placeholder="Choose your primary market"
-              onChange={(value) => patch({ primaryMarket: value || null })}
+              options={countries.map((country) => ({ value: country, label: country }))}
+              onChange={(value) => patch({ primaryMarket: value })}
             />
           </FormField>
         )}
@@ -417,7 +432,7 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
 
 // ─── Step 2 · Your business ──────────────────────────────────────────
 
-export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsLoading, errors }: StepProps) {
+export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsLoading, suggestionsFailed, onRetrySuggestions, errors }: StepProps) {
   const shop = snapshot.detection.shop;
   const aliases = draft.brandedTerms ?? [];
   const derivedIndustry = suggestions?.industry ?? null;
@@ -440,6 +455,7 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
 
   return (
     <div className="space-y-4">
+      {suggestionsFailed && <FetchFailedNote onRetry={onRetrySuggestions} retrying={suggestionsLoading} />}
       {!suggestionsLoading && suggestions && !suggestions.available && suggestions.unavailableReason && (
         <UnavailableNote>{suggestions.unavailableReason}</UnavailableNote>
       )}
@@ -467,6 +483,7 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
           <TextField
             id="onboarding-brand"
             icon={Tag}
+            maxLength={FIELD_LIMITS.brandName}
             value={draft.brandName ?? ''}
             invalid={Boolean(errors.brandName)}
             onChange={(value) => patch({ brandName: value })}
@@ -498,6 +515,7 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
             onChange={(next) => patch({ brandedTerms: next })}
             placeholder="Type an alternative name"
             max={10}
+            maxItemLength={FIELD_LIMITS.brandedTerm}
           />
         </FormField>
 
@@ -556,12 +574,13 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
             ) : null
           }
         >
-          <LabelledSelect
+          <Combobox
             id="onboarding-language"
             icon={Languages}
             value={chosenLanguage}
             options={languageOptions}
-            placeholder="Choose a language"
+            placeholder="Search for a language…"
+            emptyText="No matching language"
             invalid={Boolean(errors.contentLanguage)}
             onChange={(value) => patch({ contentLanguage: value || null })}
           />
@@ -588,7 +607,7 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
 
 // ─── Step 3 · Priorities ─────────────────────────────────────────────
 
-export function StepPriorities({ draft, patch, snapshot, suggestions, suggestionsLoading, errors }: StepProps) {
+export function StepPriorities({ draft, patch, snapshot, suggestions, suggestionsLoading, suggestionsFailed, onRetrySuggestions, errors }: StepProps) {
   const keywords = draft.targetKeywords ?? [];
   const chosenResources = draft.priorityResources ?? [];
   const chosenPillars = (draft.priorityPillars ?? []).filter(isPillarVisible);
@@ -626,6 +645,7 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
 
   return (
     <div className="space-y-4">
+      {suggestionsFailed && <FetchFailedNote onRetry={onRetrySuggestions} retrying={suggestionsLoading} />}
       <FormGrid>
         <FormSection
           className="md:col-span-2"
@@ -696,6 +716,7 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
             onChange={(next) => patch({ targetKeywords: next })}
             placeholder="Type a keyword"
             max={10}
+            maxItemLength={FIELD_LIMITS.keyword}
             transform={(raw) => {
               const value = raw.trim().replace(/\s+/g, ' ').toLowerCase();
               return value.length >= 3 ? value : null;
@@ -714,21 +735,23 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
           )}
           {!suggestionsLoading && !catalogueUnread && (
             <div className="grid gap-3 sm:grid-cols-2">
-              <LabelledSelect
+              <Combobox
                 id="onboarding-priority-product"
                 icon={Package}
                 value=""
                 options={resourceOptions('product')}
-                placeholder={(suggestions?.resources.products.length ?? 0) === 0 ? 'No products found' : 'Add a product…'}
+                emptyText="No matching product"
+                placeholder={(suggestions?.resources.products.length ?? 0) === 0 ? 'No products found' : 'Search for a product…'}
                 disabled={(suggestions?.resources.products.length ?? 0) === 0 || chosenResources.length >= 20}
                 onChange={(value) => addResource('product', value)}
               />
-              <LabelledSelect
+              <Combobox
                 id="onboarding-priority-collection"
                 icon={Boxes}
                 value=""
                 options={resourceOptions('collection')}
-                placeholder={(suggestions?.resources.collections.length ?? 0) === 0 ? 'No collections found' : 'Add a collection…'}
+                emptyText="No matching collection"
+                placeholder={(suggestions?.resources.collections.length ?? 0) === 0 ? 'No collections found' : 'Search for a collection…'}
                 disabled={(suggestions?.resources.collections.length ?? 0) === 0 || chosenResources.length >= 20}
                 onChange={(value) => addResource('collection', value)}
               />
@@ -894,6 +917,7 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
             onChange={(next) => patch({ protectedPaths: next })}
             placeholder="Type a page path, starting with /"
             max={20}
+            maxItemLength={FIELD_LIMITS.protectedPath}
             transform={normaliseProtectedPath}
           />
         </FormField>
@@ -910,27 +934,27 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
           {monitoring && (
             <div className="mt-3.5 grid gap-3 sm:grid-cols-2">
               <div>
-                <label htmlFor="onboarding-frequency" className="mb-1.5 block text-[13px] font-semibold text-surface-900">
-                  How often
-                </label>
-                <SelectField
+                <p className="mb-1.5 text-[13px] font-semibold text-surface-900">How often</p>
+                <SegmentedControl
                   id="onboarding-frequency"
-                  icon={CalendarClock}
+                  label="How often"
                   value={frequency}
-                  options={frequencies}
-                  placeholder="Choose how often"
-                  onChange={(value) => value && patch({ analysisFrequency: value })}
+                  options={frequencies.map((option) => ({ value: option, label: option }))}
+                  onChange={(value) => patch({ analysisFrequency: value })}
                 />
               </div>
               <div>
                 <label htmlFor="onboarding-scan-hour" className="mb-1.5 block text-[13px] font-semibold text-surface-900">
                   Preferred time
                 </label>
-                <LabelledSelect
+                <Combobox
                   id="onboarding-scan-hour"
                   icon={Clock3}
                   value={hour === null || hour === undefined ? '' : String(hour)}
-                  options={SCAN_HOURS.map((value) => ({ value: String(value), label: formatScanHour(value) }))}
+                  options={[
+                    { value: '', label: 'Any time it is due' },
+                    ...SCAN_HOURS.map((value) => ({ value: String(value), label: formatScanHour(value) })),
+                  ]}
                   placeholder="Any time it is due"
                   onChange={(value) => patch({ preferredScanHour: value === '' ? null : Number(value) })}
                 />

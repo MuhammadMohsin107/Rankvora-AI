@@ -210,7 +210,10 @@ describe('Onboarding · the flow', () => {
 
   async function answerStepOne() {
     fireEvent.change(screen.getByLabelText('Store name'), { target: { value: 'Northline Home' } });
-    fireEvent.change(screen.getByLabelText('Priority markets'), { target: { value: 'Canada' } });
+    const markets = screen.getByLabelText('Priority markets');
+    fireEvent.focus(markets);
+    fireEvent.change(markets, { target: { value: 'Canada' } });
+    fireEvent.keyDown(markets, { key: 'Enter' });
   }
 
   it('saves only that step’s answers and moves on to step 2', async () => {
@@ -544,5 +547,316 @@ describe('Onboarding · Languages to audit', () => {
     await screen.findByRole('heading', { level: 1, name: 'Confirm your store' });
     await waitFor(() => expect(screen.queryByText('Reading your store…')).not.toBeInTheDocument());
     expect(screen.queryByText('Languages to audit')).not.toBeInTheDocument();
+  });
+});
+
+describe('Onboarding · taking the answers', () => {
+  beforeEach(() => { vi.mocked(fetchOnboarding).mockResolvedValue(snapshot()); });
+  const heading = (name: string) => screen.findByRole('heading', { level: 1, name });
+
+  describe('markets', () => {
+    it('are found by typing part of the name, and added as chips in the field', async () => {
+      open();
+      await heading('Confirm your store');
+      const markets = screen.getByLabelText('Priority markets');
+      fireEvent.focus(markets);
+      fireEvent.change(markets, { target: { value: 'kingdom' } });
+      fireEvent.mouseDown(screen.getByRole('option', { name: 'United Kingdom' }));
+      expect(screen.getByRole('button', { name: 'Remove United Kingdom' })).toBeInTheDocument();
+    });
+
+    it('are offered only once: a market already chosen is not in the list', async () => {
+      open();
+      await heading('Confirm your store');
+      const markets = screen.getByLabelText('Priority markets');
+      fireEvent.focus(markets);
+      fireEvent.change(markets, { target: { value: 'canada' } });
+      fireEvent.keyDown(markets, { key: 'Enter' });
+      fireEvent.focus(markets);
+      fireEvent.change(markets, { target: { value: 'canada' } });
+      expect(screen.queryByRole('option', { name: 'Canada' })).not.toBeInTheDocument();
+    });
+
+    it('make the first one chosen the primary market, shown as a choice among the markets', async () => {
+      open();
+      await heading('Confirm your store');
+      const markets = screen.getByLabelText('Priority markets');
+      for (const name of ['Canada', 'Mexico']) {
+        fireEvent.focus(markets);
+        fireEvent.change(markets, { target: { value: name } });
+        fireEvent.keyDown(markets, { key: 'Enter' });
+      }
+      const primary = screen.getByRole('radiogroup', { name: 'Primary market' });
+      expect(within(primary).getByRole('radio', { name: 'Canada' })).toHaveAttribute('aria-checked', 'true');
+      fireEvent.click(within(primary).getByRole('radio', { name: 'Mexico' }));
+      expect(within(primary).getByRole('radio', { name: 'Mexico' })).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('move the primary market on when the one that was primary is removed', async () => {
+      open();
+      await heading('Confirm your store');
+      const markets = screen.getByLabelText('Priority markets');
+      for (const name of ['Canada', 'Mexico']) {
+        fireEvent.focus(markets);
+        fireEvent.change(markets, { target: { value: name } });
+        fireEvent.keyDown(markets, { key: 'Enter' });
+      }
+      fireEvent.click(screen.getByRole('button', { name: 'Remove Canada' }));
+      // One market left: there is nothing to choose between, so the primary-market control goes.
+      expect(screen.queryByRole('radiogroup', { name: 'Primary market' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('storefront address', () => {
+    const domain = () => screen.getByLabelText('Storefront address');
+
+    it('is checked as soon as the merchant leaves the field, at the field', async () => {
+      open();
+      await heading('Confirm your store');
+      fireEvent.change(domain(), { target: { value: 'localhost' } });
+      expect(screen.queryByText(/valid storefront address/i)).not.toBeInTheDocument();
+      fireEvent.blur(domain());
+      expect(screen.getByText('Enter a valid storefront address, for example https://example.com')).toBeInTheDocument();
+      expect(domain()).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('is not flagged while the merchant is still typing', async () => {
+      open();
+      await heading('Confirm your store');
+      fireEvent.change(domain(), { target: { value: 'shop' } });
+      expect(screen.queryByText(/valid storefront address/i)).not.toBeInTheDocument();
+    });
+
+    it('accepts a bare host, the way people type it', async () => {
+      open();
+      await heading('Confirm your store');
+      fireEvent.change(domain(), { target: { value: 'northline.example' } });
+      fireEvent.blur(domain());
+      expect(screen.queryByText(/valid storefront address/i)).not.toBeInTheDocument();
+    });
+
+    it('can be left blank', async () => {
+      open();
+      await heading('Confirm your store');
+      fireEvent.blur(domain());
+      expect(screen.queryByText(/valid storefront address/i)).not.toBeInTheDocument();
+    });
+
+    it('stops Continue, saves nothing, and says so — before the server is asked', async () => {
+      open();
+      await heading('Confirm your store');
+      fireEvent.change(screen.getByLabelText('Store name'), { target: { value: 'Northline Home' } });
+      const markets = screen.getByLabelText('Priority markets');
+      fireEvent.focus(markets);
+      fireEvent.change(markets, { target: { value: 'Canada' } });
+      fireEvent.keyDown(markets, { key: 'Enter' });
+      fireEvent.change(domain(), { target: { value: 'not a url at all' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Confirm and continue' }));
+
+      expect(await screen.findByText('Check the highlighted answer on this step.')).toBeInTheDocument();
+      expect(screen.getByText('Enter a valid storefront address, for example https://example.com')).toBeInTheDocument();
+      expect(saveOnboardingStep).not.toHaveBeenCalled();
+      expect(screen.getByText('Step 1 of 5')).toBeInTheDocument();
+    });
+
+    it('lets the merchant through once it is corrected', async () => {
+      open();
+      await heading('Confirm your store');
+      fireEvent.change(screen.getByLabelText('Store name'), { target: { value: 'Northline Home' } });
+      const markets = screen.getByLabelText('Priority markets');
+      fireEvent.focus(markets);
+      fireEvent.change(markets, { target: { value: 'Canada' } });
+      fireEvent.keyDown(markets, { key: 'Enter' });
+      fireEvent.change(domain(), { target: { value: 'localhost' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Confirm and continue' }));
+      await screen.findByText('Check the highlighted answer on this step.');
+      fireEvent.change(domain(), { target: { value: 'northline.example' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Confirm and continue' }));
+      expect(await heading('Your business')).toBeInTheDocument();
+      expect(vi.mocked(saveOnboardingStep).mock.calls[0][0]).toMatchObject({ step: 1, primaryDomain: 'northline.example' });
+    });
+
+    it('counts a missing answer and an unusable one together', async () => {
+      open();
+      await heading('Confirm your store');
+      fireEvent.change(domain(), { target: { value: 'localhost' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Confirm and continue' }));
+      expect(await screen.findByText('3 answers need attention on this step.')).toBeInTheDocument();
+    });
+  });
+
+  describe('field limits', () => {
+    it('stop the names at the length the server accepts', async () => {
+      open();
+      await heading('Confirm your store');
+      expect(screen.getByLabelText('Store name')).toHaveAttribute('maxlength', '255');
+      expect(screen.getByLabelText('Storefront address')).toHaveAttribute('maxlength', '512');
+    });
+  });
+
+  describe('the store’s details', () => {
+    it('are fetched once, when the store is connected', async () => {
+      open();
+      await heading('Confirm your store');
+      await screen.findByText('Imported from Shopify');
+      expect(fetchOnboardingSuggestions).toHaveBeenCalledTimes(1);
+    });
+
+    it('say so, with a way to retry, when they could not be loaded — and setup carries on', async () => {
+      vi.mocked(fetchOnboardingSuggestions).mockRejectedValue(new Error('offline'));
+      open();
+      await heading('Confirm your store');
+      const note = await screen.findByRole('alert');
+      expect(note).toHaveTextContent(/couldn.t load your store.s details/i);
+      expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled();
+      // Nothing is blocked: the fields can still be filled in by hand.
+      fireEvent.change(screen.getByLabelText('Store name'), { target: { value: 'By hand' } });
+      expect(screen.getByLabelText('Store name')).toHaveValue('By hand');
+    });
+
+    it('are fetched again when the merchant asks, and the notice goes once they arrive', async () => {
+      vi.mocked(fetchOnboardingSuggestions).mockRejectedValueOnce(new Error('offline')).mockResolvedValue(suggestions());
+      open();
+      await heading('Confirm your store');
+      fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+      expect(await screen.findByText('Imported from Shopify')).toBeInTheDocument();
+      await waitFor(() => expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument());
+      expect(fetchOnboardingSuggestions).toHaveBeenCalledTimes(2);
+      expect(await screen.findByText('128')).toBeInTheDocument();
+    });
+
+    it('keep the notice, and the button, when the retry fails too', async () => {
+      vi.mocked(fetchOnboardingSuggestions).mockRejectedValue(new Error('offline'));
+      open();
+      await heading('Confirm your store');
+      fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+      await waitFor(() => expect(fetchOnboardingSuggestions).toHaveBeenCalledTimes(2));
+      expect(await screen.findByRole('button', { name: 'Try again' })).toBeEnabled();
+    });
+
+    it('show the same notice on the next steps, from the same failure', async () => {
+      vi.mocked(fetchOnboardingSuggestions).mockRejectedValue(new Error('offline'));
+      vi.mocked(fetchOnboarding).mockResolvedValue(
+        snapshot({
+          currentStep: 2,
+          progress: [1, 2, 3, 4, 5].map((step) => ({ step, status: step === 1 ? ('complete' as const) : ('pending' as const), required: step !== 4 })),
+        }),
+      );
+      open();
+      await heading('Your business');
+      expect(await screen.findByRole('button', { name: 'Try again' })).toBeInTheDocument();
+    });
+
+    it('show no notice when they loaded', async () => {
+      open();
+      await heading('Confirm your store');
+      await screen.findByText('Imported from Shopify');
+      expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('language', () => {
+    it('is chosen by searching, and stores its code', async () => {
+      vi.mocked(fetchOnboarding).mockResolvedValue(
+        snapshot({
+          currentStep: 2,
+          progress: [1, 2, 3, 4, 5].map((step) => ({ step, status: step === 1 ? ('complete' as const) : ('pending' as const), required: step !== 4 })),
+        }),
+      );
+      open();
+      await heading('Your business');
+      const language = screen.getByLabelText('Content language');
+      fireEvent.focus(language);
+      fireEvent.change(language, { target: { value: 'engl' } });
+      fireEvent.keyDown(language, { key: 'Enter' });
+      expect(language).toHaveValue('English (en)');
+    });
+  });
+
+  describe('scheduled analysis', () => {
+    const atStepFive = () =>
+      vi.mocked(fetchOnboarding).mockResolvedValue(
+        snapshot({
+          ...answered(),
+          currentStep: 5,
+          progress: [1, 2, 3, 4, 5].map((step) => ({ step, status: step === 5 ? ('pending' as const) : ('complete' as const), required: step !== 4 })),
+        }),
+      );
+
+    it('shows how often as a choice in plain view, with the current one selected', async () => {
+      atStepFive();
+      open();
+      await heading('Permissions & monitoring');
+      const group = screen.getByRole('radiogroup', { name: 'How often' });
+      expect(within(group).getAllByRole('radio').map((radio) => radio.textContent)).toEqual(['Daily', 'Weekly']);
+      expect(within(group).getByRole('radio', { name: 'Weekly' })).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('changes how often with one press', async () => {
+      atStepFive();
+      open();
+      await heading('Permissions & monitoring');
+      // "Weekly" is also an option of the separate Alerts group, so the query stays inside this one.
+      const group = screen.getByRole('radiogroup', { name: 'How often' });
+      fireEvent.click(within(group).getByRole('radio', { name: 'Daily' }));
+      expect(within(group).getByRole('radio', { name: 'Daily' })).toHaveAttribute('aria-checked', 'true');
+      expect(within(group).getByRole('radio', { name: 'Weekly' })).toHaveAttribute('aria-checked', 'false');
+    });
+
+    it('lets the merchant search for a time, and choose "any time"', async () => {
+      atStepFive();
+      open();
+      await heading('Permissions & monitoring');
+      const time = screen.getByLabelText('Preferred time');
+      fireEvent.focus(time);
+      fireEvent.change(time, { target: { value: '03' } });
+      fireEvent.keyDown(time, { key: 'Enter' });
+      expect(time).toHaveValue('03:00');
+      fireEvent.focus(time);
+      fireEvent.mouseDown(screen.getByRole('option', { name: 'Any time it is due' }));
+      expect(time).toHaveValue('Any time it is due');
+    });
+  });
+});
+
+describe('Onboarding · saying why a fact is missing', () => {
+  beforeEach(() => { vi.mocked(fetchOnboarding).mockResolvedValue(snapshot()); });
+  const tileText = (label: string) => (screen.getByText(label).closest('div') as HTMLElement).parentElement as HTMLElement;
+
+  it('says the details could not be loaded — not that Shopify did not report them — when the request failed', async () => {
+    vi.mocked(fetchOnboardingSuggestions).mockRejectedValue(new Error('offline'));
+    open();
+    await screen.findByRole('button', { name: 'Try again' });
+    for (const label of ['Primary language', 'Published products', 'Published collections', 'Articles', 'Pages']) {
+      expect(tileText(label)).toHaveTextContent('Couldn’t be loaded');
+    }
+    expect(screen.queryByText('Not reported by Shopify')).not.toBeInTheDocument();
+  });
+
+  it('keeps showing the facts that came with the store itself, even when that request failed', async () => {
+    vi.mocked(fetchOnboardingSuggestions).mockRejectedValue(new Error('offline'));
+    open();
+    await screen.findByRole('button', { name: 'Try again' });
+    expect(tileText('Currency')).toHaveTextContent('CAD');
+    expect(tileText('Billing country')).toHaveTextContent('Canada');
+  });
+
+  it('still says "Not reported by Shopify" when Shopify was asked and gave no count', async () => {
+    vi.mocked(fetchOnboardingSuggestions).mockResolvedValue({
+      ...suggestions(),
+      content: { publishedProducts: null, publishedCollections: null, pages: null, articles: null },
+    });
+    open();
+    await screen.findByText('Imported from Shopify');
+    await waitFor(() => expect(tileText('Pages')).toHaveTextContent('Not reported by Shopify'));
+    expect(screen.queryByText('Couldn’t be loaded')).not.toBeInTheDocument();
+  });
+
+  it('replaces the "could not be loaded" text with the real figures once a retry works', async () => {
+    vi.mocked(fetchOnboardingSuggestions).mockRejectedValueOnce(new Error('offline')).mockResolvedValue(suggestions());
+    open();
+    fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(tileText('Published products')).toHaveTextContent('128'));
+    expect(screen.queryByText('Couldn’t be loaded')).not.toBeInTheDocument();
   });
 });

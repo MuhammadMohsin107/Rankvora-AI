@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { BarChart3, Check, Gauge, Loader2, Search, ShoppingBag, type LucideIcon } from 'lucide-react';
-import { ActionButton, LabelledSelect, QuietNote, ToastStack, UnavailableNote, type ToastMessage } from './OnboardingPrimitives';
+import { ActionButton, Combobox, QuietNote, ToastStack, UnavailableNote, type ToastMessage } from './OnboardingPrimitives';
 import { ApiError } from '../../lib/api';
 import {
   fetchGoogleSites,
@@ -251,7 +251,7 @@ export default function MeasurementStep({ notice }: MeasurementStepProps) {
                 {siteChosen && <QuietNote>Reporting on {google.value.siteUrl}</QuietNote>}
                 {googleConnected && !siteChosen && (
                   <div className="max-w-md">
-                    <LabelledSelect
+                    <Combobox
                       id="onboarding-gsc-site"
                       value=""
                       disabled={busy === 'site' || sites === null}
@@ -288,7 +288,7 @@ export default function MeasurementStep({ notice }: MeasurementStepProps) {
                 {propertyChosen && <QuietNote>Reporting on property {analytics.value.propertyId}</QuietNote>}
                 {ga4Ready && !propertyChosen && (
                   <div className="max-w-md">
-                    <LabelledSelect
+                    <Combobox
                       id="onboarding-ga4-property"
                       value=""
                       disabled={busy === 'property' || properties === null}

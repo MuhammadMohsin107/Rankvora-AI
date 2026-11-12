@@ -1,4 +1,4 @@
-import { useId, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import {
   AlertTriangle,
   ArrowDown,
@@ -8,6 +8,7 @@ import {
   Info,
   Loader2,
   Plus,
+  RefreshCw,
   ShieldCheck,
   Sparkles,
   X,
@@ -543,8 +544,14 @@ export function ActionButton({
   );
 }
 
-/** A fact Shopify reported, shown read-only. A missing value says so instead of showing a default. */
-export function FactTile({ label, value, icon: Icon }: { label: string; value: string | null; icon?: LucideIcon }) {
+/**
+ * A fact Shopify reported, shown read-only. A missing value says so instead of showing a default.
+ *
+ * WHY it is missing is said too. "Not reported by Shopify" is only true when Shopify was asked and
+ * did not say; when the request itself failed, nothing was reported because nothing was heard, and
+ * `missing` lets the caller say that instead.
+ */
+export function FactTile({ label, value, icon: Icon, missing = 'Not reported by Shopify' }: { label: string; value: string | null; icon?: LucideIcon; missing?: string }) {
   return (
     <div className="flex items-start gap-3 rounded-2xl bg-surface-50 px-4 py-3.5 ring-1 ring-inset ring-surface-200/70">
       {Icon && (
@@ -559,7 +566,7 @@ export function FactTile({ label, value, icon: Icon }: { label: string; value: s
             {value}
           </p>
         ) : (
-          <p className="mt-0.5 text-[13px] text-surface-400">Not reported by Shopify</p>
+          <p className="mt-0.5 text-[13px] text-surface-400">{missing}</p>
         )}
       </div>
     </div>
@@ -612,6 +619,8 @@ export function TextField({
   placeholder,
   invalid,
   icon,
+  maxLength,
+  onBlur,
 }: {
   id: string;
   value: string;
@@ -620,6 +629,10 @@ export function TextField({
   invalid?: boolean;
   /** A mark for what the field holds, shown inside it on the left. */
   icon?: LucideIcon;
+  /** The longest value the server will take, so the field stops there instead of a save failing. */
+  maxLength?: number;
+  /** Called when the field loses focus — the moment to check what was typed. */
+  onBlur?: () => void;
 }) {
   return (
     <div className="group relative">
@@ -629,69 +642,140 @@ export function TextField({
         type="text"
         value={value}
         placeholder={placeholder}
+        maxLength={maxLength}
+        autoComplete="off"
         aria-describedby={describedBy(id)}
         aria-invalid={invalid || undefined}
         onChange={(event) => onChange(event.target.value)}
+        onBlur={onBlur}
         className={`${controlBase} ${controlTone(invalid)} h-12 ${icon ? 'pl-11' : 'pl-4'} pr-4`}
       />
     </div>
   );
 }
 
+// ─── Searchable pickers ──────────────────────────────────────────────
+
 /**
- * A select whose empty state is a prompt, not the first option. Without the placeholder a native
- * select shows its first real option, which reads as an answer the merchant never chose.
+ * One thing a picker can offer: what is stored, and what the merchant reads.
+ *
+ * Both are kept because the two differ for anything an id stands behind — a product's handle and its
+ * title, a language's code and its name — and a picker that showed the value would show the id.
  */
-export function SelectField({
+export interface ComboOption {
+  value: string;
+  label: string;
+}
+
+/** The most options drawn at once. A longer list is searched, not scrolled: it says how many more there are. */
+const MAX_OPTIONS_SHOWN = 100;
+
+/** The options whose label contains `query`, those that START with it first, so "can" finds Canada before Mexican. */
+function matchOptions<T extends { label: string }>(options: readonly T[], query: string): T[] {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return [...options];
+  const starting: T[] = [];
+  const containing: T[] = [];
+  for (const option of options) {
+    const label = option.label.toLowerCase();
+    if (label.startsWith(needle)) starting.push(option);
+    else if (label.includes(needle)) containing.push(option);
+  }
+  return [...starting, ...containing];
+}
+
+/** Keeps the highlighted option in view as the arrow keys move through a long list. */
+function useScrollActiveIntoView(open: boolean, listId: string, active: number) {
+  useEffect(() => {
+    if (!open) return;
+    const element = document.getElementById(`${listId}-opt-${active}`);
+    if (element && typeof element.scrollIntoView === 'function') element.scrollIntoView({ block: 'nearest' });
+  }, [open, listId, active]);
+}
+
+/**
+ * The drop-down list both pickers share.
+ *
+ * Options take the press on `mousedown` and stop it (`preventDefault`), so the input keeps focus: the
+ * list closes when the input loses focus, and without this the click that is meant to choose an
+ * option would first close the list and never reach it.
+ */
+function OptionList({
   id,
-  value,
   options,
-  placeholder,
-  onChange,
-  invalid,
-  icon,
+  active,
+  selectedValue,
+  hiddenCount,
+  emptyText,
+  onPick,
+  onHover,
 }: {
   id: string;
-  value: string;
-  options: readonly string[];
-  placeholder: string;
-  onChange: (value: string) => void;
-  invalid?: boolean;
-  icon?: LucideIcon;
+  options: readonly ComboOption[];
+  active: number;
+  selectedValue?: string;
+  hiddenCount: number;
+  emptyText: string;
+  onPick: (option: ComboOption) => void;
+  onHover: (index: number) => void;
 }) {
   return (
-    <div className="group relative">
-      {icon && <LeadingIcon icon={icon} />}
-      <select
-        id={id}
-        value={value}
-        aria-describedby={describedBy(id)}
-        aria-invalid={invalid || undefined}
-        onChange={(event) => onChange(event.target.value)}
-        className={`${controlBase} ${controlTone(invalid)} h-12 cursor-pointer appearance-none ${icon ? 'pl-11' : 'pl-4'} pr-11 ${value ? '' : 'text-surface-400'}`}
-      >
-        <option value="">{placeholder}</option>
-        {options.map((option) => (
-          <option key={option} value={option} className="text-surface-900">
-            {option}
-          </option>
-        ))}
-      </select>
-      <ChevronDown
-        size={16}
-        className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-surface-400"
-        aria-hidden="true"
-      />
+    <div
+      id={id}
+      role="listbox"
+      className="absolute left-0 right-0 top-full z-30 mt-1.5 max-h-64 overflow-y-auto rounded-xl bg-surface-0 p-1.5 shadow-[0_24px_48px_-20px_var(--c-shadow-lg),0_4px_14px_-6px_var(--c-shadow-md)] ring-1 ring-inset ring-surface-200"
+    >
+      {options.length === 0 ? (
+        <div role="presentation" className="px-3 py-2.5 text-[13px] text-surface-500">
+          {emptyText}
+        </div>
+      ) : (
+        options.map((option, index) => {
+          const chosen = option.value === selectedValue;
+          return (
+            <div
+              key={option.value}
+              id={`${id}-opt-${index}`}
+              role="option"
+              tabIndex={-1}
+              aria-selected={chosen}
+              onMouseDown={(event) => {
+                event.preventDefault();
+                onPick(option);
+              }}
+              onMouseEnter={() => onHover(index)}
+              className={`flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 text-[14px] ${
+                index === active ? 'bg-brand-50 text-brand-900' : 'text-surface-800'
+              } ${chosen ? 'font-semibold' : ''}`}
+            >
+              <span className="min-w-0 truncate">{option.label}</span>
+              {chosen && <Check size={15} strokeWidth={2.6} className="flex-shrink-0 text-brand-600" aria-hidden="true" />}
+            </div>
+          );
+        })
+      )}
+      {hiddenCount > 0 && (
+        <div role="presentation" className="px-3 pb-1 pt-2 text-[12px] text-surface-500">
+          {hiddenCount.toLocaleString()} more — keep typing to narrow the list
+        </div>
+      )}
     </div>
   );
 }
 
 /**
- * A select whose options show one thing and store another: a product's title and its handle, a
- * language's name and its code. `SelectField` above shows its value as the label, which is right
- * for a country and wrong for anything an id stands behind.
+ * A searchable single choice: type to narrow the list, arrow keys and Enter to choose, Escape to close.
+ *
+ * It replaces the browser's own drop-down, which for a long list (250 countries, a store's whole
+ * catalogue) offers nothing but a scroll. This is the WAI-ARIA combobox: the input is the
+ * `combobox`, the list is a `listbox`, and the highlighted option is named by `aria-activedescendant`
+ * so a screen reader follows the arrows without focus ever leaving the field.
+ *
+ * Closed, the field shows the chosen label. Open, it shows what is being typed, with the chosen label
+ * as the placeholder so the current answer is never lost from view. `value=""` with no option for
+ * "" is the "add one" form: choosing calls `onChange` and the field goes back to its prompt.
  */
-export function LabelledSelect({
+export function Combobox({
   id,
   value,
   options,
@@ -700,40 +784,319 @@ export function LabelledSelect({
   invalid,
   disabled = false,
   icon,
+  emptyText = 'No matches',
 }: {
   id: string;
   value: string;
-  options: ReadonlyArray<{ value: string; label: string }>;
+  options: readonly ComboOption[];
   placeholder: string;
   onChange: (value: string) => void;
   invalid?: boolean;
   disabled?: boolean;
   icon?: LucideIcon;
+  emptyText?: string;
 }) {
+  const listId = `${id}-list`;
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [active, setActive] = useState(0);
+  const selected = options.find((option) => option.value === value);
+  const matches = useMemo(() => matchOptions(options, query), [options, query]);
+  const shown = matches.slice(0, MAX_OPTIONS_SHOWN);
+  useScrollActiveIntoView(open, listId, active);
+
+  const show = () => {
+    if (disabled) return;
+    setOpen(true);
+    const index = shown.findIndex((option) => option.value === value);
+    setActive(index >= 0 ? index : 0);
+  };
+  const close = () => {
+    setOpen(false);
+    setQuery('');
+  };
+  const pick = (option: ComboOption) => {
+    onChange(option.value);
+    close();
+  };
+
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (!open) show();
+      else setActive((index) => Math.min(index + 1, Math.max(0, shown.length - 1)));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (!open) show();
+      else setActive((index) => Math.max(index - 1, 0));
+    } else if (event.key === 'Enter' && open && shown[active]) {
+      event.preventDefault();
+      pick(shown[active]);
+    } else if (event.key === 'Escape' && open) {
+      event.preventDefault();
+      close();
+    }
+  };
+
   return (
     <div className="group relative">
       {icon && <LeadingIcon icon={icon} />}
-      <select
+      <input
         id={id}
-        value={value}
-        disabled={disabled}
+        type="text"
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        aria-activedescendant={open && shown.length > 0 ? `${listId}-opt-${active}` : undefined}
         aria-describedby={describedBy(id)}
         aria-invalid={invalid || undefined}
-        onChange={(event) => onChange(event.target.value)}
-        className={`${controlBase} ${controlTone(invalid)} h-12 cursor-pointer appearance-none ${icon ? 'pl-11' : 'pl-4'} pr-11 disabled:cursor-not-allowed disabled:bg-surface-100 disabled:opacity-60 disabled:hover:bg-surface-100 ${value ? '' : 'text-surface-400'}`}
-      >
-        <option value="">{placeholder}</option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value} className="text-surface-900">
-            {option.label}
-          </option>
-        ))}
-      </select>
+        autoComplete="off"
+        spellCheck={false}
+        disabled={disabled}
+        value={open ? query : (selected?.label ?? '')}
+        placeholder={open && selected ? selected.label : placeholder}
+        onChange={(event) => {
+          setQuery(event.target.value);
+          setOpen(true);
+          setActive(0);
+        }}
+        onFocus={show}
+        onClick={show}
+        onBlur={close}
+        onKeyDown={onKeyDown}
+        className={`${controlBase} ${controlTone(invalid)} h-12 ${icon ? 'pl-11' : 'pl-4'} pr-11 disabled:cursor-not-allowed disabled:bg-surface-100 disabled:opacity-60 disabled:hover:bg-surface-100`}
+      />
       <ChevronDown
         size={16}
-        className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-surface-400"
+        className={`pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-surface-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
         aria-hidden="true"
       />
+      {open && (
+        <OptionList
+          id={listId}
+          options={shown}
+          active={active}
+          selectedValue={selected?.value}
+          hiddenCount={matches.length - shown.length}
+          emptyText={emptyText}
+          onPick={pick}
+          onHover={setActive}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * The classes of a field that holds chips: the same "filled" well as a text field, drawn around the
+ * chips and the input together, so the whole box takes the focus ring.
+ */
+function chipWell(invalid: boolean | undefined, disabled: boolean, hasIcon: boolean): string {
+  const tone = disabled
+    ? 'bg-surface-100 ring-surface-200'
+    : invalid
+      ? 'bg-critical-50/50 ring-critical-300 hover:ring-critical-400 focus-within:ring-critical-500 focus-within:shadow-[0_0_0_4px_var(--c-critical-100)]'
+      : 'group bg-surface-50 ring-surface-200 hover:bg-surface-0 hover:ring-surface-300 focus-within:ring-brand-500 focus-within:shadow-[0_0_0_4px_var(--c-brand-100)]';
+  return `flex min-h-12 flex-wrap items-center gap-1.5 rounded-xl py-1.5 pr-2 ring-1 ring-inset transition-[box-shadow,background-color] duration-150 focus-within:bg-surface-0 focus-within:ring-2 ${
+    hasIcon ? 'pl-3' : 'pl-2'
+  } ${tone}`;
+}
+
+/**
+ * A searchable multiple choice from a closed list: the chosen ones sit as chips inside the field, and
+ * typing narrows what is left to add.
+ *
+ * Each choice is made once — an option already chosen is not offered again — and Backspace on an empty
+ * field takes the last one back, as in any tag field. It reports adds and removes separately
+ * (`onAdd` / `onRemove`) rather than handing back a new list, because the caller has rules that hang
+ * on each: adding the first market also makes it the primary one.
+ */
+export function MultiCombobox({
+  id,
+  values,
+  options,
+  onAdd,
+  onRemove,
+  placeholder,
+  invalid,
+  icon: Icon,
+  max,
+  emptyText = 'No matches',
+}: {
+  id: string;
+  values: readonly string[];
+  options: readonly string[];
+  onAdd: (value: string) => void;
+  onRemove: (value: string) => void;
+  placeholder: string;
+  invalid?: boolean;
+  icon?: LucideIcon;
+  max?: number;
+  emptyText?: string;
+}) {
+  const listId = `${id}-list`;
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [active, setActive] = useState(0);
+  const full = max !== undefined && values.length >= max;
+  const pool = useMemo(() => {
+    const taken = new Set(values.map((value) => value.toLowerCase()));
+    return options.filter((option) => !taken.has(option.toLowerCase())).map((option) => ({ value: option, label: option }));
+  }, [options, values]);
+  const matches = useMemo(() => matchOptions(pool, query), [pool, query]);
+  const shown = matches.slice(0, MAX_OPTIONS_SHOWN);
+  useScrollActiveIntoView(open, listId, active);
+
+  const show = () => {
+    if (full) return;
+    setOpen(true);
+    setActive(0);
+  };
+  const close = () => {
+    setOpen(false);
+    setQuery('');
+  };
+  const pick = (option: ComboOption) => {
+    onAdd(option.value);
+    close();
+  };
+
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (!open) show();
+      else setActive((index) => Math.min(index + 1, Math.max(0, shown.length - 1)));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (!open) show();
+      else setActive((index) => Math.max(index - 1, 0));
+    } else if (event.key === 'Enter' && open && shown[active]) {
+      event.preventDefault();
+      pick(shown[active]);
+    } else if (event.key === 'Escape' && open) {
+      event.preventDefault();
+      close();
+    } else if (event.key === 'Backspace' && !query && values.length > 0) {
+      onRemove(values[values.length - 1]);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <div className={chipWell(invalid, false, Boolean(Icon))}>
+        {Icon && <Icon size={17} strokeWidth={1.8} className="flex-shrink-0 text-surface-400" aria-hidden="true" />}
+        {values.map((value) => (
+          <Chip key={value} label={value} onRemove={() => onRemove(value)} />
+        ))}
+        <input
+          id={id}
+          type="text"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={open && shown.length > 0 ? `${listId}-opt-${active}` : undefined}
+          aria-describedby={describedBy(id)}
+          aria-invalid={invalid || undefined}
+          autoComplete="off"
+          spellCheck={false}
+          disabled={full}
+          value={query}
+          placeholder={full ? `Maximum of ${max} reached` : values.length === 0 ? placeholder : 'Add another…'}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setOpen(true);
+            setActive(0);
+          }}
+          onFocus={show}
+          onClick={show}
+          onBlur={close}
+          onKeyDown={onKeyDown}
+          className="min-w-[9rem] flex-1 bg-transparent px-1.5 py-1.5 text-[14.5px] text-surface-950 outline-none placeholder:text-surface-400 disabled:cursor-not-allowed"
+        />
+      </div>
+      {open && (
+        <OptionList
+          id={listId}
+          options={shown}
+          active={active}
+          hiddenCount={matches.length - shown.length}
+          emptyText={emptyText}
+          onPick={pick}
+          onHover={setActive}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * A short, closed choice shown all at once: every option is visible and one press picks it.
+ *
+ * For a handful of options (how often, which of your markets) this beats a drop-down, which hides the
+ * answers behind a click. It is a `radiogroup`: one tab stop for the whole group, arrow keys move the
+ * choice (and make it), Home and End jump to the ends. With no value yet, the first option is the one
+ * in the tab order, so the group is never unreachable.
+ */
+export function SegmentedControl<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+  id,
+}: {
+  label: string;
+  options: ReadonlyArray<{ value: T; label: string }>;
+  value: T | '';
+  onChange: (value: T) => void;
+  id?: string;
+}) {
+  const refs = useRef(new Map<string, HTMLButtonElement>());
+  const current = options.findIndex((option) => option.value === value);
+
+  const choose = (index: number) => {
+    const target = options[(index + options.length) % options.length];
+    onChange(target.value);
+    refs.current.get(target.value)?.focus();
+  };
+
+  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') choose(index + 1);
+    else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') choose(index - 1);
+    else if (event.key === 'Home') choose(0);
+    else if (event.key === 'End') choose(options.length - 1);
+    else return;
+    event.preventDefault();
+  };
+
+  return (
+    <div id={id} role="radiogroup" aria-label={label} className="inline-flex max-w-full flex-wrap gap-1 rounded-xl bg-surface-100 p-1">
+      {options.map((option, index) => {
+        const on = index === current;
+        return (
+          <button
+            key={option.value}
+            ref={(element) => {
+              if (element) refs.current.set(option.value, element);
+              else refs.current.delete(option.value);
+            }}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            tabIndex={on || (current < 0 && index === 0) ? 0 : -1}
+            onClick={() => onChange(option.value)}
+            onKeyDown={(event) => onKeyDown(event, index)}
+            className={`h-10 rounded-lg px-4 text-[13.5px] font-medium transition-[background-color,color,box-shadow] duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
+              on
+                ? 'bg-surface-0 font-semibold text-surface-950 shadow-[0_1px_3px_var(--c-shadow-md)] ring-1 ring-surface-200'
+                : 'text-surface-600 hover:text-surface-950'
+            }`}
+          >
+            {option.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -827,6 +1190,33 @@ export function InfoNote({ children }: { children: ReactNode }) {
     <div className="flex items-start gap-2.5 rounded-xl bg-info-50 px-3.5 py-2.5 ring-1 ring-inset ring-info-100">
       <Info size={15} className="mt-px flex-shrink-0 text-info-700" aria-hidden="true" />
       <p className="text-pretty text-[12.5px] leading-[1.5] text-info-700">{children}</p>
+    </div>
+  );
+}
+
+/**
+ * Said when the request for the store's details failed, with the way to try again.
+ *
+ * The details are only suggestions, so setup never depends on them — the note says so, and every
+ * field stays usable. But a failure that leaves the merchant with no suggestions and no sign of why
+ * (and no way to ask again short of reloading the page) is a failure they cannot act on.
+ */
+export function FetchFailedNote({ onRetry, retrying }: { onRetry: () => void; retrying: boolean }) {
+  return (
+    <div role="alert" className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2.5 rounded-xl bg-warning-50 px-4 py-3 ring-1 ring-inset ring-warning-100">
+      <AlertTriangle size={16} className="flex-shrink-0 text-warning-700" aria-hidden="true" />
+      <p className="min-w-[12rem] flex-1 text-pretty text-[13px] leading-[1.5] text-warning-700">
+        We couldn’t load your store’s details to suggest answers. You can still fill everything in yourself.
+      </p>
+      <button
+        type="button"
+        onClick={onRetry}
+        disabled={retrying}
+        className="inline-flex h-9 flex-shrink-0 items-center gap-1.5 rounded-lg bg-surface-0 px-3.5 text-[13px] font-semibold text-warning-700 shadow-[0_1px_2px_var(--c-shadow-sm)] ring-1 ring-inset ring-warning-100 transition-[background-color,transform] hover:bg-warning-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-warning-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 motion-reduce:active:scale-100"
+      >
+        {retrying ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <RefreshCw size={14} aria-hidden="true" />}
+        {retrying ? 'Trying again…' : 'Try again'}
+      </button>
     </div>
   );
 }
@@ -1134,6 +1524,7 @@ export function TagInput({
   invalid,
   transform,
   icon: Icon,
+  maxItemLength,
 }: {
   id: string;
   values: string[];
@@ -1146,6 +1537,8 @@ export function TagInput({
   transform?: (raw: string) => string | null;
   /** A mark for what is being collected, at the start of the field. */
   icon?: LucideIcon;
+  /** The longest single entry the server will take; a longer one is refused with a note, not sent. */
+  maxItemLength?: number;
 }) {
   const [draft, setDraft] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
@@ -1155,6 +1548,10 @@ export function TagInput({
     const candidate = transform ? transform(raw) : raw.trim();
     if (!candidate) {
       setNotice(transform ? "That doesn't look like a valid entry." : null);
+      return;
+    }
+    if (maxItemLength !== undefined && candidate.length > maxItemLength) {
+      setNotice(`Keep each entry to ${maxItemLength} characters or fewer.`);
       return;
     }
     if (values.some((value) => value.toLowerCase() === candidate.toLowerCase())) {
@@ -1186,17 +1583,7 @@ export function TagInput({
 
   return (
     <div>
-      <div
-        className={`flex min-h-12 flex-wrap items-center gap-1.5 rounded-xl py-1.5 pr-2 ring-1 ring-inset transition-[box-shadow,background-color] duration-150 focus-within:bg-surface-0 focus-within:ring-2 ${
-          Icon ? 'pl-3' : 'pl-2'
-        } ${
-          disabled
-            ? 'bg-surface-100 ring-surface-200'
-            : invalid
-              ? 'bg-critical-50/50 ring-critical-300 hover:ring-critical-400 focus-within:ring-critical-500 focus-within:shadow-[0_0_0_4px_var(--c-critical-100)]'
-              : 'group bg-surface-50 ring-surface-200 hover:bg-surface-0 hover:ring-surface-300 focus-within:ring-brand-500 focus-within:shadow-[0_0_0_4px_var(--c-brand-100)]'
-        }`}
-      >
+      <div className={chipWell(invalid, disabled, Boolean(Icon))}>
         {Icon && <Icon size={17} strokeWidth={1.8} className="flex-shrink-0 text-surface-400" aria-hidden="true" />}
         {values.map((value) => (
           <Chip

@@ -6,13 +6,17 @@ import {
   ActionButton,
   CheckCard,
   ChoiceCard,
+  Combobox,
   DetectedNote,
+  FactTile,
+  FetchFailedNote,
   FieldError,
   FormField,
   FormSection,
+  MultiCombobox,
   MultiSelectChips,
   PriorityList,
-  SelectField,
+  SegmentedControl,
   StepHeader,
   StepRail,
   Stepper,
@@ -190,21 +194,6 @@ describe('FieldError', () => {
   it('is an alert', () => {
     render(<FieldError>Something is missing.</FieldError>);
     expect(screen.getByRole('alert')).toHaveTextContent('Something is missing.');
-  });
-});
-
-describe('SelectField', () => {
-  it('opens on its prompt, not on the first option', () => {
-    render(<SelectField id="s" value="" options={['Canada', 'France']} placeholder="Add a market…" onChange={() => undefined} />);
-    expect(screen.getByRole('combobox')).toHaveValue('');
-    expect(screen.getByRole('option', { name: 'Add a market…' })).toBeInTheDocument();
-  });
-
-  it('reports the chosen option', () => {
-    const onChange = vi.fn();
-    render(<SelectField id="s" value="" options={['Canada', 'France']} placeholder="Add…" onChange={onChange} />);
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'France' } });
-    expect(onChange).toHaveBeenCalledWith('France');
   });
 });
 
@@ -459,5 +448,375 @@ describe('PriorityList wrapping and marks', () => {
     render(<PriorityList items={[{ key: 'content', label: long, icon: Search }]} onReorder={() => undefined} />);
     const name = screen.getByText(long);
     expect(name.className).not.toMatch(/truncate/);
+  });
+});
+
+// ─── Searchable pickers ──────────────────────────────────────────────
+
+const COUNTRIES = [
+  { value: 'ca', label: 'Canada' },
+  { value: 'mx', label: 'Mexico' },
+  { value: 'us', label: 'United States' },
+  { value: 'gb', label: 'United Kingdom' },
+];
+
+function Picker({ initial = '', onChange }: { initial?: string; onChange?: (value: string) => void }) {
+  const [value, setValue] = useState(initial);
+  return (
+    <Combobox
+      id="pick"
+      value={value}
+      options={COUNTRIES}
+      placeholder="Pick a country"
+      onChange={(next) => {
+        setValue(next);
+        onChange?.(next);
+      }}
+    />
+  );
+}
+
+const box = () => screen.getByRole('combobox');
+const optionNames = () => screen.queryAllByRole('option').map((option) => option.textContent);
+
+describe('Combobox', () => {
+  it('starts closed, on its prompt', () => {
+    render(<Picker />);
+    expect(box()).toHaveAttribute('aria-expanded', 'false');
+    expect(box()).toHaveAttribute('placeholder', 'Pick a country');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+
+  it('opens on focus and offers every option', () => {
+    render(<Picker />);
+    fireEvent.focus(box());
+    expect(box()).toHaveAttribute('aria-expanded', 'true');
+    expect(optionNames()).toEqual(['Canada', 'Mexico', 'United States', 'United Kingdom']);
+  });
+
+  it('narrows the list as the merchant types', () => {
+    render(<Picker />);
+    fireEvent.focus(box());
+    fireEvent.change(box(), { target: { value: 'united' } });
+    expect(optionNames()).toEqual(['United States', 'United Kingdom']);
+  });
+
+  it('lists matches that START with what was typed ahead of those that merely contain it', () => {
+    render(<Combobox id="r" value="" options={[{ value: 'm', label: 'Mexican food' }, { value: 'c', label: 'Canada' }]} placeholder="x" onChange={() => undefined} />);
+    fireEvent.focus(box());
+    fireEvent.change(box(), { target: { value: 'can' } });
+    expect(optionNames()).toEqual(['Canada', 'Mexican food']);
+  });
+
+  it('says so when nothing matches', () => {
+    render(<Picker />);
+    fireEvent.focus(box());
+    fireEvent.change(box(), { target: { value: 'zzz' } });
+    expect(screen.getByText('No matches')).toBeInTheDocument();
+    expect(screen.queryAllByRole('option')).toHaveLength(0);
+  });
+
+  it('chooses the highlighted option with Enter, and then shows it by name', () => {
+    const onChange = vi.fn();
+    render(<Picker onChange={onChange} />);
+    fireEvent.focus(box());
+    fireEvent.change(box(), { target: { value: 'mex' } });
+    fireEvent.keyDown(box(), { key: 'Enter' });
+    expect(onChange).toHaveBeenCalledWith('mx');
+    expect(box()).toHaveValue('Mexico');
+    expect(box()).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('moves the highlight with the arrow keys, and announces it', () => {
+    render(<Picker />);
+    fireEvent.focus(box());
+    const first = box().getAttribute('aria-activedescendant');
+    fireEvent.keyDown(box(), { key: 'ArrowDown' });
+    const second = box().getAttribute('aria-activedescendant');
+    expect(second).not.toBe(first);
+    expect(document.getElementById(second as string)).toHaveTextContent('Mexico');
+    fireEvent.keyDown(box(), { key: 'ArrowUp' });
+    expect(box().getAttribute('aria-activedescendant')).toBe(first);
+  });
+
+  it('never moves the highlight past either end of the list', () => {
+    render(<Picker />);
+    fireEvent.focus(box());
+    for (let i = 0; i < 10; i += 1) fireEvent.keyDown(box(), { key: 'ArrowDown' });
+    expect(document.getElementById(box().getAttribute('aria-activedescendant') as string)).toHaveTextContent('United Kingdom');
+    for (let i = 0; i < 10; i += 1) fireEvent.keyDown(box(), { key: 'ArrowUp' });
+    expect(document.getElementById(box().getAttribute('aria-activedescendant') as string)).toHaveTextContent('Canada');
+  });
+
+  it('chooses with the mouse', () => {
+    const onChange = vi.fn();
+    render(<Picker onChange={onChange} />);
+    fireEvent.focus(box());
+    fireEvent.mouseDown(screen.getByRole('option', { name: 'United States' }));
+    expect(onChange).toHaveBeenCalledWith('us');
+  });
+
+  it('closes on Escape without changing the answer', () => {
+    const onChange = vi.fn();
+    render(<Picker initial="ca" onChange={onChange} />);
+    fireEvent.focus(box());
+    fireEvent.change(box(), { target: { value: 'mex' } });
+    fireEvent.keyDown(box(), { key: 'Escape' });
+    expect(onChange).not.toHaveBeenCalled();
+    expect(box()).toHaveValue('Canada');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+
+  it('closes when the field loses focus', () => {
+    render(<Picker />);
+    fireEvent.focus(box());
+    fireEvent.blur(box());
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+
+  it('keeps the current answer in view while open, as the placeholder, and marks it selected', () => {
+    render(<Picker initial="mx" />);
+    fireEvent.focus(box());
+    expect(box()).toHaveAttribute('placeholder', 'Mexico');
+    expect(screen.getByRole('option', { name: 'Mexico' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('option', { name: 'Canada' })).toHaveAttribute('aria-selected', 'false');
+  });
+
+  it('wires the field to its list for assistive technology', () => {
+    render(<Picker />);
+    fireEvent.focus(box());
+    expect(screen.getByRole('listbox')).toHaveAttribute('id', box().getAttribute('aria-controls') as string);
+    expect(box()).toHaveAttribute('aria-autocomplete', 'list');
+  });
+
+  it('does not open when it is disabled', () => {
+    render(<Combobox id="d" value="" options={COUNTRIES} placeholder="x" disabled onChange={() => undefined} />);
+    expect(box()).toBeDisabled();
+    fireEvent.focus(box());
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+
+  it('can be an "add one" field: choosing reports the value and the field goes back to its prompt', () => {
+    const onChange = vi.fn();
+    render(<Combobox id="a" value="" options={COUNTRIES} placeholder="Add a country…" onChange={onChange} />);
+    fireEvent.focus(box());
+    fireEvent.keyDown(box(), { key: 'Enter' });
+    expect(onChange).toHaveBeenCalledWith('ca');
+    expect(box()).toHaveValue('');
+    expect(box()).toHaveAttribute('placeholder', 'Add a country…');
+  });
+
+  it('can offer a "no choice" option whose value is empty', () => {
+    const onChange = vi.fn();
+    render(<Combobox id="h" value="3" options={[{ value: '', label: 'Any time' }, { value: '3', label: '03:00' }]} placeholder="x" onChange={onChange} />);
+    expect(box()).toHaveValue('03:00');
+    fireEvent.focus(box());
+    fireEvent.mouseDown(screen.getByRole('option', { name: 'Any time' }));
+    expect(onChange).toHaveBeenCalledWith('');
+  });
+
+  it('draws a long list in part and says how many more there are', () => {
+    const many = Array.from({ length: 130 }, (_, index) => ({ value: String(index), label: `Item ${index}` }));
+    render(<Combobox id="m" value="" options={many} placeholder="x" onChange={() => undefined} />);
+    fireEvent.focus(box());
+    expect(screen.getAllByRole('option')).toHaveLength(100);
+    expect(screen.getByText('30 more — keep typing to narrow the list')).toBeInTheDocument();
+  });
+
+  it('marks a missing answer', () => {
+    render(<Combobox id="i" value="" options={COUNTRIES} placeholder="x" invalid onChange={() => undefined} />);
+    expect(box()).toHaveAttribute('aria-invalid', 'true');
+  });
+});
+
+describe('MultiCombobox', () => {
+  function Markets({ start = [], max, onAdd, onRemove }: { start?: string[]; max?: number; onAdd?: (v: string) => void; onRemove?: (v: string) => void }) {
+    const [values, setValues] = useState<string[]>(start);
+    return (
+      <MultiCombobox
+        id="markets"
+        values={values}
+        options={['Canada', 'Mexico', 'United States']}
+        placeholder="Search for a country…"
+        max={max}
+        onAdd={(value) => {
+          setValues((current) => [...current, value]);
+          onAdd?.(value);
+        }}
+        onRemove={(value) => {
+          setValues((current) => current.filter((entry) => entry !== value));
+          onRemove?.(value);
+        }}
+      />
+    );
+  }
+
+  it('adds the highlighted option as a chip inside the field', () => {
+    const onAdd = vi.fn();
+    render(<Markets onAdd={onAdd} />);
+    fireEvent.focus(box());
+    fireEvent.change(box(), { target: { value: 'mex' } });
+    fireEvent.keyDown(box(), { key: 'Enter' });
+    expect(onAdd).toHaveBeenCalledWith('Mexico');
+    expect(screen.getByRole('button', { name: 'Remove Mexico' })).toBeInTheDocument();
+    expect(box()).toHaveValue('');
+  });
+
+  it('does not offer a choice that has already been made', () => {
+    render(<Markets start={['canada']} />);
+    fireEvent.focus(box());
+    expect(optionNames()).toEqual(['Mexico', 'United States']);
+  });
+
+  it('takes the last choice back with Backspace on an empty field', () => {
+    const onRemove = vi.fn();
+    render(<Markets start={['Canada', 'Mexico']} onRemove={onRemove} />);
+    fireEvent.keyDown(box(), { key: 'Backspace' });
+    expect(onRemove).toHaveBeenCalledWith('Mexico');
+  });
+
+  it('leaves the chips alone on Backspace while something is being typed', () => {
+    const onRemove = vi.fn();
+    render(<Markets start={['Canada']} onRemove={onRemove} />);
+    fireEvent.focus(box());
+    fireEvent.change(box(), { target: { value: 'x' } });
+    fireEvent.keyDown(box(), { key: 'Backspace' });
+    expect(onRemove).not.toHaveBeenCalled();
+  });
+
+  it('removes a choice from its chip', () => {
+    const onRemove = vi.fn();
+    render(<Markets start={['Canada']} onRemove={onRemove} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Canada' }));
+    expect(onRemove).toHaveBeenCalledWith('Canada');
+  });
+
+  it('stops at the maximum and says so', () => {
+    render(<Markets start={['Canada']} max={1} />);
+    expect(box()).toBeDisabled();
+    expect(box()).toHaveAttribute('placeholder', 'Maximum of 1 reached');
+  });
+
+  it('offers nothing to add once every option is chosen', () => {
+    render(<Markets start={['Canada', 'Mexico', 'United States']} />);
+    fireEvent.focus(box());
+    expect(screen.getByText('No matches')).toBeInTheDocument();
+  });
+});
+
+describe('SegmentedControl', () => {
+  const OPTIONS = [{ value: 'Daily', label: 'Daily' }, { value: 'Weekly', label: 'Weekly' }, { value: 'Monthly', label: 'Monthly' }];
+  function Frequency({ initial = 'Weekly', onChange }: { initial?: string; onChange?: (v: string) => void }) {
+    const [value, setValue] = useState(initial);
+    return <SegmentedControl label="How often" options={OPTIONS} value={value} onChange={(v) => { setValue(v); onChange?.(v); }} />;
+  }
+  const radio = (name: string) => screen.getByRole('radio', { name });
+
+  it('is one named radio group with the current choice checked', () => {
+    render(<Frequency />);
+    expect(screen.getByRole('radiogroup', { name: 'How often' })).toBeInTheDocument();
+    expect(radio('Weekly')).toHaveAttribute('aria-checked', 'true');
+    expect(radio('Daily')).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('shows every option at once and picks with one press', () => {
+    const onChange = vi.fn();
+    render(<Frequency onChange={onChange} />);
+    fireEvent.click(radio('Monthly'));
+    expect(onChange).toHaveBeenCalledWith('Monthly');
+    expect(radio('Monthly')).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('puts only the chosen option in the tab order', () => {
+    render(<Frequency />);
+    expect(radio('Weekly')).toHaveAttribute('tabindex', '0');
+    expect(radio('Daily')).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('keeps the group reachable when nothing is chosen yet', () => {
+    render(<SegmentedControl label="x" options={OPTIONS} value="" onChange={() => undefined} />);
+    expect(radio('Daily')).toHaveAttribute('tabindex', '0');
+    expect(radio('Weekly')).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('moves the choice with the arrow keys, wrapping at the ends', () => {
+    render(<Frequency initial="Monthly" />);
+    fireEvent.keyDown(radio('Monthly'), { key: 'ArrowRight' });
+    expect(radio('Daily')).toHaveAttribute('aria-checked', 'true');
+    expect(radio('Daily')).toHaveFocus();
+    fireEvent.keyDown(radio('Daily'), { key: 'ArrowLeft' });
+    expect(radio('Monthly')).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('jumps to the ends with Home and End', () => {
+    render(<Frequency />);
+    fireEvent.keyDown(radio('Weekly'), { key: 'End' });
+    expect(radio('Monthly')).toHaveAttribute('aria-checked', 'true');
+    fireEvent.keyDown(radio('Monthly'), { key: 'Home' });
+    expect(radio('Daily')).toHaveAttribute('aria-checked', 'true');
+  });
+});
+
+describe('FetchFailedNote', () => {
+  it('says what failed, that setup can go on, and offers to try again', () => {
+    const onRetry = vi.fn();
+    render(<FetchFailedNote onRetry={onRetry} retrying={false} />);
+    expect(screen.getByRole('alert')).toHaveTextContent(/couldn.t load your store.s details/i);
+    expect(screen.getByRole('alert')).toHaveTextContent(/still fill everything in yourself/i);
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows that it is trying, and cannot be pressed again meanwhile', () => {
+    const onRetry = vi.fn();
+    render(<FetchFailedNote onRetry={onRetry} retrying />);
+    const button = screen.getByRole('button', { name: 'Trying again…' });
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    expect(onRetry).not.toHaveBeenCalled();
+  });
+});
+
+describe('Limits on what can be typed', () => {
+  it('stops a text field at the length the server accepts', () => {
+    render(<TextField id="n" value="" onChange={() => undefined} maxLength={255} />);
+    expect(screen.getByRole('textbox')).toHaveAttribute('maxlength', '255');
+  });
+
+  it('refuses a tag entry longer than the server accepts, with a note, and adds nothing', () => {
+    const onChange = vi.fn();
+    render(<TagInput id="k" values={[]} onChange={onChange} placeholder="Type" max={10} maxItemLength={5} />);
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'toolong' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByText('Keep each entry to 5 characters or fewer.')).toBeInTheDocument();
+  });
+
+  it('accepts an entry exactly at the limit', () => {
+    const onChange = vi.fn();
+    render(<TagInput id="k" values={[]} onChange={onChange} placeholder="Type" max={10} maxItemLength={5} />);
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'exact' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onChange).toHaveBeenCalledWith(['exact']);
+  });
+});
+
+describe('FactTile', () => {
+  it('shows a fact', () => {
+    render(<FactTile label="Currency" value="CAD" />);
+    expect(screen.getByText('CAD')).toBeInTheDocument();
+  });
+
+  it('says Shopify did not report a missing fact, by default', () => {
+    render(<FactTile label="Pages" value={null} />);
+    expect(screen.getByText('Not reported by Shopify')).toBeInTheDocument();
+  });
+
+  it('says what it is told to when the reason is something else', () => {
+    render(<FactTile label="Pages" value={null} missing="Couldn’t be loaded" />);
+    expect(screen.getByText('Couldn’t be loaded')).toBeInTheDocument();
+    expect(screen.queryByText('Not reported by Shopify')).not.toBeInTheDocument();
   });
 });
