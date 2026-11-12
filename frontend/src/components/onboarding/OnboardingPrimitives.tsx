@@ -404,11 +404,14 @@ export function FormField({
       <p id={`${htmlFor}-hint`} className="mt-1 text-pretty text-[12.5px] leading-[1.45] text-surface-500">
         {hint}
       </p>
-      <div className="mt-2.5 min-w-0">{children}</div>
-      <div className="min-w-0">
+      {/* The error sits in the control's own cell, right under the input. In the row below it would
+          be placed after the TALLEST control in the row — a neighbouring tag field's helper line made
+          that a gap of 40px between a field and the sentence explaining it. */}
+      <div className="mt-2.5 min-w-0">
+        {children}
         {error && <FieldError id={`${htmlFor}-error`}>{error}</FieldError>}
-        {extras}
       </div>
+      <div className="min-w-0">{extras}</div>
     </div>
   );
 }
