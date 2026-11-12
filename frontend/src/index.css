@@ -948,3 +948,26 @@
     .auth-input         { transition: none !important; }
   }
 }
+
+/* ─── Guided setup · staggered entry ─────────────────────────────────────────
+ * The fields of a step rise in one after another instead of arriving as a block. Done in CSS by
+ * position because the fields are items of a subgrid (components/onboarding/OnboardingPrimitives
+ * FormGrid): wrapping each in an element to delay it would take it out of the grid and break the
+ * row alignment. `backwards` holds the first frame during the delay, so a delayed field is never
+ * visible before it starts. Switched off entirely for anyone who asks for reduced motion. */
+@keyframes onboarding-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.onboarding-stagger > * {
+  animation: onboarding-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+.onboarding-stagger > *:nth-child(2) { animation-delay: 50ms; }
+.onboarding-stagger > *:nth-child(3) { animation-delay: 100ms; }
+.onboarding-stagger > *:nth-child(4) { animation-delay: 150ms; }
+.onboarding-stagger > *:nth-child(n + 5) { animation-delay: 200ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-stagger > * { animation: none; }
+}
