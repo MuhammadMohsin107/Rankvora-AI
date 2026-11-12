@@ -4,6 +4,7 @@ import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { PriorityIssue, Severity } from '../../data/dashboard/dashboard.types';
 import PillarTag from './PillarTag';
+import Tabs, { type TabItem } from '../ui/Tabs';
 import { catalogKindOfMove, catalogLinkForMove } from '../../data/catalog.repository';
 import { CATALOG_KINDS } from '../../data/catalogKinds';
 import { cardClass, countBySeverity, hairline, severityOrder, severityTone } from './scoreTone';
@@ -62,9 +63,9 @@ export default function PriorityIssues({ issues, heading = 'Priority issues', he
     return filter === 'all' ? sorted : sorted.filter((issue) => issue.severity === filter);
   }, [issues, filter]);
 
-  const chips: { key: Filter; label: string; count: number }[] = [
-    { key: 'all', label: 'All', count: issues.length },
-    ...severityOrder.map((s) => ({ key: s as Filter, label: severityTone[s].label, count: counts[s] })),
+  const chips: TabItem<Filter>[] = [
+    { id: 'all', label: 'All', count: issues.length },
+    ...severityOrder.map((s) => ({ id: s as Filter, label: severityTone[s].label, count: counts[s], dotClass: severityTone[s].dot })),
   ];
 
   return (
@@ -80,39 +81,7 @@ export default function PriorityIssues({ issues, heading = 'Priority issues', he
         </div>
 
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          {/* Segmented filter: one inset track, the chosen segment raised onto it. */}
-          <div
-            className="inline-flex max-w-full flex-wrap gap-0.5 rounded-lg border border-surface-200/70 bg-surface-50 p-0.5"
-            role="tablist"
-            aria-label="Filter issues by severity"
-          >
-            {chips.map((chip) => {
-              const isActive = filter === chip.key;
-              const isEmpty = chip.count === 0;
-              return (
-                <button
-                  key={chip.key}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => setFilter(chip.key)}
-                  className={`inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
-                    isActive
-                      ? 'bg-surface-0 text-surface-950 shadow-[0_1px_2px_var(--c-shadow-md)] ring-1 ring-surface-200'
-                      : isEmpty
-                        ? 'text-surface-400 hover:text-surface-600'
-                        : 'text-surface-600 hover:text-surface-900'
-                  }`}
-                >
-                  {chip.key !== 'all' && (
-                    <span className={`h-1.5 w-1.5 rounded-full ${severityTone[chip.key as Severity].dot} ${isEmpty ? 'opacity-40' : ''}`} aria-hidden="true" />
-                  )}
-                  {chip.label}
-                  <span className={`tabular-nums ${isActive ? 'text-surface-500' : 'text-surface-400'}`}>{chip.count}</span>
-                </button>
-              );
-            })}
-          </div>
+          <Tabs tabs={chips} active={filter} onChange={setFilter} label="Filter issues by severity" />
         </div>
       </div>
 
@@ -122,6 +91,7 @@ export default function PriorityIssues({ issues, heading = 'Priority issues', he
         className={`${height === 'panel' ? '' : 'max-h-[420px] xl:max-h-none'} min-h-0 flex-1 overflow-y-auto [scrollbar-color:var(--c-surface-300)_transparent] [scrollbar-width:thin] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500`}
         ref={scrollChaining}
         role="region"
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region must be focusable so a keyboard can scroll it
         tabIndex={0}
         aria-label="Priority issues list"
       >

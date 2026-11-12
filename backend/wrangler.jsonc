@@ -23,7 +23,7 @@
 // `wrangler secret put NAME --env staging`, and deploy refuses to run while a required one is
 // missing (`secrets.required`). Locally they come from backend/.dev.vars, which git ignores.
 {
-  "$schema": "https://unpkg.com/wrangler@4.153.0/config-schema.json",
+  "$schema": "https://unpkg.com/wrangler@4.160.0/config-schema.json",
   "name": "rankvora-dev",
   "main": "src/worker.ts",
   "compatibility_date": "2026-10-01",

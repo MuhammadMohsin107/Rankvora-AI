@@ -7,5 +7,5 @@ export async function getIntegrations(req: Request, res: Response) {
 }
 
 export async function patchIntegration(req: Request, res: Response) {
-  res.json({ data: await updateIntegration(requireUserId(req), req.params.provider, req.body, optionalStoreId(req)) });
+  res.json({ data: await updateIntegration(requireUserId(req), String(req.params.provider), req.body, optionalStoreId(req)) });
 }

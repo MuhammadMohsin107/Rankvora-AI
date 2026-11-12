@@ -17,6 +17,8 @@ import { titleFieldBounds } from '../../../data/fixBounds';
 import { ApiError } from '../../../lib/api';
 import Button from '../../../components/polaris/Button';
 import { TextAreaField } from '../../polaris/fields';
+import TextDiff from '../../ui/TextDiff';
+import SerpPreview from '../../ui/SerpPreview';
 
 /**
  * ─── The fix itself, for the item being investigated ─────────────────────────────────────────
@@ -111,6 +113,46 @@ const EMPTY: ItemFix = {
 const normalizeValue = (value: string): string => value.replace(/\s+/g, ' ').trim();
 
 const refOf = (proposal: Pick<AiFixProposal, 'resourceType' | 'resourceId'>) => `${proposal.resourceType}:${proposal.resourceId}`;
+
+/**
+ * What a draft would change, for the merchant to look at before pressing Apply: the current value
+ * against the draft word by word, and — for the two fields a search result is made of — how that one
+ * field would read in a result. Closed until asked for, so a list of drafts stays short.
+ *
+ * It shows only the field being fixed. The other half of a search result is not in this panel, so it
+ * is left out rather than guessed.
+ */
+function DraftPreview({ field, address, current, draft }: { field: string; address: string | null; current: string; draft: string }) {
+  const before = normalizeValue(current);
+  const after = normalizeValue(draft);
+  if (!after) return null;
+  const unchanged = before === after;
+  return (
+    <details className="mt-1.5">
+      <summary className="cursor-pointer text-[11px] font-medium text-brand-700 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+        Preview changes
+      </summary>
+      <div className="mt-1.5 space-y-2">
+        <div>
+          <p className="text-[9.5px] font-semibold uppercase tracking-[0.1em] text-surface-500">What changes</p>
+          {unchanged
+            ? <p className="mt-0.5 text-[11.5px] text-surface-500">Same as the current value.</p>
+            : <TextDiff before={before} after={after} className="mt-0.5" />}
+        </div>
+        {(field === 'seo.title' || field === 'seo.description') && (
+          <div>
+            <p className="mb-0.5 text-[9.5px] font-semibold uppercase tracking-[0.1em] text-surface-500">In a search result</p>
+            <SerpPreview
+              address={address ?? undefined}
+              title={field === 'seo.title' ? after : undefined}
+              description={field === 'seo.description' ? after : undefined}
+            />
+          </div>
+        )}
+      </div>
+    </details>
+  );
+}
 
 /** Drafts written automatically when an item is opened. More than this waits for a click. */
 const AUTO_GENERATE_LIMIT = 5;
@@ -409,6 +451,7 @@ export default function InvestigationFix({ finding, rows, capability, autoGenera
                     <p className={`mt-1 text-[10.5px] tabular-nums ${draftProblem ? 'text-warning-700' : 'text-success-700'}`}>
                       {draftProblem ?? `${normalizeValue(item.draft).length} characters · within ${minLength}–${maxLength}`}
                     </p>
+                    <DraftPreview field={field.field} address={path} current={current} draft={item.draft} />
                     {item.reason && <p className="mt-1 text-[11px] leading-[1.45] text-surface-600">{item.reason}</p>}
                     <p className={`mt-1 items-center gap-1 text-[10.5px] text-surface-500 ${item.source === 'template' || item.source === null ? 'hidden' : 'flex'}`}>
                       <Store size={11} aria-hidden="true" />

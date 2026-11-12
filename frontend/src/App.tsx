@@ -1,32 +1,44 @@
+import { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
+import PolarisNotice from './components/PolarisNotice';
+import { ToastProvider } from './components/Toast';
 import AppShell from './layouts/AppShell';
 import Dashboard from './pages/Dashboard';
-import SeoDashboard from './pages/seo/SeoDashboard';
-
-import ContentDashboard from './pages/content/ContentDashboard';
-
-import SpeedDashboard from './pages/speed/SpeedDashboard';
-
-import AiDiscoveryDashboard from './pages/ai-discovery/AiDiscoveryDashboard';
-import CroDashboard from './pages/cro/CroDashboard';
-import NonSeoSubPillarPage from './pages/NonSeoSubPillarPage';
-// All 8 SEO sub-pillars render through the shared master template
-// established on Title Tags; each supplies its own analysis data.
-import SeoSubPillarRoute from './pages/seo/SeoSubPillarRoute';
-import CatalogList from './pages/CatalogList';
-import CatalogDetail from './pages/CatalogDetail';
-import Integrations from './pages/Integrations';
 import NotFound from './pages/NotFound';
-import OpenFromShopify from './pages/auth/OpenFromShopify';
 import RequireAuth from './components/auth/RequireAuth';
-import Onboarding from './pages/onboarding/Onboarding';
 import OnboardingGate from './components/onboarding/OnboardingGate';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { isEmbedded } from './lib/embedded';
 import { isPillarVisible } from './config/modules';
+import { lazyPage } from './lib/lazyPage';
 
+// Every page below is downloaded when its route is first opened, not with the first screen. Dashboard
+// stays in the main bundle because it is where nearly every visit starts; NotFound is tiny.
+const SeoDashboard = lazyPage(() => import('./pages/seo/SeoDashboard'));
+const ContentDashboard = lazyPage(() => import('./pages/content/ContentDashboard'));
+const SpeedDashboard = lazyPage(() => import('./pages/speed/SpeedDashboard'));
+const AiDiscoveryDashboard = lazyPage(() => import('./pages/ai-discovery/AiDiscoveryDashboard'));
+const CroDashboard = lazyPage(() => import('./pages/cro/CroDashboard'));
+const NonSeoSubPillarPage = lazyPage(() => import('./pages/NonSeoSubPillarPage'));
+// All 8 SEO sub-pillars render through the shared master template established on Title Tags; each
+// supplies its own analysis data.
+const SeoSubPillarRoute = lazyPage(() => import('./pages/seo/SeoSubPillarRoute'));
+const CatalogList = lazyPage(() => import('./pages/CatalogList'));
+const CatalogDetail = lazyPage(() => import('./pages/CatalogDetail'));
+const Integrations = lazyPage(() => import('./pages/Integrations'));
+const OpenFromShopify = lazyPage(() => import('./pages/auth/OpenFromShopify'));
+const Onboarding = lazyPage(() => import('./pages/onboarding/Onboarding'));
+
+/** Shown for the moment a page's file is on its way. Matches the skeleton the pages themselves use. */
+function PageLoading() {
+  return (
+    <div className="page-shell pt-3" role="status" aria-busy="true" aria-label="Loading">
+      <div className="skeleton h-7 w-64 rounded-lg" />
+    </div>
+  );
+}
 
 /**
  * What /login is now: where a visitor lands who is not inside the Shopify admin.
@@ -46,9 +58,12 @@ export default function App() {
     // Outermost, so a render crash anywhere below shows a recoverable screen instead of unmounting
     // the tree and leaving a blank page. See components/ErrorBoundary.tsx.
     <ErrorBoundary>
+    <PolarisNotice />
     <ThemeProvider>
+    <ToastProvider>
     <BrowserRouter>
       <AuthProvider>
+        <Suspense fallback={<PageLoading />}>
         <Routes>
           {/* No sign-in page: the shop that opens the app is identified by Shopify itself (see
               SignedOutEntry). These render outside AppShell — no sidebar or header around them. */}
@@ -59,8 +74,10 @@ export default function App() {
           <Route path="/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
           <Route path="*" element={<AuthenticatedApp />} />
           </Routes>
+        </Suspense>
         </AuthProvider>
       </BrowserRouter>
+    </ToastProvider>
     </ThemeProvider>
     </ErrorBoundary>
   );
@@ -83,6 +100,7 @@ function AuthenticatedApp() {
           Deep links, bookmarks and the back/forward buttons behaved correctly under that
           component too — this simply makes reload behave the same as all three. */}
       <AppShell>
+        <Suspense fallback={<PageLoading />}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           {/* The store's catalog, one list per kind — products, collections, blog articles: the
@@ -128,6 +146,7 @@ function AuthenticatedApp() {
               empty main area and only a console warning to explain it. */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
       </AppShell>
       </OnboardingGate>
     </RequireAuth>

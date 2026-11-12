@@ -77,6 +77,7 @@ export default function OpenFromShopify() {
       title="Open Rankvora AI"
       subtitle="Enter your Shopify store address to continue."
     >
+      {/* oxlint-disable-next-line jsx-a11y/no-static-element-interactions -- Enter inside the text field submits the form */}
       <div onKeyDown={onKeyDown}>
         <TextField
           id="shop-domain"

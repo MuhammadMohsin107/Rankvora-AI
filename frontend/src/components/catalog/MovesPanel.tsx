@@ -7,6 +7,7 @@ import { catalogKindOfMove } from '../../data/catalog.repository';
 import { CATALOG_KINDS, type CatalogKind } from '../../data/catalogKinds';
 import { SCORE_TARGET, countBySeverity, severityOrder, severityTone, statusTone } from '../dashboard/scoreTone';
 import Button from '../../components/polaris/Button';
+import Tabs, { type TabItem } from '../ui/Tabs';
 
 interface Props {
   /** The list this panel sits beside: a move about this kind filters that list; any other opens its page. */
@@ -61,9 +62,10 @@ export default function MovesPanel({ kind, state, issues, score, active, onSelec
   }, [issues, filter]);
 
   const tone = score ? statusTone[score.status] : null;
-  const chips: { key: Filter; label: string; count: number }[] = [
-    { key: 'all', label: 'All', count: issues.length },
-    ...severityOrder.filter((severity) => counts[severity] > 0).map((severity) => ({ key: severity as Filter, label: severityTone[severity].label, count: counts[severity] })),
+  // "All" carries no count of its own; each severity that has moves does.
+  const chips: TabItem<Filter>[] = [
+    { id: 'all', label: 'All' },
+    ...severityOrder.filter((severity) => counts[severity] > 0).map((severity) => ({ id: severity as Filter, label: severityTone[severity].label, count: counts[severity] })),
   ];
 
   return (
@@ -114,25 +116,7 @@ export default function MovesPanel({ kind, state, issues, score, active, onSelec
           </div>
 
           <div className="border-b border-surface-200/70 px-3 py-2">
-            <div className="inline-flex max-w-full flex-wrap gap-0.5 rounded-lg border border-surface-200/70 bg-surface-50 p-0.5" role="tablist" aria-label="Filter moves by severity">
-              {chips.map((chip) => {
-                const selected = filter === chip.key;
-                return (
-                  <button
-                    key={chip.key}
-                    type="button"
-                    role="tab"
-                    aria-selected={selected}
-                    onClick={() => setFilter(chip.key)}
-                    className={`rounded-md px-2 py-0.5 text-[11.5px] font-medium transition-all ${
-                      selected ? 'bg-surface-0 font-semibold text-surface-950 shadow-[0_1px_2px_var(--c-shadow-md)] ring-1 ring-surface-200' : 'text-surface-600 hover:text-surface-900'
-                    }`}
-                  >
-                    {chip.label}{chip.key !== 'all' && <span className="ml-1 tabular-nums text-surface-400">({chip.count})</span>}
-                  </button>
-                );
-              })}
-            </div>
+            <Tabs tabs={chips} active={filter} onChange={setFilter} label="Filter moves by severity" countStyle="parens" />
           </div>
 
           <div ref={scrollChaining} className="min-h-0 flex-1 overflow-y-auto [scrollbar-color:var(--c-surface-300)_transparent] [scrollbar-width:thin]">

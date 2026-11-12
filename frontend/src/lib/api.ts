@@ -34,6 +34,7 @@ interface RequestOptions extends RequestInit {}
 function rawRequest(path: string, options: RequestOptions): Promise<Response> {
   return fetch(`${API_BASE_URL}${path}`, {
     ...options,
+    // oxlint-disable-next-line unicorn/no-useless-fallback-in-spread -- options.headers may be a Headers object or array, so spreading it bare does not type-check
     headers: { 'Content-Type': 'application/json', ...(options.headers ?? {}) },
   });
 }

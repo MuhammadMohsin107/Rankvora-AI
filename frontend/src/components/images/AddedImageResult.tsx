@@ -40,6 +40,7 @@ export default function AddedImageResult({ result, productTitle, onAddAnother, o
 
     const check = async (current: MediaOutcome) => {
       if (current.status === 'READY' || current.status === 'FAILED') { finish(current); return; }
+      // oxlint-disable-next-line no-unmodified-loop-condition -- `live` is cleared by the effect cleanup while the loop awaits
       while (live && Date.now() - startedAt < SETTLE_MS) {
         await new Promise((resolve) => setTimeout(resolve, POLL_MS));
         if (!live) return;

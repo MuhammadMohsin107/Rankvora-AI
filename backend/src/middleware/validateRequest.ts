@@ -37,7 +37,14 @@ export function validateRequest(schemas: RequestSchemas): RequestHandler {
       return;
     }
 
-    Object.assign(req, parsedValues);
+    // Express 5 made `req.query` a read-only getter on the request, so assigning to it throws. The
+    // parsed (coerced, defaulted) query is placed on the request itself instead, where it shadows the
+    // getter and reads exactly as it did before. `body` and `params` are ordinary properties.
+    const { query: parsedQuery, ...assignable } = parsedValues;
+    Object.assign(req, assignable);
+    if ('query' in parsedValues) {
+      Object.defineProperty(req, 'query', { value: parsedQuery, writable: true, configurable: true, enumerable: true });
+    }
     next();
   };
 }

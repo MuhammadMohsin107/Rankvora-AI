@@ -14,18 +14,21 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import ts from 'typescript';
+import { parse as parseJsonc, printParseErrorCode, type ParseError } from 'jsonc-parser';
 import { findPlaceholders } from './wrangler-guard.js';
 
 const args = process.argv.slice(2);
 const backend = path.resolve(import.meta.dirname, '../..');
 
-const parsed = ts.parseConfigFileTextToJson('wrangler.jsonc', fs.readFileSync(path.join(backend, 'wrangler.jsonc'), 'utf8'));
-if (parsed.error) {
-  console.error('wrangler.jsonc could not be read:', ts.flattenDiagnosticMessageText(parsed.error.messageText, '\n'));
+// Comments and trailing commas are read the way Wrangler reads them.
+const parseErrors: ParseError[] = [];
+const config = parseJsonc(fs.readFileSync(path.join(backend, 'wrangler.jsonc'), 'utf8'), parseErrors, { allowTrailingComma: true }) as
+  | { account_id?: string; env?: Record<string, { name?: string; account_id?: string }> }
+  | undefined;
+if (parseErrors.length > 0 || !config) {
+  console.error('wrangler.jsonc could not be read:', parseErrors.map((error) => `${printParseErrorCode(error.error)} at character ${error.offset}`).join('; '));
   process.exit(1);
 }
-const config = parsed.config as { account_id?: string; env?: Record<string, { name?: string; account_id?: string }> };
 
 // --env staging, -e staging, or --env=staging
 const envIndex = args.findIndex((arg) => arg === '--env' || arg === '-e');

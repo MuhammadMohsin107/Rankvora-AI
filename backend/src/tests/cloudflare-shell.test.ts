@@ -155,9 +155,9 @@ describe('the Wrangler helper', () => {
 
   it('finds none in the staging and production environments, so their commands may run', async () => {
     const { default: fs } = await import('node:fs');
-    const ts = (await import('typescript')).default;
-    const parsed = ts.parseConfigFileTextToJson('wrangler.jsonc', fs.readFileSync(path.join(backend, 'wrangler.jsonc'), 'utf8'));
-    const environments = (parsed.config as { env: Record<string, unknown> }).env;
+    const { parse: parseJsonc } = await import('jsonc-parser');
+    const config = parseJsonc(fs.readFileSync(path.join(backend, 'wrangler.jsonc'), 'utf8'), [], { allowTrailingComma: true }) as { env: Record<string, unknown> };
+    const environments = config.env;
     for (const name of ['staging', 'production']) assert.deepEqual(findPlaceholders(environments[name]), [], name);
   });
 

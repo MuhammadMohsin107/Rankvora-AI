@@ -15,10 +15,12 @@ import { IssueBadges, Thumbnail, formatCatalogDate } from '../components/catalog
 import RunAuditButton from '../components/audit/RunAuditButton';
 import { cardClass } from '../components/dashboard/scoreTone';
 import Button from '../components/polaris/Button';
+import Tabs from '../components/ui/Tabs';
 import { SearchField, SelectField } from '../components/polaris/fields';
 
 type Tab = 'all' | 'critical' | 'warnings' | 'passing';
 type Sort = 'worst' | 'name' | 'best' | 'updated';
+const TABS: readonly Tab[] = ['all', 'critical', 'warnings', 'passing'];
 const SORTS: readonly Sort[] = ['worst', 'best', 'updated', 'name'];
 const SORT_LABELS: Record<Sort, string> = { worst: 'Needs most work first', best: 'Healthiest first', updated: 'Recently updated', name: 'Name A–Z' };
 
@@ -85,7 +87,6 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [movesState, setMovesState] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [tab, setTab] = useState<Tab>('all');
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<Sort>('worst');
   /**
@@ -102,6 +103,15 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
   // The move the table is filtered to, read from the address: ?area=content/product-descriptions&issue=…
   const area = searchParams.get('area');
   const issue = searchParams.get('issue');
+  // The tab lives in the address too (?tab=critical), so a reload, a shared link or the back button
+  // keeps it. 'all' is the default and is left out; an unknown value falls back to it.
+  const tabParam = searchParams.get('tab');
+  const tab: Tab = TABS.includes(tabParam as Tab) ? (tabParam as Tab) : 'all';
+  const setTab = (next: Tab) => {
+    const params = new URLSearchParams(searchParams);
+    if (next === 'all') params.delete('tab'); else params.set('tab', next);
+    setSearchParams(params, { replace: true });
+  };
   const move = area && issue ? { route: `/${area}`, title: issue } : null;
 
   const load = useCallback(async (fresh = false) => {
@@ -132,9 +142,23 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
 
   const selectMove = (next: PriorityIssue) => {
     const same = move && move.route === next.route && move.title === next.title;
-    setSearchParams(same ? {} : { area: next.route.replace(/^\//, ''), issue: next.title });
+    // Only the move's own parameters change; the chosen tab stays.
+    const params = new URLSearchParams(searchParams);
+    if (same) {
+      params.delete('area');
+      params.delete('issue');
+    } else {
+      params.set('area', next.route.replace(/^\//, ''));
+      params.set('issue', next.title);
+    }
+    setSearchParams(params);
   };
-  const clearMove = () => setSearchParams({});
+  const clearMove = () => {
+    const params = new URLSearchParams(searchParams);
+    params.delete('area');
+    params.delete('issue');
+    setSearchParams(params);
+  };
 
   // The items the table works on: every item, or only those the chosen move names.
   const base = useMemo(() => {
@@ -311,27 +335,14 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
       <div className="grid gap-3 xl:h-[calc(100vh_-_9rem)] xl:min-h-[30rem] xl:grid-cols-[minmax(0,1fr)_340px]">
         <section className={`${cardClass} flex min-h-0 flex-col overflow-hidden`} aria-label={config.navLabel}>
           <div className="flex flex-col gap-1.5 border-b border-surface-200/70 px-3 py-2 lg:flex-row lg:items-center lg:justify-between">
-            <div className="inline-flex max-w-full flex-wrap gap-0.5 self-start rounded-lg border border-surface-200/70 bg-surface-50 p-0.5" role="tablist" aria-label={`Filter ${config.nouns}`}>
-              {tabs.map((option) => {
-                const active = tab === option.key;
-                return (
-                  <button
-                    key={option.key}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => { setTab(option.key); setPage(0); }}
-                    // The same chip as the Winning moves filter beside it, so the two controls read as one family.
-                    className={`rounded-md px-2 py-0.5 text-[11.5px] font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
-                      active ? 'bg-surface-0 font-semibold text-surface-950 shadow-[0_1px_2px_var(--c-shadow-md)] ring-1 ring-surface-200' : 'text-surface-600 hover:text-surface-900'
-                    }`}
-                  >
-                    {option.label}
-                    <span className="ml-1 tabular-nums text-surface-400">({counts[option.key].toLocaleString()})</span>
-                  </button>
-                );
-              })}
-            </div>
+            <Tabs
+              tabs={tabs.map((option) => ({ id: option.key, label: option.label, count: counts[option.key] }))}
+              active={tab}
+              onChange={(next) => { setTab(next); setPage(0); }}
+              label={`Filter ${config.nouns}`}
+              countStyle="parens"
+              className="self-start"
+            />
             <div className="flex items-center gap-1.5">
               <div className="min-w-0 flex-1 lg:w-52 lg:flex-none">
                 <SearchField
