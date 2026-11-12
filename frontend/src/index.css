@@ -796,3 +796,31 @@
 @media (prefers-reduced-motion: reduce) {
   .onboarding-stagger > * { animation: none; }
 }
+
+/* ─── Guided setup · completion mark ─────────────────────────────────────────
+ * The ring draws itself, then the tick. Each path is dashed to its own length and sits FULLY DRAWN by
+ * default; the animation only runs from "dash pulled back" to that state (`backwards` holds the first
+ * frame during the delay). So if an animation never runs — reduced motion, a throttled tab — the
+ * mark is a finished tick, never an empty disc. */
+@keyframes onboarding-draw-ring {
+  from { stroke-dashoffset: 101; }
+}
+@keyframes onboarding-draw-mark {
+  from { stroke-dashoffset: 32; }
+}
+
+.onboarding-check-ring {
+  stroke-dasharray: 101;
+  stroke-dashoffset: 0;
+  animation: onboarding-draw-ring 0.7s cubic-bezier(0.65, 0, 0.35, 1) 0.1s backwards;
+}
+.onboarding-check-mark {
+  stroke-dasharray: 32;
+  stroke-dashoffset: 0;
+  animation: onboarding-draw-mark 0.4s cubic-bezier(0.65, 0, 0.35, 1) 0.7s backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-check-ring,
+  .onboarding-check-mark { animation: none; }
+}

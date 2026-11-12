@@ -310,3 +310,138 @@ describe('Onboarding · finishing and editing', () => {
     expect(screen.queryByRole('button', { name: 'Save and close' })).not.toBeInTheDocument();
   });
 });
+
+const answered = (over: Partial<OnboardingSnapshot['answers']> = {}): Partial<OnboardingSnapshot> => ({
+  answers: {
+    ...snapshot().answers,
+    organizationName: 'Northline Home',
+    brandName: 'Northline',
+    industries: ['Home & garden'],
+    targetCountries: ['Canada', 'United States'],
+    priorityPillars: ['seo', 'speed'],
+    automationConsent: 'ask',
+    ...over,
+  },
+  preferences: { contentLanguage: 'en', priorityResources: [], protectedPaths: [], preferredScanHour: null },
+});
+
+describe('Onboarding · step 3, priorities', () => {
+  const atStepThree = (over: Partial<OnboardingSnapshot['answers']> = {}) => {
+    vi.mocked(fetchOnboarding).mockResolvedValue(
+      snapshot({
+        ...answered(over),
+        currentStep: 3,
+        progress: [1, 2, 3, 4, 5].map((step) => ({ step, status: step <= 2 ? ('complete' as const) : ('pending' as const), required: step !== 4 })),
+      }),
+    );
+  };
+  const tile = (name: RegExp) => screen.getByRole('checkbox', { name }).closest('label') as HTMLElement;
+
+  it('numbers the chosen tiles in the order they will be looked at', async () => {
+    atStepThree({ priorityPillars: ['speed', 'seo'] });
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Priorities' });
+    expect(within(tile(/Store performance/)).getByText('1')).toBeInTheDocument();
+    expect(within(tile(/Search visibility/)).getByText('2')).toBeInTheDocument();
+  });
+
+  it('shows no numbers, and no order list, for a single choice', async () => {
+    atStepThree({ priorityPillars: ['seo'] });
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Priorities' });
+    expect(within(tile(/Search visibility/)).queryByText(/^\d$/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Priority order')).not.toBeInTheDocument();
+  });
+
+  it('lists the order under its own heading, with a count', async () => {
+    atStepThree({ priorityPillars: ['seo', 'speed'] });
+    open();
+    await screen.findByText('Priority order');
+    expect(screen.getByText('2 areas')).toBeInTheDocument();
+  });
+
+  it('renumbers the tiles when the order is changed', async () => {
+    atStepThree({ priorityPillars: ['seo', 'speed'] });
+    open();
+    await screen.findByText('Priority order');
+    fireEvent.click(screen.getByRole('button', { name: 'Move Store performance up' }));
+    expect(within(tile(/Store performance/)).getByText('1')).toBeInTheDocument();
+    expect(within(tile(/Search visibility/)).getByText('2')).toBeInTheDocument();
+  });
+
+  it('drops a tile from the order when it is unticked', async () => {
+    atStepThree({ priorityPillars: ['seo', 'speed'] });
+    open();
+    await screen.findByText('Priority order');
+    fireEvent.click(screen.getByRole('checkbox', { name: /Store performance/ }));
+    expect(screen.queryByText('Priority order')).not.toBeInTheDocument();
+  });
+});
+
+describe('Onboarding · the completion screen', () => {
+  const atFinish = () => {
+    vi.mocked(fetchOnboarding).mockResolvedValue(
+      snapshot({
+        ...answered(),
+        currentStep: 5,
+        progress: [1, 2, 3, 4, 5].map((step) => ({ step, status: step === 5 ? ('pending' as const) : ('complete' as const), required: step !== 4 })),
+      }),
+    );
+  };
+
+  it('replaces the form with a confirmation once setup is saved and completed', async () => {
+    atFinish();
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Permissions & monitoring' });
+    fireEvent.click(button('Finish setup'));
+    expect(await screen.findByRole('heading', { level: 1, name: 'You’re all set' })).toBeInTheDocument();
+    expect(completeOnboarding).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: 'Finish setup' })).not.toBeInTheDocument();
+  });
+
+  it('reads back the merchant’s own answers', async () => {
+    atFinish();
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Permissions & monitoring' });
+    fireEvent.click(button('Finish setup'));
+    await screen.findByRole('heading', { level: 1, name: 'You’re all set' });
+    const summary = within(screen.getByText('Store').closest('dl') as HTMLElement);
+    expect(summary.getByText('Northline Home')).toBeInTheDocument();
+    expect(summary.getByText('Canada, United States')).toBeInTheDocument();
+    expect(summary.getByText('Home & garden')).toBeInTheDocument();
+    expect(summary.getByText('Search visibility → Store performance')).toBeInTheDocument();
+    expect(summary.getByText('Review every change before publishing')).toBeInTheDocument();
+  });
+
+  it('only says what is true: the answers are saved, with no claim that an analysis has started', async () => {
+    atFinish();
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Permissions & monitoring' });
+    fireEvent.click(button('Finish setup'));
+    await screen.findByRole('heading', { level: 1, name: 'You’re all set' });
+    expect(screen.getByText(/Your answers are saved/)).toBeInTheDocument();
+    expect(screen.queryByText(/analysis (has|is) (started|running)|first analysis/i)).not.toBeInTheDocument();
+  });
+
+  it('leaves for the dashboard only when the merchant says so', async () => {
+    atFinish();
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Permissions & monitoring' });
+    fireEvent.click(button('Finish setup'));
+    await screen.findByRole('heading', { level: 1, name: 'You’re all set' });
+    expect(screen.queryByTestId('where')?.textContent).not.toBe('/');
+    fireEvent.click(button(/Go to dashboard/));
+    expect(await screen.findByTestId('where')).toHaveTextContent('/');
+  });
+
+  it('does not show it when the final save fails', async () => {
+    atFinish();
+    vi.mocked(completeOnboarding).mockRejectedValue(new Error('offline'));
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Permissions & monitoring' });
+    fireEvent.click(button('Finish setup'));
+    await waitFor(() => expect(screen.getByText(/couldn't save that/i)).toBeInTheDocument());
+    expect(screen.queryByRole('heading', { name: 'You’re all set' })).not.toBeInTheDocument();
+    expect(button('Finish setup')).toBeEnabled();
+  });
+});

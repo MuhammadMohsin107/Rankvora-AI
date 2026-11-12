@@ -21,6 +21,7 @@ import {
   Stepper,
 } from '../../components/onboarding/OnboardingPrimitives';
 import {
+  PILLAR_GOALS,
   StepBusiness,
   StepMeasurement,
   StepPermissions,
@@ -28,10 +29,13 @@ import {
   StepStore,
   type StepProps,
 } from '../../components/onboarding/OnboardingSteps';
+import SetupComplete, { type CompletionRow } from '../../components/onboarding/SetupComplete';
+import { isPillarVisible } from '../../config/modules';
 import { describeGoogleOutcome } from '../../data/google.repository';
 import {
   REQUIRED_FIELD_MESSAGE,
   STEP_META,
+  consentLabel,
   TOTAL_STEPS,
   completeOnboarding,
   describeOnboardingError,
@@ -182,6 +186,8 @@ export default function Onboarding() {
   /** How many times the merchant has been stopped for a missing answer. Drives the scroll below. */
   const [stopCount, setStopCount] = useState(0);
   const [busy, setBusy] = useState(false);
+  /** Set once setup has been saved and marked complete — the screen then reads the answers back. */
+  const [finished, setFinished] = useState(false);
 
   const patch = useCallback((changes: Partial<StepPayload>) => {
     setDraft((previous) => ({ ...previous, ...changes }));
@@ -405,7 +411,11 @@ export default function Onboarding() {
         return;
       }
       await completeOnboarding();
-      navigate('/', { replace: true });
+      setBusy(false);
+      setFinished(true);
+      // The step's own scroll position belongs to the form, not to this screen.
+      scrollRef.current?.scrollTo({ top: 0 });
+      window.scrollTo({ top: 0 });
     } catch (error) {
       setSaveError(describeOnboardingError(error));
       setBusy(false);
@@ -450,7 +460,7 @@ export default function Onboarding() {
             <StateMark tone="brand">
               <Store size={22} strokeWidth={1.8} aria-hidden="true" />
             </StateMark>
-            <h1 className="mt-5 text-balance text-[26px] font-semibold leading-[1.1] tracking-[-0.03em] text-surface-950 sm:text-[32px]">
+            <h1 className="mt-5 text-balance text-[28px] font-semibold leading-[1.1] tracking-[-0.035em] text-surface-950 sm:text-[36px]">
               Connect Shopify first
             </h1>
 
@@ -464,6 +474,17 @@ export default function Onboarding() {
               </ActionButton>
             </div>
           </div>
+        </Sheet>
+      </Frame>
+    );
+  }
+
+  // Setup just finished: say so, and read back what was saved, before the dashboard.
+  if (finished) {
+    return (
+      <Frame scrollRef={scrollRef}>
+        <Sheet>
+          <SetupComplete rows={completionRows(draft)} onContinue={() => navigate('/', { replace: true })} />
         </Sheet>
       </Frame>
     );
@@ -496,7 +517,7 @@ export default function Onboarding() {
 
       <Sheet>
         {editing && (
-          <div className="relative flex items-center gap-2 border-b border-success-100 bg-success-50 px-5 py-2.5 sm:px-9">
+          <div className="relative flex items-center gap-2 border-b border-success-100 bg-success-50 px-5 py-2.5 sm:px-10">
             <Check size={15} className="flex-shrink-0 text-success-700" aria-hidden="true" />
             <p className="text-[12.5px] font-medium leading-[1.45] text-success-700">Setup is complete. Edit any step.</p>
           </div>
@@ -506,7 +527,7 @@ export default function Onboarding() {
 
         {/* Keyed on the step so each one enters rather than swapping in place — the sheet is the only
             thing that changes between steps, and without this the transition is invisible. */}
-        <div key={step} className="relative px-5 pb-8 pt-7 motion-safe:animate-fade-in sm:px-9 sm:pb-10">
+        <div key={step} className="relative px-5 pb-10 pt-8 motion-safe:animate-fade-in sm:px-10 sm:pb-12">
           <StepComponent
             draft={draft}
             patch={patch}
@@ -550,12 +571,12 @@ export default function Onboarding() {
               through this button. */}
           <div className="ml-auto flex flex-1 items-center justify-end gap-2.5 sm:flex-none">
             {step < TOTAL_STEPS ? (
-              <ActionButton loading={busy} onClick={() => void goTo(step + 1)} className="flex-1 sm:min-w-44 sm:flex-none">
+              <ActionButton loading={busy} onClick={() => void goTo(step + 1)} className="flex-1 sm:min-w-48 sm:flex-none">
                 {busy ? 'Saving…' : editing ? 'Next' : step === 1 ? 'Confirm and continue' : 'Continue'}
                 {!busy && <ArrowRight size={16} aria-hidden="true" />}
               </ActionButton>
             ) : (
-              <ActionButton loading={busy} onClick={() => void onFinish()} className="flex-1 sm:min-w-44 sm:flex-none">
+              <ActionButton loading={busy} onClick={() => void onFinish()} className="flex-1 sm:min-w-48 sm:flex-none">
                 {busy ? 'Saving…' : editing ? 'Save changes' : 'Finish setup'}
                 {!busy && <Check size={16} aria-hidden="true" />}
               </ActionButton>
@@ -568,7 +589,32 @@ export default function Onboarding() {
 }
 
 /**
- * The page frame: an ambient backdrop, the logo, the guide, and the step.
+ * What the completion screen reads back: the merchant's own saved answers, in plain words.
+ *
+ * A row is left out when its answer is empty rather than shown as "none": an optional question that
+ * was not answered is not something to announce at the end.
+ */
+function completionRows(draft: StepPayload): CompletionRow[] {
+  const rows: CompletionRow[] = [];
+  const add = (label: string, value: string | undefined | null) => {
+    if (value && value.trim()) rows.push({ label, value });
+  };
+  add('Store', draft.organizationName);
+  const markets = draft.targetCountries ?? [];
+  add('Markets', markets.length > 0 ? markets.join(', ') : null);
+  const industries = draft.industries ?? [];
+  add('Industry', industries.length > 0 ? industries.join(', ') : null);
+  const focus = (draft.priorityPillars ?? []).filter(isPillarVisible).map((key) => PILLAR_GOALS[key]?.label ?? key);
+  add('Improve first', focus.length > 0 ? focus.join(' → ') : null);
+  add('Change approval', draft.automationConsent ? consentLabel(draft.automationConsent) : null);
+  if (draft.autoAnalysis !== undefined) {
+    add('Scheduled analysis', draft.autoAnalysis ? (draft.analysisFrequency ?? 'On') : 'Off');
+  }
+  return rows;
+}
+
+/**
+ * The page frame: an ambient backdrop, the guide beside the step, and (without a guide) a centred sheet.
  *
  * SCROLLING IS NOT NEGOTIABLE, and none of the design below changes it.
  * `h-full`, not `min-h-full`: outside the Shopify admin html, body and #root are fixed to the viewport
@@ -592,7 +638,9 @@ export default function Onboarding() {
  * it resembles a chart or a figure — a backdrop that looked like data would be a picture of a
  * measurement nobody took, behind a form where the merchant has told us nothing yet.
  *
- * Without a guide (loading, errors, not connected) the sheet is centred at a reading width.
+ * THE LOGO lives in the guide panel on wide screens, so the header carries it only below `lg` (and on
+ * the screens that have no guide). The "Save and close" button of an edit session is rendered ONCE, in
+ * the header, which therefore stays on wide screens for that case alone.
  */
 function Frame({
   children,
@@ -617,9 +665,11 @@ function Frame({
         <div className="absolute inset-0 opacity-[0.035] mix-blend-multiply" style={{ backgroundImage: GRAIN }} />
       </div>
 
-      <div className="relative mx-auto flex min-h-full w-full max-w-[1120px] flex-col px-4 py-5 sm:px-6 lg:py-8">
-        <header className="mb-6 flex items-center justify-between gap-3 lg:mb-9">
-          <RankvoraLogo />
+      <div className="relative mx-auto flex min-h-full w-full max-w-[1200px] flex-col px-4 py-5 sm:px-6 lg:py-8">
+        <header className={`mb-6 flex items-center justify-between gap-3 ${rail && !exit ? 'lg:hidden' : 'lg:mb-5'}`}>
+          <span className={rail ? 'lg:invisible' : ''}>
+            <RankvoraLogo />
+          </span>
           {exit && (
             // Tighter on a phone: the logo and this button share a 320px row, and "Save and close"
             // at full padding pushed the pair past the viewport.
@@ -630,20 +680,12 @@ function Frame({
         </header>
 
         {rail ? (
-          <div className="grid flex-1 items-start gap-8 lg:grid-cols-[236px_minmax(0,1fr)] lg:gap-14">
-            <aside className="hidden lg:sticky lg:top-8 lg:block">
-              {rail}
-              <p className="mt-9 flex items-start gap-2.5 border-t border-surface-200/80 pt-5 text-pretty text-[12.5px] leading-[1.55] text-surface-500">
-                <ShieldCheck size={16} strokeWidth={1.8} className="mt-px flex-shrink-0 text-success-600" aria-hidden="true" />
-                <span>
-                  Rankvora never changes your store without your approval. Your answers save as you move between steps.
-                </span>
-              </p>
-            </aside>
+          <div className="grid flex-1 items-start gap-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-8">
+            <aside className="hidden lg:sticky lg:top-8 lg:block">{rail}</aside>
             <div className="min-w-0 pb-4">{children}</div>
           </div>
         ) : (
-          <div className="mx-auto w-full max-w-2xl">{children}</div>
+          <div className="mx-auto w-full max-w-3xl">{children}</div>
         )}
       </div>
     </div>
@@ -654,7 +696,7 @@ function Frame({
 const GRAIN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
 
 /**
- * The one raised surface on the page: the step sits on it.
+ * The one light raised surface on the page: the step sits on it.
  *
  * `overflow-hidden` clips the corner glow to the rounded edge. It is safe here because the action
  * dock is NOT inside the sheet — the sticky footer is what once forbade it.
@@ -674,7 +716,7 @@ function StateMark({ tone, children }: { tone: 'brand' | 'warning'; children: Re
   const look =
     tone === 'warning'
       ? 'bg-warning-50 text-warning-700 ring-warning-100'
-      : 'bg-brand-50 text-brand-600 ring-brand-100';
+      : 'bg-brand-600 text-surface-0 ring-transparent shadow-[0_14px_28px_-16px_var(--c-brand-600)]';
   return (
     <span className={`mx-auto flex h-14 w-14 items-center justify-center rounded-2xl ring-1 ring-inset sm:mx-0 ${look}`}>
       {children}
@@ -685,26 +727,27 @@ function StateMark({ tone, children }: { tone: 'brand' | 'warning'; children: Re
 /**
  * What the merchant sees for the one request that decides which step opens.
  *
- * A skeleton of the real layout rather than a spinner on a line: the page it resolves into is a
+ * A skeleton of the real layout rather than a spinner on a line: the page it resolves into is an ink
  * guide beside a sheet, so showing that shape immediately means nothing jumps when the data lands.
  */
 function LoadingFrame({ scrollRef }: { scrollRef: RefObject<HTMLDivElement | null> }) {
   const bar = 'animate-pulse rounded-md bg-surface-200/80 motion-reduce:animate-none';
+  const ink = 'animate-pulse rounded-md bg-white/15 motion-reduce:animate-none';
   return (
     <Frame
       scrollRef={scrollRef}
       rail={
-        <div className="flex flex-col gap-7" aria-hidden="true">
-          <div className="space-y-2.5">
-            <div className={`${bar} h-3.5 w-28`} />
-            <div className={`${bar} h-1.5 w-full rounded-full`} />
-            <div className={`${bar} h-3 w-20`} />
-          </div>
-          <div className="space-y-5">
+        <div className="rounded-[22px] bg-[#0d1122] p-7 lg:min-h-[38rem]" aria-hidden="true">
+          <div className={`${ink} h-9 w-36`} />
+          <div className={`${ink} mt-9 h-6 w-48`} />
+          <div className={`${ink} mt-3 h-3.5 w-40`} />
+          <div className={`${ink} mt-8 h-10 w-24`} />
+          <div className={`${ink} mt-4 h-1.5 w-full rounded-full`} />
+          <div className="mt-9 space-y-5">
             {[0, 1, 2, 3, 4].map((index) => (
-              <div key={index} className="flex items-center gap-3.5">
-                <div className={`${bar} h-7 w-7 flex-shrink-0 rounded-full`} />
-                <div className={`${bar} h-3.5 flex-1`} style={{ maxWidth: `${132 - index * 9}px` }} />
+              <div key={index} className="flex items-center gap-4">
+                <div className={`${ink} h-8 w-8 flex-shrink-0 rounded-full`} />
+                <div className={`${ink} h-3.5 flex-1`} style={{ maxWidth: `${140 - index * 10}px` }} />
               </div>
             ))}
           </div>
@@ -712,21 +755,21 @@ function LoadingFrame({ scrollRef }: { scrollRef: RefObject<HTMLDivElement | nul
       }
     >
       <Sheet>
-        <div role="status" aria-live="polite" className="px-5 py-7 sm:px-9 sm:py-9">
+        <div role="status" aria-live="polite" className="px-5 py-8 sm:px-10 sm:py-10">
           <span className="sr-only">Loading your store…</span>
           <div aria-hidden="true">
             <div className="flex items-center gap-3">
-              <div className={`${bar} h-10 w-10 flex-shrink-0 rounded-xl`} />
+              <div className={`${bar} h-11 w-11 flex-shrink-0 rounded-2xl`} />
               <div className={`${bar} h-3 w-20`} />
             </div>
-            <div className={`${bar} mt-5 h-8 w-72 max-w-full`} />
+            <div className={`${bar} mt-6 h-9 w-72 max-w-full`} />
             <div className={`${bar} mt-3 h-3.5 w-full max-w-md`} />
-            <div className="mt-9 grid gap-x-7 gap-y-8 md:grid-cols-2">
+            <div className="mt-10 grid gap-x-8 gap-y-9 md:grid-cols-2">
               {[0, 1, 2, 3].map((index) => (
                 <div key={index} className="space-y-2.5">
                   <div className={`${bar} h-3.5 w-32`} />
                   <div className={`${bar} h-3 w-44 max-w-full`} />
-                  <div className={`${bar} h-11 w-full rounded-xl`} />
+                  <div className={`${bar} h-12 w-full rounded-xl`} />
                 </div>
               ))}
             </div>
