@@ -19,6 +19,8 @@ import { fetchPillarDashboard, isNoAuditError, type PillarDashboardData } from '
 import type { PillarKey } from '../../data/dashboard/dashboard.types';
 import { useAuditCompletion, useAuditRun } from '../../data/useAuditRun';
 import Button from '../../components/polaris/Button';
+import Tabs, { type TabItem } from '../ui/Tabs';
+import SeverityBar from '../ui/SeverityBar';
 
 /**
  * ─── The pillar dashboard ────────────────────────────────────────────
@@ -111,41 +113,14 @@ function SeverityChips({ counts, total, active, onChange }: {
   active: IssueFilter;
   onChange: (next: IssueFilter) => void;
 }) {
-  const items: { key: IssueFilter; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'critical', label: 'Critical' },
-    { key: 'high', label: 'High' },
-    { key: 'medium', label: 'Medium' },
-    { key: 'low', label: 'Low' },
+  const items: TabItem<IssueFilter>[] = [
+    { id: 'all', label: 'All', count: total },
+    { id: 'critical', label: 'Critical', count: counts.critical },
+    { id: 'high', label: 'High', count: counts.high },
+    { id: 'medium', label: 'Medium', count: counts.medium },
+    { id: 'low', label: 'Low', count: counts.low },
   ];
-  return (
-    <div className="inline-flex max-w-full flex-wrap gap-0.5 rounded-lg border border-surface-200/70 bg-surface-50 p-0.5" role="tablist" aria-label="Filter issues by severity">
-      {items.map((item) => {
-        const count = item.key === 'all' ? total : counts[item.key];
-        const isActive = active === item.key;
-        const isEmpty = count === 0;
-        return (
-          <button
-            key={item.key}
-            type="button"
-            role="tab"
-            aria-selected={isActive}
-            onClick={() => onChange(item.key)}
-            className={`inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
-              isActive
-                ? 'bg-surface-0 text-surface-950 shadow-[0_1px_2px_var(--c-shadow-md)] ring-1 ring-surface-200'
-                : isEmpty
-                  ? 'text-surface-400 hover:text-surface-600'
-                  : 'text-surface-600 hover:text-surface-900'
-            }`}
-          >
-            {item.label}
-            <span className={`tabular-nums ${isActive ? 'text-surface-500' : 'text-surface-400'}`}>{count}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
+  return <Tabs tabs={items} active={active} onChange={onChange} label="Filter issues by severity" />;
 }
 
 /** One issue row. Used by Priority Issues and Quick Wins, which differ only in their leading mark. */
@@ -430,11 +405,14 @@ export default function PillarDashboard({
 
           <div className="rounded-lg border border-surface-200 bg-surface-0 p-3 shadow-sm">
             <h2 className="section-title">{title} Health</h2>
+            {/* The same counts as the rows below, as one proportional bar: how the open issues split at a glance. */}
+            <SeverityBar counts={data.counts} showLegend={false} className="mt-2" />
             <div className="mt-2 space-y-1.5">
               {([
                 ['Critical Issues', data.counts.critical, 'bg-critical-500'],
                 ['High Priority', data.counts.high, 'bg-warning-500'],
-                ['Medium Priority', data.counts.medium, 'bg-surface-400'],
+                ['Medium Priority', data.counts.medium, 'bg-brand-500'],
+                ['Low Priority', data.counts.low, 'bg-surface-400'],
               ] as const).map(([label, count, dot]) => (
                 <div key={label} className="flex items-center justify-between rounded-md bg-surface-50 px-2.5 py-1.5">
                   <span className="flex items-center gap-2 text-[12px] font-medium text-surface-900">
