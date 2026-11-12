@@ -258,13 +258,3 @@ export function formatLastUpdated(isoDate: string): string {
   if (diffHours < 24) return `${diffHours}h ago`;
   return `${diffDays}d ago`;
 }
-
-/**
- * Returns semantic color class prefix for a score status.
- */
-export function getScoreColorClass(score: number): string {
-  if (score >= 90) return 'success';
-  if (score >= 75) return 'brand';
-  if (score >= 50) return 'warning';
-  return 'critical';
-}

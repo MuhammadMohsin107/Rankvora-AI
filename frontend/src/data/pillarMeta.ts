@@ -174,12 +174,3 @@ export function describePillar(label: string, score: number, checksTotal: number
   if (status === 'needs-work') return `${label} needs attention — only ${checksPassed} of ${checksTotal} analyzed items are healthy.`;
   return `${label} requires immediate attention — just ${checksPassed} of ${checksTotal} analyzed items are healthy.`;
 }
-
-/** Overall-score narrative — no per-pillar check counts available at this level. */
-export function describeOverall(score: number): string {
-  const { status } = scoreToStatus(score);
-  if (status === 'excellent') return 'Your store is performing excellently across every pillar Rankvora AI tracks.';
-  if (status === 'good') return 'Your store is performing well, with several opportunities that could improve visibility and conversions.';
-  if (status === 'needs-work') return 'Your store has real opportunities to improve — several pillars need attention.';
-  return 'Your store needs urgent attention — critical issues are affecting multiple pillars.';
-}

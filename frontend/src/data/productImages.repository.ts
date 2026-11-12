@@ -135,6 +135,3 @@ export const applyGeneratedImage = (productId: string, token: string, alt: strin
 
 /** Error codes whose fix is a new AI key — the panel says "update the AI key" for exactly these. */
 export const AI_KEY_ERROR_CODES = new Set(['AI_IMAGE_NOT_CONFIGURED', 'AI_IMAGE_KEY_REJECTED', 'AI_IMAGE_QUOTA', 'AI_IMAGE_MODEL_UNAVAILABLE']);
-
-/** Error codes that mean Rankvora AI may not write to the store, so the panel offers a reconnect. */
-export const WRITE_ERROR_CODES = new Set(['MISSING_WRITE_SCOPE', 'AUTOMATION_NOT_PERMITTED', 'SHOPIFY_RECONNECT_REQUIRED', 'SHOPIFY_NOT_CONNECTED']);

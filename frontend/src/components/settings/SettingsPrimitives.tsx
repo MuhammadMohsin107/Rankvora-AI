@@ -1,14 +1,9 @@
-import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
-import { Check, X } from 'lucide-react';
-import Banner from '../polaris/Banner';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { SelectField, SwitchField, TextField } from '../polaris/fields';
-import { Button } from '../workflows/WorkflowPrimitives';
 
 /** Card shell — matches Integrations / Reports exactly. */
 export const settingsCard =
   'rounded-lg border border-surface-200 bg-surface-0 shadow-[0_8px_24px_-20px_rgba(15,23,42,0.45)]';
-
-export const eyebrowClass = 'text-[10px] font-bold uppercase tracking-[0.14em] text-surface-500';
 
 /** One settings group: title, description and its fields. */
 export function SettingsCard({
@@ -151,94 +146,6 @@ export function ToggleRow({
   return (
     <div className="py-2">
       <SwitchField id={id} label={label} details={description} checked={checked} onChange={onChange} disabled={disabled} />
-    </div>
-  );
-}
-
-/** Read-only row for values Rankvora AI derives rather than accepts. */
-export function ReadOnlyRow({ label, value, hint }: { label: string; value: ReactNode; hint?: string }) {
-  return (
-    <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-surface-100 py-2 last:border-0">
-      <div className="min-w-0">
-        <p className="text-[12.5px] font-semibold text-surface-800">{label}</p>
-        {hint && <p className="mt-0.5 text-[11.5px] text-surface-500">{hint}</p>}
-      </div>
-      <div className="text-[12.5px] text-surface-700">{value}</div>
-    </div>
-  );
-}
-
-/** Explains why a group is display-only in this build. */
-export function PreviewNotice({ children }: { children: ReactNode }) {
-  return (
-    <Banner tone="info">
-      <s-text>{children}</s-text>
-    </Banner>
-  );
-}
-
-/** Sticky bar shown only while there are unsaved changes. */
-export function SaveBar({
-  visible,
-  saving,
-  onSave,
-  onCancel,
-  message = 'You have unsaved changes',
-}: {
-  visible: boolean;
-  saving: boolean;
-  onSave: () => void;
-  onCancel: () => void;
-  message?: string;
-}) {
-  if (!visible) return null;
-  return (
-    <div className="sticky bottom-4 z-20 mt-2" role="region" aria-label="Unsaved changes">
-      <div className="flex flex-col gap-2 rounded-lg border border-surface-300 bg-surface-0/95 px-3 py-2 shadow-[0_16px_40px_-16px_rgba(15,23,42,0.35)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-        <p className="flex items-center gap-2 text-[12.5px] font-semibold text-surface-800">
-          <span className="h-2 w-2 flex-shrink-0 rounded-full bg-warning-500" aria-hidden="true" />
-          {message}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={onCancel} disabled={saving}>
-            Discard
-          </Button>
-          <Button onClick={onSave} disabled={saving}>
-            {saving ? 'Saving…' : 'Save changes'}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** Transient success confirmation after a save. */
-export function SavedToast({ visible, onDismiss }: { visible: boolean; onDismiss: () => void }) {
-  useEffect(() => {
-    if (!visible) return;
-    const timer = window.setTimeout(onDismiss, 3200);
-    return () => window.clearTimeout(timer);
-  }, [visible, onDismiss]);
-
-  if (!visible) return null;
-  return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-lg border border-success-100 bg-surface-0 px-3 py-2 shadow-[0_16px_40px_-16px_rgba(15,23,42,0.35)] motion-safe:animate-scale-in"
-    >
-      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-success-50 text-success-700">
-        <Check size={14} strokeWidth={2.6} aria-hidden="true" />
-      </span>
-      <p className="text-[12.5px] font-semibold text-surface-800">Settings saved</p>
-      <button
-        type="button"
-        onClick={onDismiss}
-        className="ml-1 rounded p-1 text-surface-400 transition-colors hover:bg-surface-100 hover:text-surface-700"
-        aria-label="Dismiss"
-      >
-        <X size={13} />
-      </button>
     </div>
   );
 }

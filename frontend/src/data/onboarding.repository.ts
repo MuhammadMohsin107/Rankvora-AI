@@ -372,13 +372,6 @@ export function consentLabel(value: AutomationConsent | null): string {
 }
 
 /**
- * The most questions a store may track at once. MIRRORS `MAX_PROMPT_QUERIES` in the backend
- * (ai-discovery.service.ts), which is what enforces it; this only lets the screen say how many are
- * left before a save would be refused.
- */
-export const MAX_TRACKED_QUESTIONS = 25;
-
-/**
  * What a merchant typed into the protected-pages field, as the path it means — or null if it is not
  * one. A pasted full address is accepted ("https://shop.example/pages/legal"), lower-cased, with no
  * query, fragment or trailing slash. MIRRORS `normalisePath` in the backend, which is what the

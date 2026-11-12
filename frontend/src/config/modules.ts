@@ -35,20 +35,6 @@ export function hiddenPillarKeys(): ModuleKey[] {
   return (Object.keys(MODULE_VISIBILITY) as ModuleKey[]).filter((key) => !MODULE_VISIBILITY[key]);
 }
 
-/**
- * The guided-setup goals that exist for one module and for nothing else. The goal's wording is the
- * server's (it is stored and validated there), so it is named here, against the module it belongs
- * to, to be left out of the choices while that module is hidden.
- */
-const MODULE_GOALS: Record<ModuleKey, string[]> = {
-  cro: ['Improve conversion rate'],
-};
-
-/** Whether a setup goal may be offered to the customer. */
-export function isGoalVisible(goal: string): boolean {
-  return (Object.keys(MODULE_GOALS) as ModuleKey[]).every((key) => MODULE_VISIBILITY[key] || !MODULE_GOALS[key].includes(goal));
-}
-
 /** Whether a check, written "pillar/sub-pillar" ("cro/options"), belongs to a visible pillar. */
 export function isCheckVisible(checkKey: string): boolean {
   return isPillarVisible(checkKey.split('/')[0]);

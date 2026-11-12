@@ -155,24 +155,6 @@ export const schemaPageSettingsDefinition: PageSettingsDefinition = {
   ],
 };
 
-export const defaultSchemaPageSettings: Record<string, PageSettingValue> = {
-  organizationName: 'Rankvora AI Store',
-  websiteUrl: 'https://www.example.com',
-  logoUrl: 'https://www.example.com/logo.png',
-  supportEmail: 'support@example.com',
-  productSchemaEnabled: true,
-  productGroupSchemaEnabled: true,
-  offerDataEnabled: true,
-  aggregateRatingEnabled: true,
-  organizationSchemaEnabled: true,
-  websiteSchemaEnabled: true,
-  collectionSchemaEnabled: true,
-  faqSchemaEnabled: false,
-  breadcrumbSchemaEnabled: true,
-  faqPrompt: 'How quickly can I receive my order?',
-  schemaOutputMode: 'Draft preview',
-};
-
 export const subPillarSettingsRegistry: Record<string, PageSettingsDefinition> = {
   schema: schemaPageSettingsDefinition,
   'title-tags': {

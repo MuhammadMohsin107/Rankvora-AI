@@ -90,11 +90,6 @@ export const PILLAR_GOALS: Record<string, { label: string }> = {
   cro: { label: 'Conversion (CRO)' },
 };
 
-/** Human labels for the pillar slugs the API works in. */
-export const PILLAR_LABELS: Record<string, string> = Object.fromEntries(
-  Object.entries(PILLAR_GOALS).map(([key, value]) => [key, key === 'ai-discovery' ? 'AI Discovery' : value.label]),
-);
-
 /** Hostname of a URL, or null if it will not parse. Guarded because this runs during render. */
 function hostOf(url: string): string | null {
   try {
