@@ -30,10 +30,6 @@ const EXTENSION: Record<ProductImageType, string> = {
   'image/gif': 'gif',
 };
 
-export function isProductImageType(value: string): value is ProductImageType {
-  return (PRODUCT_IMAGE_TYPES as readonly string[]).includes(value);
-}
-
 export function extensionFor(type: ProductImageType): string {
   return EXTENSION[type];
 }

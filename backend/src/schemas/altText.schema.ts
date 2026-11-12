@@ -29,4 +29,3 @@ export const altTextConfigSchema = z.object({
   }).strict(),
 }).strict();
 
-export type AltTextConfigInput = z.infer<typeof altTextConfigSchema>;

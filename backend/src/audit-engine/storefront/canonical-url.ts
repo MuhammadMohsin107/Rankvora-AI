@@ -45,10 +45,6 @@ export function comparableUrl(url: URL): string {
   return `${url.protocol}//${url.host}${comparablePath(url.pathname)}${url.search}`;
 }
 
-export function sameDocument(a: URL, b: URL): boolean {
-  return comparableUrl(a) === comparableUrl(b);
-}
-
 /** comparableUrl() for a raw string. Null when it does not parse. */
 export function comparableFromString(value: string): string | null {
   try {

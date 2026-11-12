@@ -21,4 +21,3 @@ export const notificationListQuerySchema = z.object({
   ...storeIdQueryShape,
 }).strict();
 
-export type NotificationListQuery = z.infer<typeof notificationListQuerySchema>;

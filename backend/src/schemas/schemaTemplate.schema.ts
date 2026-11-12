@@ -60,9 +60,4 @@ export const schemaTemplateParamsSchema = z.object({
   context: schemaContextSchema,
 });
 
-export const schemaPreviewQuerySchema = z.object({
-  context: schemaContextSchema,
-  storeId: z.coerce.number().int().positive().optional(),
-}).strict();
-
 export type UpsertSchemaTemplateInput = z.infer<typeof upsertSchemaTemplateSchema>;

@@ -150,10 +150,6 @@ export async function writeOnboardingPreferences(
  * is not needed — a prefix already covers a section of the store, and glob semantics nobody
  * documented would be a rule the merchant could not predict.
  */
-export function isProtectedPath(protectedPaths: string[], path: string): boolean {
-  return findProtectedRule(protectedPaths, path) !== null;
-}
-
 /** The protected path that covers `path`, or null. Returned so a refusal can name the rule. */
 export function findProtectedRule(protectedPaths: string[], path: string): string | null {
   const target = normalisePath(path);

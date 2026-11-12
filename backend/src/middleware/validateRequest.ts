@@ -48,5 +48,3 @@ export function validateRequest(schemas: RequestSchemas): RequestHandler {
     next();
   };
 }
-
-export const idParamSchema = z.object({ id: z.coerce.number().int().positive() });

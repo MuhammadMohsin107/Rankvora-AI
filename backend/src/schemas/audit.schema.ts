@@ -22,4 +22,3 @@ export const subPillarParamSchema = z.object({
 
 export type AuditListQuery = z.infer<typeof auditListQuerySchema>;
 export type LatestAuditQuery = z.infer<typeof latestAuditQuerySchema>;
-export type SubPillarParam = z.infer<typeof subPillarParamSchema>;

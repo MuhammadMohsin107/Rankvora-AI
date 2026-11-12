@@ -28,5 +28,3 @@ export const callbackQuerySchema = z.object({
 }).passthrough();
 
 export type OpenBody = z.infer<typeof openBodySchema>;
-export type InstallQuery = z.infer<typeof installQuerySchema>;
-export type CallbackQuery = z.infer<typeof callbackQuerySchema>;

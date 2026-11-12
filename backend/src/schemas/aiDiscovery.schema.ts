@@ -73,6 +73,3 @@ export const indexCoverageQuerySchema = z
   .object({ ...storeIdQueryShape, sample: z.coerce.number().int().min(1).max(25).optional() })
   .strict();
 
-export type SetIndexNowKeyInput = z.infer<typeof setIndexNowKeySchema>;
-export type AddPromptQueryInput = z.infer<typeof addPromptQuerySchema>;
-export type BotTestInput = z.infer<typeof botTestSchema>;

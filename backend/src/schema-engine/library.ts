@@ -853,11 +853,6 @@ export function findSchemaType(type: SchemaTypeName): SchemaTypeDefinition | nul
   return BY_TYPE.get(type) ?? null;
 }
 
-/** Types offered as top-level templates for a context. */
-export function builtInTypesForContext(context: SchemaContextKind): SchemaTypeDefinition[] {
-  return SCHEMA_LIBRARY.filter((definition) => definition.builtIn && definition.contexts.includes(context));
-}
-
 /** Builds a template preconfigured from the library's defaults — what "enable Product schema"
  * produces before the merchant changes anything. */
 export function defaultTemplateFor(type: SchemaTypeName, context: SchemaContextKind) {

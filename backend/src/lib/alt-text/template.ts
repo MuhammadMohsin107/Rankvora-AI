@@ -31,10 +31,6 @@
 export const ALT_TEXT_CONTENT_TYPES = ['products', 'articles'] as const;
 export type AltTextContentType = (typeof ALT_TEXT_CONTENT_TYPES)[number];
 
-export function isAltTextContentType(value: unknown): value is AltTextContentType {
-  return typeof value === 'string' && (ALT_TEXT_CONTENT_TYPES as readonly string[]).includes(value);
-}
-
 export const AUTO_FORMATS = ['none', 'sentence', 'lower', 'upper'] as const;
 export type AutoFormat = (typeof AUTO_FORMATS)[number];
 

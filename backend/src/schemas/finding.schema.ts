@@ -37,7 +37,6 @@ export const bulkFindingStatusSchema = z.object({
 
 export type FindingListQuery = z.infer<typeof findingListQuerySchema>;
 export type UpdateFindingStatusInput = z.infer<typeof updateFindingStatusSchema>;
-export type AiRecommendationInput = z.infer<typeof aiRecommendationSchema>;
 export type BulkFindingStatusInput = z.infer<typeof bulkFindingStatusSchema>;
 
 // ─── AI fix planning ─────────────────────────────────────────────────
