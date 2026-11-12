@@ -1,4 +1,25 @@
-import { Boxes, CircleDollarSign, Clock3, FileText, Globe2, Languages, Loader2, MapPin, Newspaper, Store } from 'lucide-react';
+import {
+  Boxes,
+  CalendarClock,
+  CircleDollarSign,
+  Clock3,
+  FileText,
+  Globe2,
+  Languages,
+  Lightbulb,
+  Loader2,
+  MapPin,
+  Newspaper,
+  Package,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Store,
+  Tag,
+  Target,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react';
 import { isPillarVisible } from '../../config/modules';
 import {
   CheckCard,
@@ -19,6 +40,7 @@ import {
   TagInput,
   TextArea,
   TextField,
+  ToggleCard,
   UnavailableNote,
 } from './OnboardingPrimitives';
 import MeasurementStep from './MeasurementStep';
@@ -81,13 +103,22 @@ export interface StepProps {
   notice?: { tone: 'success' | 'error' | 'info'; message: string } | null;
 }
 
-/** What each pillar is called when the merchant is choosing what to improve first. */
-export const PILLAR_GOALS: Record<string, { label: string }> = {
-  seo: { label: 'Search visibility' },
-  content: { label: 'Product & collection content' },
-  speed: { label: 'Store performance' },
-  'ai-discovery': { label: 'AI discovery' },
-  cro: { label: 'Conversion (CRO)' },
+/**
+ * What each pillar is called when the merchant is choosing what to improve first, with one line on
+ * what it covers (the sub-pillars it audits, data/pillarMeta.ts) and its mark.
+ */
+export const PILLAR_GOALS: Record<string, { label: string; description: string; icon: LucideIcon }> = {
+  seo: { label: 'Search visibility', description: 'Titles, descriptions, schema, links and indexing', icon: Search },
+  content: { label: 'Product & collection content', description: 'Descriptions, blog freshness and media', icon: FileText },
+  speed: { label: 'Store performance', description: 'Core Web Vitals, images, apps and theme weight', icon: Zap },
+  'ai-discovery': { label: 'AI discovery', description: 'How AI assistants find, read and cite your store', icon: Sparkles },
+  cro: { label: 'Conversion (CRO)', description: 'Cart, trust, returns and checkout quality', icon: Target },
+};
+
+/** What each way of approving changes means, in plain words. */
+const CONSENT_COPY: Record<string, { description: string; icon: LucideIcon }> = {
+  ask: { description: 'Every fix waits for your approval before it is written to Shopify.', icon: ShieldCheck },
+  none: { description: 'Rankvora only recommends. Nothing is written to your store.', icon: Lightbulb },
 };
 
 /** Hostname of a URL, or null if it will not parse. Guarded because this runs during render. */
@@ -228,6 +259,7 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
         >
           <TextField
             id="onboarding-organization"
+            icon={Store}
             value={draft.organizationName ?? ''}
             invalid={Boolean(errors.organizationName)}
             onChange={(value) => patch({ organizationName: value })}
@@ -261,6 +293,7 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
         >
           <TextField
             id="onboarding-domain"
+            icon={Globe2}
             value={draft.primaryDomain ?? ''}
             onChange={(value) => patch({ primaryDomain: value })}
             placeholder="Enter your storefront address"
@@ -300,6 +333,7 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
           {available.length > 0 ? (
             <SelectField
               id="onboarding-country-add"
+              icon={MapPin}
               value=""
               options={selectable}
               placeholder="Add a market…"
@@ -311,6 +345,7 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
             // A market is required, and no merchant may be stranded on a step they cannot answer.
             <TagInput
               id="onboarding-country-add"
+              icon={MapPin}
               values={countries}
               onChange={(next) =>
                 patch({
@@ -334,6 +369,7 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
           >
             <SelectField
               id="onboarding-primary-market"
+              icon={MapPin}
               value={draft.primaryMarket ?? ''}
               options={countries}
               placeholder="Choose your primary market"
@@ -437,6 +473,7 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
         >
           <TextField
             id="onboarding-brand"
+            icon={Tag}
             value={draft.brandName ?? ''}
             invalid={Boolean(errors.brandName)}
             onChange={(value) => patch({ brandName: value })}
@@ -463,6 +500,7 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
         >
           <TagInput
             id="onboarding-aliases"
+            icon={Tag}
             values={aliases}
             onChange={(next) => patch({ brandedTerms: next })}
             placeholder="Type an alternative name"
@@ -527,6 +565,7 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
         >
           <LabelledSelect
             id="onboarding-language"
+            icon={Languages}
             value={chosenLanguage}
             options={languageOptions}
             placeholder="Choose a language"
@@ -610,18 +649,22 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
                   id={`onboarding-pillar-${key}`}
                   checked={chosenPillars.includes(key)}
                   label={goal?.label ?? key}
+                  description={goal?.description}
+                  icon={goal?.icon}
+                  rank={chosenPillars.length > 1 && chosenPillars.includes(key) ? chosenPillars.indexOf(key) + 1 : undefined}
                   onToggle={() => togglePillar(key)}
                 />
               );
             })}
           </div>
           {chosenPillars.length > 1 && (
-            <div className="mt-2.5">
-              <p className="mb-2 text-[12.5px] font-medium leading-[1.45] text-surface-600">
-                Priority order
+            <div className="mt-6">
+              <p className="mb-2.5 flex items-baseline justify-between gap-3">
+                <span className="text-[13px] font-semibold tracking-[-0.01em] text-surface-950">Priority order</span>
+                <span className="text-[12px] text-surface-500">{chosenPillars.length} areas</span>
               </p>
               <PriorityList
-                items={chosenPillars.map((key) => ({ key, label: PILLAR_GOALS[key]?.label ?? key }))}
+                items={chosenPillars.map((key) => ({ key, label: PILLAR_GOALS[key]?.label ?? key, icon: PILLAR_GOALS[key]?.icon }))}
                 onReorder={(keys) => patch({ priorityPillars: [...keys, ...(draft.priorityPillars ?? []).filter((key) => !isPillarVisible(key))] })}
               />
             </div>
@@ -655,6 +698,7 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
         >
           <TagInput
             id="onboarding-keywords"
+            icon={Search}
             values={keywords}
             onChange={(next) => patch({ targetKeywords: next })}
             placeholder="Type a keyword"
@@ -679,6 +723,7 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
             <div className="grid gap-3 sm:grid-cols-2">
               <LabelledSelect
                 id="onboarding-priority-product"
+                icon={Package}
                 value=""
                 options={resourceOptions('product')}
                 placeholder={(suggestions?.resources.products.length ?? 0) === 0 ? 'No products found' : 'Add a product…'}
@@ -687,6 +732,7 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
               />
               <LabelledSelect
                 id="onboarding-priority-collection"
+                icon={Boxes}
                 value=""
                 options={resourceOptions('collection')}
                 placeholder={(suggestions?.resources.collections.length ?? 0) === 0 ? 'No collections found' : 'Add a collection…'}
@@ -788,6 +834,7 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
                 value="low_risk"
                 label={consentLabel('low_risk')}
                 description="Choose an option below to replace it."
+                icon={ShieldCheck}
                 selected
                 onSelect={() => undefined}
                 className="sm:col-span-2"
@@ -799,6 +846,8 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
                 name="automation-consent"
                 value={option.value}
                 label={option.label}
+                description={CONSENT_COPY[option.value]?.description}
+                icon={CONSENT_COPY[option.value]?.icon}
                 selected={consent === option.value}
                 onSelect={(value) => patch({ automationConsent: value as AutomationConsent })}
               />
@@ -847,6 +896,7 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
         >
           <TagInput
             id="onboarding-protected"
+            icon={ShieldCheck}
             values={protectedPaths}
             onChange={(next) => patch({ protectedPaths: next })}
             placeholder="Type a page path, starting with /"
@@ -856,10 +906,12 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
         </FormField>
 
         <FormSection className="md:col-span-2" title="Scheduled monitoring">
-          <CheckCard
+          <ToggleCard
             id="onboarding-monitoring"
+            icon={CalendarClock}
             checked={monitoring}
             label="Re-analyze my store automatically"
+            description="Runs again on the schedule below, so your results stay up to date."
             onToggle={(next) => patch({ autoAnalysis: next })}
           />
           {monitoring && (
@@ -870,6 +922,7 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
                 </label>
                 <SelectField
                   id="onboarding-frequency"
+                  icon={CalendarClock}
                   value={frequency}
                   options={frequencies}
                   placeholder="Choose how often"
@@ -882,6 +935,7 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
                 </label>
                 <LabelledSelect
                   id="onboarding-scan-hour"
+                  icon={Clock3}
                   value={hour === null || hour === undefined ? '' : String(hour)}
                   options={SCAN_HOURS.map((value) => ({ value: String(value), label: formatScanHour(value) }))}
                   placeholder="Any time it is due"

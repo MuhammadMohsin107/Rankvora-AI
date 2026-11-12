@@ -8,10 +8,12 @@ import {
   Info,
   Loader2,
   Plus,
+  ShieldCheck,
   Sparkles,
   X,
   type LucideIcon,
 } from 'lucide-react';
+import RankvoraLogo from '../auth/RankvoraLogo';
 
 /**
  * ─── Guided-setup building blocks ────────────────────────────────────
@@ -19,15 +21,20 @@ import {
  * Built on the app's surface/brand tokens, so setup follows light and dark mode without a single
  * `dark:` variant.
  *
- * THE LOOK. Setup is the first thing a merchant does, so it is allowed to be calmer and larger than
- * the data screens behind it: 44px controls, 14px control text, display-size step titles, and space
- * between questions instead of a box around each one. Structure comes from whitespace and hairlines;
- * the one raised surface is the sheet the step sits on (see pages/onboarding/Onboarding.tsx).
+ * THE LAYOUT. Two surfaces side by side: an ink GUIDE panel (where you are, every step on one line)
+ * and a light SHEET (the step itself). The guide is the one dark object on the page, which is what
+ * makes it read as "map" against the "form" beside it. It is a FIXED dark surface in both themes, not
+ * a token pair: the semantic ramp inverts in dark mode, which turned the panel light under a logo
+ * that is white by design. Everything that sits on it uses literal white (at an opacity) for the same
+ * reason.
  *
- * COLOUR, USED SPARINGLY. The brand colour means "this is chosen" or "this is progress" — a selected
- * tile, a filled chip, the progress bar. The one thing a merchant is meant to press is an ink button
- * (`surface-950` on `surface-0`, which the semantic ramp inverts in dark mode), the same restraint as
- * the Shopify admin's own primary buttons.
+ * THE CONTROLS. Modern "filled" fields: a soft well that lifts to white with a brand ring on focus,
+ * 48px tall, with an optional leading icon that warms up when the field does. Choices are tiles with
+ * an icon, a plain-language line and a clear selected state; on/off settings are real switches.
+ * Required / Optional are quiet words next to the label, never pills.
+ *
+ * COLOUR, USED SPARINGLY. Brand means "this is chosen" or "this is progress". The one thing a merchant
+ * is meant to press is an ink button, the same restraint as the Shopify admin's own primary buttons.
  *
  * `DetectedNote` and `UnavailableNote` keep one promise visible throughout the flow: a suggested
  * value always states where it came from, and a value we could not read says so rather than
@@ -85,32 +92,31 @@ function progressSentence(steps: StepEntry[], completed: number): string {
 // ─── Progress ────────────────────────────────────────────────────────
 
 /**
- * The numbered marker beside a step.
+ * The numbered marker beside a step, drawn for the ink guide.
  *
- * `text-surface-0`, never `text-white`: success-600 is a dark green in light mode and a bright one
- * in dark, so a fixed white glyph on it goes from readable to invisible. surface-0 inverts with the
- * theme and stays legible on both.
+ * Done is green with a tick; the current step is the one bright disc on the panel; the rest are
+ * quiet outlines. Fixed colours, because the panel it sits on is fixed.
  */
 function StepBadge({ entry, isCurrent }: { entry: StepEntry; isCurrent: boolean }) {
   const tone =
     entry.status === 'complete'
-      ? 'bg-success-600 text-surface-0'
+      ? 'bg-emerald-400 text-[#0d1122]'
       : isCurrent
-        ? 'bg-brand-600 text-surface-0 shadow-[0_0_0_4px_var(--c-brand-100)]'
-        : 'bg-surface-0 text-surface-500 ring-1 ring-inset ring-surface-300';
+        ? 'bg-white text-[#0d1122] shadow-[0_0_0_5px_rgba(255,255,255,0.12)]'
+        : 'text-white/55 ring-1 ring-inset ring-white/25';
 
   return (
     <span
       aria-hidden="true"
-      className={`relative z-10 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[12px] font-semibold tabular-nums transition-[background-color,box-shadow,color] duration-300 ${tone}`}
+      className={`relative z-10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[12.5px] font-semibold tabular-nums transition-[background-color,box-shadow,color] duration-300 ${tone}`}
     >
-      {entry.status === 'complete' ? <Check size={14} strokeWidth={3} /> : entry.step}
+      {entry.status === 'complete' ? <Check size={15} strokeWidth={3} /> : entry.step}
     </span>
   );
 }
 
 /** A thin bar that fills with the share of steps done. The width animates; the number does not need to. */
-function ProgressBar({ completed, total, className = '' }: { completed: number; total: number; className?: string }) {
+function ProgressBar({ completed, total, className = '', tone = 'light' }: { completed: number; total: number; className?: string; tone?: 'light' | 'ink' }) {
   const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
   return (
     <div
@@ -119,10 +125,10 @@ function ProgressBar({ completed, total, className = '' }: { completed: number; 
       aria-valuemin={0}
       aria-valuemax={total}
       aria-valuenow={completed}
-      className={`h-1.5 w-full overflow-hidden rounded-full bg-surface-200 ${className}`}
+      className={`h-1.5 w-full overflow-hidden rounded-full ${tone === 'ink' ? 'bg-white/15' : 'bg-surface-200'} ${className}`}
     >
       <div
-        className="h-full rounded-full bg-brand-600 transition-[width] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none"
+        className={`h-full rounded-full transition-[width] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none ${tone === 'ink' ? 'bg-indigo-400' : 'bg-brand-600'}`}
         style={{ width: `${percent}%` }}
       />
     </div>
@@ -130,11 +136,12 @@ function ProgressBar({ completed, total, className = '' }: { completed: number; 
 }
 
 /**
- * The guide for wide screens: where setup stands, then every step on one vertical line.
+ * The guide for wide screens: an ink panel holding the brand, how far setup has got, and every step
+ * on one vertical line.
  *
- * It sits directly on the page, not in a box, so the sheet beside it is the only raised surface and
- * reads as the thing to act on. The line between the markers fills green as steps are completed, so
- * progress reads as one continuous stroke instead of five loose dots.
+ * It is the page's one dark surface, so the sheet beside it stays the thing to act on. The line
+ * between the markers fills green as steps are completed, so progress reads as one continuous
+ * stroke, and the number at the top says it in the plainest way there is.
  */
 export function StepRail({
   current,
@@ -147,67 +154,91 @@ export function StepRail({
 }) {
   const furthest = furthestReachable(current, steps);
   const completed = steps.filter((entry) => entry.status === 'complete').length;
+  const percent = steps.length > 0 ? Math.round((completed / steps.length) * 100) : 0;
 
   return (
-    <nav aria-label="Setup progress" className="flex flex-col">
-      <div>
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="text-[13px] font-semibold tracking-[-0.01em] text-surface-950">Guided setup</p>
-          <p className="text-[12px] font-medium tabular-nums text-surface-500">
-            {completed} of {steps.length}
+    <nav
+      aria-label="Setup progress"
+      className="relative flex flex-col overflow-hidden rounded-[22px] bg-[#0d1122] p-7 text-white shadow-[0_36px_70px_-40px_var(--c-shadow-lg),0_10px_28px_-16px_var(--c-shadow-md)] lg:min-h-[38rem]"
+    >
+      {/* Two soft lights and a hairline, so the panel has depth instead of being a flat slab. */}
+      <div aria-hidden="true" className="pointer-events-none absolute -left-16 -top-24 h-64 w-64 rounded-full bg-indigo-500/30 blur-[90px]" />
+      <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 -right-16 h-60 w-60 rounded-full bg-indigo-400/20 blur-[90px]" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+
+      <div className="relative flex flex-1 flex-col">
+        <RankvoraLogo tone="dark" />
+
+        <div className="mt-9">
+          <p className="text-balance text-[22px] font-semibold leading-[1.15] tracking-[-0.03em]">Let’s set up your store</p>
+          <p className="mt-2 text-pretty text-[13px] leading-[1.55] text-white/60">
+            Your answers shape how Rankvora analyses it.
           </p>
         </div>
-        <ProgressBar completed={completed} total={steps.length} className="mt-2.5" />
-        <p className="mt-2 text-[12.5px] text-surface-500">{progressSentence(steps, completed)}</p>
-      </div>
 
-      <ol className="mt-7 flex flex-col">
-        {steps.map((entry, index) => {
-          const isCurrent = entry.step === current;
-          const reachable = entry.step <= furthest;
-          const isLast = index === steps.length - 1;
-          return (
-            <li key={entry.step} className="relative">
-              {/* The connector runs behind the markers and is drawn from this marker to the next. */}
-              {!isLast && (
-                <span
-                  aria-hidden="true"
-                  className={`absolute left-[13px] top-[34px] h-[calc(100%-26px)] w-px transition-colors duration-500 motion-reduce:transition-none ${
-                    entry.status === 'complete' ? 'bg-success-500' : 'bg-surface-300'
-                  }`}
-                />
-              )}
-              <button
-                type="button"
-                disabled={!reachable}
-                onClick={() => reachable && !isCurrent && onJump(entry.step)}
-                aria-current={isCurrent ? 'step' : undefined}
-                className={`group relative flex w-full items-start gap-3.5 rounded-xl py-2.5 pr-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-50 ${
-                  reachable && !isCurrent ? 'cursor-pointer' : isCurrent ? 'cursor-default' : 'cursor-not-allowed'
-                }`}
-              >
-                <StepBadge entry={entry} isCurrent={isCurrent} />
-                <span className="min-w-0 pt-px">
+        <div className="mt-7">
+          <div className="flex items-end justify-between gap-3">
+            <p className="text-[44px] font-semibold leading-none tracking-[-0.04em] tabular-nums">
+              {percent}
+              <span className="ml-0.5 text-[20px] font-medium text-white/50">%</span>
+            </p>
+            <p className="pb-1 text-[12.5px] font-medium tabular-nums text-white/60">
+              {completed} of {steps.length}
+            </p>
+          </div>
+          <ProgressBar completed={completed} total={steps.length} tone="ink" className="mt-3" />
+          <p className="mt-2.5 text-[12.5px] text-white/60">{progressSentence(steps, completed)}</p>
+        </div>
+
+        <ol className="mb-8 mt-8 flex flex-col">
+          {steps.map((entry, index) => {
+            const isCurrent = entry.step === current;
+            const reachable = entry.step <= furthest;
+            const isLast = index === steps.length - 1;
+            return (
+              <li key={entry.step} className="relative">
+                {/* The connector runs behind the markers and is drawn from this marker to the next. */}
+                {!isLast && (
                   <span
-                    className={`block text-[14px] font-semibold leading-tight tracking-[-0.01em] transition-colors ${
-                      isCurrent
-                        ? 'text-surface-950'
-                        : reachable
-                          ? 'text-surface-700 group-hover:text-surface-950'
-                          : 'text-surface-400'
+                    aria-hidden="true"
+                    className={`absolute left-[15px] top-[38px] h-[calc(100%-30px)] w-px transition-colors duration-500 motion-reduce:transition-none ${
+                      entry.status === 'complete' ? 'bg-emerald-400/80' : 'bg-white/20'
                     }`}
-                  >
-                    {entry.title}
+                  />
+                )}
+                <button
+                  type="button"
+                  disabled={!reachable}
+                  onClick={() => reachable && !isCurrent && onJump(entry.step)}
+                  aria-current={isCurrent ? 'step' : undefined}
+                  className={`group relative flex w-full items-start gap-4 rounded-xl py-2.5 pr-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1122] ${
+                    reachable && !isCurrent ? 'cursor-pointer' : isCurrent ? 'cursor-default' : 'cursor-not-allowed'
+                  }`}
+                >
+                  <StepBadge entry={entry} isCurrent={isCurrent} />
+                  <span className="min-w-0 pt-0.5">
+                    <span
+                      className={`block text-[14px] font-semibold leading-tight tracking-[-0.01em] transition-colors ${
+                        isCurrent ? 'text-white' : reachable ? 'text-white/75 group-hover:text-white' : 'text-white/40'
+                      }`}
+                    >
+                      {entry.title}
+                    </span>
+                    <span className={`mt-1 block text-[12px] leading-tight ${isCurrent ? 'text-indigo-300' : 'text-white/45'}`}>
+                      {isCurrent && entry.status !== 'complete' ? 'In progress' : statusLabel(entry)}
+                    </span>
                   </span>
-                  <span className={`mt-1 block text-[12px] leading-tight ${isCurrent ? 'text-brand-700' : 'text-surface-500'}`}>
-                    {isCurrent && entry.status !== 'complete' ? 'In progress' : statusLabel(entry)}
-                  </span>
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+
+        <p className="mt-auto flex items-start gap-2.5 border-t border-white/15 pt-5 text-pretty text-[12.5px] leading-[1.55] text-white/60">
+          <ShieldCheck size={16} strokeWidth={1.8} className="mt-px flex-shrink-0 text-emerald-400" aria-hidden="true" />
+          <span>Rankvora never changes your store without your approval. Your answers save as you move between steps.</span>
+        </p>
+      </div>
     </nav>
   );
 }
@@ -273,8 +304,9 @@ export function Stepper({
  * The step's own heading: its mark, where it sits in the sequence, a display-size title and — only
  * where the title is not enough — one line saying what it is for.
  *
- * The icon tile is the step's identity and repeats nowhere else on screen, so it is also the only
- * place the step's own mark sits beside its title once the guide is gone on a narrow screen.
+ * A very large, very faint numeral sits behind the top-right corner. It is decoration only
+ * (`aria-hidden`): the real "Step 2 of 5" is in the text, and the numeral just gives each step a
+ * face of its own as the sheet changes.
  */
 export function StepHeader({
   step,
@@ -290,21 +322,27 @@ export function StepHeader({
   icon?: LucideIcon;
 }) {
   return (
-    <header className="px-5 pb-1 pt-6 sm:px-9 sm:pt-9">
-      <div className="flex items-center gap-3">
+    <header className="relative px-5 pb-1 pt-6 sm:px-10 sm:pt-10">
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute right-6 top-3 select-none text-[120px] font-semibold leading-none tracking-[-0.06em] text-surface-100 tabular-nums sm:right-10 sm:text-[148px]"
+      >
+        {String(step).padStart(2, '0')}
+      </span>
+      <div className="relative flex items-center gap-3">
         {Icon && (
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
-            <Icon size={19} strokeWidth={1.8} aria-hidden="true" />
+          <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-600 text-surface-0 shadow-[0_10px_22px_-12px_var(--c-brand-600)]">
+            <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
           </span>
         )}
         <p className="text-[12.5px] font-medium tabular-nums text-surface-500">
           Step {step} of {total}
         </p>
       </div>
-      <h1 className="mt-4 text-balance text-[26px] font-semibold leading-[1.1] tracking-[-0.03em] text-surface-950 sm:text-[32px]">
+      <h1 className="relative mt-5 max-w-[16ch] text-balance text-[28px] font-semibold leading-[1.08] tracking-[-0.035em] text-surface-950 sm:max-w-none sm:text-[36px]">
         {title}
       </h1>
-      {purpose && <p className="mt-2 max-w-[56ch] text-pretty text-[14px] leading-[1.55] text-surface-500">{purpose}</p>}
+      {purpose && <p className="relative mt-2.5 max-w-[56ch] text-pretty text-[14.5px] leading-[1.55] text-surface-500">{purpose}</p>}
     </header>
   );
 }
@@ -344,7 +382,7 @@ export function FormGrid({ children }: { children: ReactNode }) {
   // row gap here would also open up the space between a label and its control. The distance between
   // one question and the next is each field's own bottom padding instead, and the last row's is
   // pulled back with the negative margin so the sheet's padding stays the bottom edge.
-  return <div className="onboarding-stagger -mb-8 grid gap-x-7 gap-y-0 md:grid-cols-2">{children}</div>;
+  return <div className="onboarding-stagger -mb-9 grid gap-x-8 gap-y-0 md:grid-cols-2">{children}</div>;
 }
 
 /**
@@ -368,8 +406,9 @@ export function FieldError({ id, children }: { id?: string; children: ReactNode 
  * belongs under the control — a suggestion from Shopify, a list of chips — goes in `extras`, so it
  * stays attached to the control instead of shifting the next row.
  *
- * `error` renders directly beneath the control and above `extras`: a merchant who has just been
- * stopped should read what is wrong before they read a suggestion.
+ * `error` renders in the control's own cell, directly under it: a merchant who has just been stopped
+ * should read what is wrong before they read a suggestion, and in the shared row below it would sit
+ * beneath the TALLEST control in the row, a neighbouring tag field's helper line included.
  */
 export function FormField({
   label,
@@ -394,7 +433,7 @@ export function FormField({
 }) {
   return (
     // Always four children, even when a hint or extras are absent, so the subgrid rows line up.
-    <div className={`row-span-4 grid min-w-0 grid-rows-subgrid gap-y-0 pb-8 ${className}`}>
+    <div className={`row-span-4 grid min-w-0 grid-rows-subgrid gap-y-0 pb-9 ${className}`}>
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
         <label htmlFor={htmlFor} className="text-[14px] font-semibold tracking-[-0.01em] text-surface-950">
           {label}
@@ -404,9 +443,6 @@ export function FormField({
       <p id={`${htmlFor}-hint`} className="mt-1 text-pretty text-[12.5px] leading-[1.45] text-surface-500">
         {hint}
       </p>
-      {/* The error sits in the control's own cell, right under the input. In the row below it would
-          be placed after the TALLEST control in the row — a neighbouring tag field's helper line made
-          that a gap of 40px between a field and the sentence explaining it. */}
       <div className="mt-2.5 min-w-0">
         {children}
         {error && <FieldError id={`${htmlFor}-error`}>{error}</FieldError>}
@@ -442,7 +478,7 @@ export function FormSection({
       aria-labelledby={headingId}
       // oxlint-disable-next-line jsx-a11y/role-supports-aria-props -- kept for the error styling hook; not announced by role=group
       aria-invalid={error ? true : undefined}
-      className={`row-span-3 grid min-w-0 grid-rows-subgrid gap-y-0 pb-8 ${className}`}
+      className={`row-span-3 grid min-w-0 grid-rows-subgrid gap-y-0 pb-9 ${className}`}
     >
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
         <h2 id={headingId} className="text-[14px] font-semibold tracking-[-0.01em] text-surface-950">
@@ -466,7 +502,7 @@ export function FormSection({
 }
 
 /**
- * Setup's buttons: 44px, the size of a comfortable thumb target, because this is the one thing a
+ * Setup's buttons: 48px, the size of a comfortable thumb target, because this is the one thing a
  * merchant is meant to press.
  *
  * The primary is ink (`surface-950`), not the brand colour: brand marks what is chosen and how far
@@ -491,7 +527,7 @@ export function ActionButton({
 }) {
   const tone = {
     primary:
-      'bg-surface-950 text-surface-0 shadow-[0_1px_2px_var(--c-shadow-md),inset_0_1px_0_rgba(255,255,255,0.14)] hover:bg-surface-800 hover:shadow-[0_10px_22px_-12px_var(--c-shadow-lg)]',
+      'bg-surface-950 text-surface-0 shadow-[0_1px_2px_var(--c-shadow-md),inset_0_1px_0_rgba(255,255,255,0.14)] hover:bg-surface-800 hover:shadow-[0_12px_24px_-12px_var(--c-shadow-lg)]',
     secondary:
       'bg-surface-0 text-surface-800 ring-1 ring-inset ring-surface-200 shadow-[0_1px_2px_var(--c-shadow-sm)] hover:bg-surface-50 hover:text-surface-950 hover:ring-surface-300',
     ghost: 'bg-transparent text-surface-600 hover:bg-surface-100 hover:text-surface-950',
@@ -503,9 +539,9 @@ export function ActionButton({
       onClick={onClick}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={`inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-5 text-[14px] font-semibold tracking-[-0.01em] transition-[background-color,box-shadow,transform,color] duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none motion-reduce:active:scale-100 ${tone} ${className}`}
+      className={`inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-6 text-[14.5px] font-semibold tracking-[-0.01em] transition-[background-color,box-shadow,transform,color] duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none motion-reduce:active:scale-100 ${tone} ${className}`}
     >
-      {loading && <Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />}
+      {loading && <Loader2 size={16} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />}
       {children}
     </button>
   );
@@ -514,33 +550,42 @@ export function ActionButton({
 /** A fact Shopify reported, shown read-only. A missing value says so instead of showing a default. */
 export function FactTile({ label, value, icon: Icon }: { label: string; value: string | null; icon?: LucideIcon }) {
   return (
-    <div className="rounded-xl bg-surface-50 px-3.5 py-3 ring-1 ring-inset ring-surface-200/70">
-      <p className="flex items-center gap-1.5 text-[11.5px] font-medium text-surface-500">
-        {Icon && <Icon size={13} strokeWidth={2} className="text-surface-400" aria-hidden="true" />}
-        {label}
-      </p>
-      {value ? (
-        <p className="mt-1 truncate text-[14px] font-semibold tracking-[-0.01em] text-surface-950" title={value}>
-          {value}
-        </p>
-      ) : (
-        <p className="mt-1 text-[13px] text-surface-400">Not reported by Shopify</p>
+    <div className="flex items-start gap-3 rounded-2xl bg-surface-50 px-4 py-3.5 ring-1 ring-inset ring-surface-200/70">
+      {Icon && (
+        <span className="mt-px flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-surface-0 text-surface-500 ring-1 ring-inset ring-surface-200">
+          <Icon size={15} strokeWidth={1.9} aria-hidden="true" />
+        </span>
       )}
+      <div className="min-w-0">
+        <p className="text-[11.5px] font-medium text-surface-500">{label}</p>
+        {value ? (
+          <p className="mt-0.5 truncate text-[14px] font-semibold tracking-[-0.01em] text-surface-950" title={value}>
+            {value}
+          </p>
+        ) : (
+          <p className="mt-0.5 text-[13px] text-surface-400">Not reported by Shopify</p>
+        )}
+      </div>
     </div>
   );
 }
 
 // ─── Controls ────────────────────────────────────────────────────────
 
+/**
+ * The "filled" field: a soft well with a hairline ring that lifts to white and takes a brand ring
+ * on focus. `ring-inset` keeps the 1px/2px line inside the box, so a field never changes size when
+ * it is focused, and the leading icon (when there is one) sits in the padding the input reserves.
+ */
 const controlBase =
-  'w-full rounded-xl border bg-surface-0 text-[14px] text-surface-950 outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-surface-400 focus:ring-4';
+  'w-full rounded-xl border-0 bg-surface-50 text-[14.5px] text-surface-950 outline-none ring-1 ring-inset transition-[box-shadow,background-color] duration-150 placeholder:text-surface-400 focus:bg-surface-0 focus:ring-2';
 
 /** Neutral or flagged. Kept in one place so every control in the flow marks a missing answer the
- * same way — a red edge that survives focus, rather than a border that disappears when tabbed to. */
+ * same way — a red ring that survives focus, rather than a border that disappears when tabbed to. */
 function controlTone(invalid?: boolean) {
   return invalid
-    ? 'border-critical-300 hover:border-critical-400 focus:border-critical-500 focus:ring-critical-100'
-    : 'border-surface-200 hover:border-surface-300 focus:border-brand-500 focus:ring-brand-100';
+    ? 'bg-critical-50/50 ring-critical-300 hover:ring-critical-400 focus:ring-critical-500 focus:shadow-[0_0_0_4px_var(--c-critical-100)]'
+    : 'ring-surface-200 hover:bg-surface-0 hover:ring-surface-300 focus:ring-brand-500 focus:shadow-[0_0_0_4px_var(--c-brand-100)]';
 }
 
 /**
@@ -552,30 +597,48 @@ function describedBy(id: string) {
   return `${id}-hint ${id}-error`;
 }
 
+/** The icon inside a field. It warms to the brand colour when the field has focus. */
+function LeadingIcon({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <Icon
+      size={17}
+      strokeWidth={1.8}
+      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-surface-400 transition-colors duration-150 group-focus-within:text-brand-600"
+      aria-hidden="true"
+    />
+  );
+}
+
 export function TextField({
   id,
   value,
   onChange,
   placeholder,
   invalid,
+  icon,
 }: {
   id: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   invalid?: boolean;
+  /** A mark for what the field holds, shown inside it on the left. */
+  icon?: LucideIcon;
 }) {
   return (
-    <input
-      id={id}
-      type="text"
-      value={value}
-      placeholder={placeholder}
-      aria-describedby={describedBy(id)}
-      aria-invalid={invalid || undefined}
-      onChange={(event) => onChange(event.target.value)}
-      className={`${controlBase} ${controlTone(invalid)} h-11 px-3.5`}
-    />
+    <div className="group relative">
+      {icon && <LeadingIcon icon={icon} />}
+      <input
+        id={id}
+        type="text"
+        value={value}
+        placeholder={placeholder}
+        aria-describedby={describedBy(id)}
+        aria-invalid={invalid || undefined}
+        onChange={(event) => onChange(event.target.value)}
+        className={`${controlBase} ${controlTone(invalid)} h-12 ${icon ? 'pl-11' : 'pl-4'} pr-4`}
+      />
+    </div>
   );
 }
 
@@ -590,6 +653,7 @@ export function SelectField({
   placeholder,
   onChange,
   invalid,
+  icon,
 }: {
   id: string;
   value: string;
@@ -597,16 +661,18 @@ export function SelectField({
   placeholder: string;
   onChange: (value: string) => void;
   invalid?: boolean;
+  icon?: LucideIcon;
 }) {
   return (
-    <div className="relative">
+    <div className="group relative">
+      {icon && <LeadingIcon icon={icon} />}
       <select
         id={id}
         value={value}
         aria-describedby={describedBy(id)}
         aria-invalid={invalid || undefined}
         onChange={(event) => onChange(event.target.value)}
-        className={`${controlBase} ${controlTone(invalid)} h-11 cursor-pointer appearance-none pl-3.5 pr-10 ${value ? '' : 'text-surface-400'}`}
+        className={`${controlBase} ${controlTone(invalid)} h-12 cursor-pointer appearance-none ${icon ? 'pl-11' : 'pl-4'} pr-11 ${value ? '' : 'text-surface-400'}`}
       >
         <option value="">{placeholder}</option>
         {options.map((option) => (
@@ -617,7 +683,7 @@ export function SelectField({
       </select>
       <ChevronDown
         size={16}
-        className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-surface-400"
+        className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-surface-400"
         aria-hidden="true"
       />
     </div>
@@ -637,6 +703,7 @@ export function LabelledSelect({
   onChange,
   invalid,
   disabled = false,
+  icon,
 }: {
   id: string;
   value: string;
@@ -645,9 +712,11 @@ export function LabelledSelect({
   onChange: (value: string) => void;
   invalid?: boolean;
   disabled?: boolean;
+  icon?: LucideIcon;
 }) {
   return (
-    <div className="relative">
+    <div className="group relative">
+      {icon && <LeadingIcon icon={icon} />}
       <select
         id={id}
         value={value}
@@ -655,7 +724,7 @@ export function LabelledSelect({
         aria-describedby={describedBy(id)}
         aria-invalid={invalid || undefined}
         onChange={(event) => onChange(event.target.value)}
-        className={`${controlBase} ${controlTone(invalid)} h-11 cursor-pointer appearance-none pl-3.5 pr-10 disabled:cursor-not-allowed disabled:bg-surface-50 disabled:opacity-60 ${value ? '' : 'text-surface-400'}`}
+        className={`${controlBase} ${controlTone(invalid)} h-12 cursor-pointer appearance-none ${icon ? 'pl-11' : 'pl-4'} pr-11 disabled:cursor-not-allowed disabled:bg-surface-100 disabled:opacity-60 disabled:hover:bg-surface-100 ${value ? '' : 'text-surface-400'}`}
       >
         <option value="">{placeholder}</option>
         {options.map((option) => (
@@ -666,13 +735,14 @@ export function LabelledSelect({
       </select>
       <ChevronDown
         size={16}
-        className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-surface-400"
+        className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-surface-400"
         aria-hidden="true"
       />
     </div>
   );
 }
 
+/** A multi-line field with its length counter inside the box, bottom right, where the eye already is. */
 export function TextArea({
   id,
   value,
@@ -689,7 +759,7 @@ export function TextArea({
   rows?: number;
 }) {
   return (
-    <div>
+    <div className="relative">
       <textarea
         id={id}
         rows={rows}
@@ -698,9 +768,9 @@ export function TextArea({
         placeholder={placeholder}
         aria-describedby={describedBy(id)}
         onChange={(event) => onChange(event.target.value)}
-        className={`${controlBase} ${controlTone(false)} block resize-y px-3.5 py-2.5 leading-[1.55]`}
+        className={`${controlBase} ${controlTone(false)} block resize-none px-4 pb-8 pt-3 leading-[1.55]`}
       />
-      <p className="mt-1.5 text-right font-mono text-[11.5px] tabular-nums text-surface-400">
+      <p className="pointer-events-none absolute bottom-2.5 right-3.5 font-mono text-[11px] tabular-nums text-surface-400">
         {value.length}/{maxLength}
       </p>
     </div>
@@ -774,14 +844,54 @@ export function QuietNote({ children }: { children: ReactNode }) {
 // Moved to components/Toast.tsx so the whole app can use them; re-exported for the setup steps.
 export { ToastStack, type ToastMessage } from '../Toast';
 
-// ─── Choice cards ────────────────────────────────────────────────────
+// ─── Choice tiles ────────────────────────────────────────────────────
 
 function cardClasses(selected: boolean, className = '') {
-  return `group relative flex h-full cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3.5 transition-[border-color,background-color,box-shadow,transform] duration-200 motion-safe:hover:-translate-y-px ${
+  return `group relative flex h-full cursor-pointer items-start gap-3.5 rounded-2xl p-4 ring-1 ring-inset transition-[background-color,box-shadow,transform] duration-200 motion-safe:hover:-translate-y-px ${
     selected
-      ? 'border-brand-500 bg-brand-50/60 shadow-[0_0_0_1px_var(--c-brand-500),0_12px_26px_-20px_var(--c-brand-600)]'
-      : 'border-surface-200 bg-surface-0 hover:border-surface-300 hover:shadow-[0_10px_24px_-18px_var(--c-shadow-lg)]'
+      ? 'bg-brand-50/70 ring-2 ring-brand-500 shadow-[0_10px_20px_-18px_var(--c-brand-600)]'
+      : 'bg-surface-0 ring-surface-200 hover:bg-surface-50/70 hover:ring-surface-300 hover:shadow-[0_12px_26px_-20px_var(--c-shadow-lg)]'
   } ${className}`;
+}
+
+/**
+ * The mark on a tile: it fills with the brand colour when the tile is chosen. With a `rank` it also
+ * carries a small number on its corner — "this one is first" — so an ordering is visible on the very
+ * tiles it applies to instead of only in a list somewhere else.
+ */
+function TileIcon({ icon: Icon, selected, rank }: { icon: LucideIcon; selected: boolean; rank?: number }) {
+  return (
+    <span aria-hidden="true" className="relative flex-shrink-0">
+      <span
+        className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors duration-200 ${
+          selected ? 'bg-brand-600 text-surface-0' : 'bg-surface-100 text-surface-600 group-hover:bg-surface-200/70'
+        }`}
+      >
+        <Icon size={18} strokeWidth={1.8} />
+      </span>
+      {rank !== undefined && (
+        <span className="absolute -left-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-surface-950 px-1 text-[11px] font-semibold tabular-nums leading-none text-surface-0 ring-2 ring-surface-0">
+          {rank}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** The selection indicator, at the right edge of a tile: a round radio dot or a square tick. */
+function Indicator({ selected, shape }: { selected: boolean; shape: 'round' | 'square' }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`mt-0.5 flex h-[20px] w-[20px] flex-shrink-0 items-center justify-center border-2 transition-colors duration-200 peer-focus-visible:ring-2 peer-focus-visible:ring-brand-500 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface-0 ${
+        shape === 'round' ? 'rounded-full' : 'rounded-[7px]'
+      } ${selected ? 'border-brand-600 bg-brand-600 text-surface-0' : 'border-surface-300 bg-surface-0 group-hover:border-surface-400'}`}
+    >
+      {/* surface-0, not white: brand-600 is a pale lavender in dark mode and a white mark on it
+          disappears. */}
+      {selected && (shape === 'round' ? <span className="h-[7px] w-[7px] rounded-full bg-surface-0" /> : <Check size={13} strokeWidth={3.2} />)}
+    </span>
+  );
 }
 
 /** A selectable option with a title and an explanation of what choosing it does. */
@@ -793,6 +903,7 @@ export function ChoiceCard({
   description,
   onSelect,
   className,
+  icon,
 }: {
   name: string;
   value: string;
@@ -802,6 +913,8 @@ export function ChoiceCard({
   onSelect: (value: string) => void;
   /** Grid placement, e.g. letting the last card of an odd row span it. */
   className?: string;
+  /** A mark for what the option is. */
+  icon?: LucideIcon;
 }) {
   const id = `${name}-${value.replace(/\W+/g, '-').toLowerCase()}`;
   return (
@@ -814,22 +927,14 @@ export function ChoiceCard({
         onChange={() => onSelect(value)}
         className="peer sr-only"
       />
-      <span
-        aria-hidden="true"
-        className={`mt-px flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-200 peer-focus-visible:ring-2 peer-focus-visible:ring-brand-500 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface-0 ${
-          selected ? 'border-brand-600 bg-brand-600' : 'border-surface-300 bg-surface-0 group-hover:border-surface-400'
-        }`}
-      >
-        {/* surface-0, not white: brand-600 is a pale lavender in dark mode and a white dot on it
-            disappears. */}
-        {selected && <span className="h-[6px] w-[6px] rounded-full bg-surface-0" />}
-      </span>
-      <span className="min-w-0">
-        <span className={`block text-[14px] font-semibold leading-snug tracking-[-0.01em] ${selected ? 'text-brand-900' : 'text-surface-900'}`}>
+      {icon && <TileIcon icon={icon} selected={selected} />}
+      <span className="min-w-0 flex-1">
+        <span className={`block text-[14px] font-semibold leading-snug tracking-[-0.01em] ${selected ? 'text-brand-900' : 'text-surface-950'}`}>
           {label}
         </span>
-        {description && <span className="mt-1 block text-pretty text-[12.5px] leading-[1.45] text-surface-500">{description}</span>}
+        {description && <span className="mt-1 block text-pretty text-[12.5px] leading-[1.5] text-surface-500">{description}</span>}
       </span>
+      <Indicator selected={selected} shape="round" />
     </label>
   );
 }
@@ -841,12 +946,17 @@ export function CheckCard({
   label,
   description,
   onToggle,
+  icon,
+  rank,
 }: {
   id: string;
   checked: boolean;
   label: string;
   description?: string;
   onToggle: (next: boolean) => void;
+  icon?: LucideIcon;
+  /** Where this choice stands in an order the merchant is building (1 = first). Shown on its mark. */
+  rank?: number;
 }) {
   return (
     <label htmlFor={id} className={cardClasses(checked)}>
@@ -857,19 +967,70 @@ export function CheckCard({
         onChange={(event) => onToggle(event.target.checked)}
         className="peer sr-only"
       />
-      <span
-        aria-hidden="true"
-        className={`mt-px flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-[6px] border-2 transition-colors duration-200 peer-focus-visible:ring-2 peer-focus-visible:ring-brand-500 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface-0 ${
-          checked ? 'border-brand-600 bg-brand-600 text-surface-0' : 'border-surface-300 bg-surface-0 group-hover:border-surface-400'
-        }`}
-      >
-        {checked && <Check size={12} strokeWidth={3.2} />}
-      </span>
-      <span className="min-w-0">
-        <span className={`block text-[14px] font-semibold leading-snug tracking-[-0.01em] ${checked ? 'text-brand-900' : 'text-surface-900'}`}>
+      {icon && <TileIcon icon={icon} selected={checked} rank={rank} />}
+      <span className="min-w-0 flex-1">
+        <span className={`block text-[14px] font-semibold leading-snug tracking-[-0.01em] ${checked ? 'text-brand-900' : 'text-surface-950'}`}>
           {label}
         </span>
-        {description && <span className="mt-1 block text-pretty text-[12.5px] leading-[1.45] text-surface-500">{description}</span>}
+        {description && <span className="mt-1 block text-pretty text-[12.5px] leading-[1.5] text-surface-500">{description}</span>}
+      </span>
+      <Indicator selected={checked} shape="square" />
+    </label>
+  );
+}
+
+/**
+ * An on/off setting as a real switch.
+ *
+ * It is still a native checkbox underneath (`role="switch"`), so it is one tab stop, toggles with
+ * Space and is announced as on or off; the track and knob are drawn over it. Used where the answer
+ * is a state of the product ("re-analyze automatically") rather than an item picked from a list,
+ * which is what a CheckCard is for.
+ */
+export function ToggleCard({
+  id,
+  checked,
+  label,
+  description,
+  onToggle,
+  icon,
+}: {
+  id: string;
+  checked: boolean;
+  label: string;
+  description?: string;
+  onToggle: (next: boolean) => void;
+  icon?: LucideIcon;
+}) {
+  return (
+    <label htmlFor={id} className={cardClasses(checked)}>
+      <input
+        id={id}
+        type="checkbox"
+        role="switch"
+        aria-checked={checked}
+        checked={checked}
+        onChange={(event) => onToggle(event.target.checked)}
+        className="peer sr-only"
+      />
+      {icon && <TileIcon icon={icon} selected={checked} />}
+      <span className="min-w-0 flex-1">
+        <span className={`block text-[14px] font-semibold leading-snug tracking-[-0.01em] ${checked ? 'text-brand-900' : 'text-surface-950'}`}>
+          {label}
+        </span>
+        {description && <span className="mt-1 block text-pretty text-[12.5px] leading-[1.5] text-surface-500">{description}</span>}
+      </span>
+      <span
+        aria-hidden="true"
+        className={`relative mt-0.5 h-6 w-11 flex-shrink-0 rounded-full transition-colors duration-200 peer-focus-visible:ring-2 peer-focus-visible:ring-brand-500 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface-0 ${
+          checked ? 'bg-brand-600' : 'bg-surface-300'
+        }`}
+      >
+        <span
+          className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-surface-0 shadow-[0_1px_3px_var(--c-shadow-md)] transition-transform duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none ${
+            checked ? 'translate-x-5' : 'translate-x-0'
+          }`}
+        />
       </span>
     </label>
   );
@@ -928,13 +1089,13 @@ export function MultiSelectChips({
             type="button"
             aria-pressed={isSelected}
             onClick={() => onToggle(option)}
-            className={`inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg px-3.5 text-[13px] font-medium ring-1 ring-inset transition-[background-color,color,box-shadow,transform] duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 active:scale-[0.97] motion-reduce:active:scale-100 ${
+            className={`inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl px-4 text-[13.5px] font-medium ring-1 ring-inset transition-[background-color,color,box-shadow,transform] duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 active:scale-[0.97] motion-reduce:active:scale-100 ${
               isSelected
-                ? 'bg-brand-600 text-surface-0 ring-brand-600'
+                ? 'bg-brand-600 text-surface-0 ring-brand-600 shadow-[0_10px_20px_-14px_var(--c-brand-600)]'
                 : 'bg-surface-0 text-surface-700 ring-surface-200 hover:bg-brand-50 hover:text-brand-800 hover:ring-brand-200'
             }`}
           >
-            {isSelected && <Check size={13} strokeWidth={2.8} aria-hidden="true" />}
+            {isSelected && <Check size={14} strokeWidth={2.8} aria-hidden="true" />}
             {option}
           </button>
         );
@@ -976,6 +1137,7 @@ export function TagInput({
   disabled = false,
   invalid,
   transform,
+  icon: Icon,
 }: {
   id: string;
   values: string[];
@@ -986,6 +1148,8 @@ export function TagInput({
   invalid?: boolean;
   /** Normalises an entry as it is committed (lower-casing a keyword, stripping a URL to a host). */
   transform?: (raw: string) => string | null;
+  /** A mark for what is being collected, at the start of the field. */
+  icon?: LucideIcon;
 }) {
   const [draft, setDraft] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
@@ -1027,14 +1191,17 @@ export function TagInput({
   return (
     <div>
       <div
-        className={`flex min-h-11 flex-wrap items-center gap-1.5 rounded-xl border px-2 py-1.5 transition-[border-color,box-shadow] duration-150 focus-within:ring-4 ${
+        className={`flex min-h-12 flex-wrap items-center gap-1.5 rounded-xl py-1.5 pr-2 ring-1 ring-inset transition-[box-shadow,background-color] duration-150 focus-within:bg-surface-0 focus-within:ring-2 ${
+          Icon ? 'pl-3' : 'pl-2'
+        } ${
           disabled
-            ? 'border-surface-200 bg-surface-50'
+            ? 'bg-surface-100 ring-surface-200'
             : invalid
-              ? 'border-critical-300 bg-surface-0 hover:border-critical-400 focus-within:border-critical-500 focus-within:ring-critical-100'
-              : 'border-surface-200 bg-surface-0 hover:border-surface-300 focus-within:border-brand-500 focus-within:ring-brand-100'
+              ? 'bg-critical-50/50 ring-critical-300 hover:ring-critical-400 focus-within:ring-critical-500 focus-within:shadow-[0_0_0_4px_var(--c-critical-100)]'
+              : 'group bg-surface-50 ring-surface-200 hover:bg-surface-0 hover:ring-surface-300 focus-within:ring-brand-500 focus-within:shadow-[0_0_0_4px_var(--c-brand-100)]'
         }`}
       >
+        {Icon && <Icon size={17} strokeWidth={1.8} className="flex-shrink-0 text-surface-400" aria-hidden="true" />}
         {values.map((value) => (
           <Chip
             key={value}
@@ -1059,7 +1226,7 @@ export function TagInput({
           onKeyDown={onKeyDown}
           onBlur={() => draft.trim() && commit(draft)}
           placeholder={full ? `Maximum of ${max} reached` : values.length === 0 ? placeholder : 'Add another…'}
-          className="min-w-[9rem] flex-1 bg-transparent px-1.5 py-1 text-[14px] text-surface-950 outline-none placeholder:text-surface-400 disabled:cursor-not-allowed"
+          className="min-w-[9rem] flex-1 bg-transparent px-1.5 py-1.5 text-[14.5px] text-surface-950 outline-none placeholder:text-surface-400 disabled:cursor-not-allowed"
         />
       </div>
       <div className="mt-1.5 flex items-baseline justify-between gap-2">
@@ -1100,12 +1267,12 @@ export function SuggestionRow({
   const lowered = selected.map((value) => value.toLowerCase());
 
   return (
-    <div className="rounded-xl border border-dashed border-surface-300 bg-surface-50/70 px-3.5 py-3">
+    <div className="rounded-2xl border border-dashed border-surface-300 bg-surface-50/70 px-4 py-3.5">
       <p id={headingId} className="flex items-center gap-1.5 text-[12px] font-medium text-surface-600">
         <Sparkles size={13} className="text-brand-600" aria-hidden="true" />
         {label}
       </p>
-      <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-labelledby={headingId}>
+      <div className="mt-2.5 flex flex-wrap gap-1.5" role="group" aria-labelledby={headingId}>
         {suggestions.map((suggestion) => {
           const added = lowered.includes(suggestion.value.toLowerCase());
           return (
@@ -1131,12 +1298,18 @@ export function SuggestionRow({
   );
 }
 
-/** Ordered priority list. Position is the answer, so moving an item is the interaction. */
+/**
+ * Ordered priority list. Position is the answer, so moving an item is the interaction.
+ *
+ * Each row carries the same mark as the tile it came from, so the two read as one thing. Labels wrap
+ * rather than truncate: on a phone the two arrow buttons take a third of the row, and a name cut to
+ * "Product & collection …" is a name the merchant can no longer tell from its neighbour.
+ */
 export function PriorityList({
   items,
   onReorder,
 }: {
-  items: Array<{ key: string; label: string }>;
+  items: Array<{ key: string; label: string; icon?: LucideIcon }>;
   onReorder: (keys: string[]) => void;
 }) {
   const move = (index: number, direction: -1 | 1) => {
@@ -1148,32 +1321,36 @@ export function PriorityList({
   };
 
   const moveButton =
-    'flex h-8 w-8 items-center justify-center rounded-lg text-surface-500 ring-1 ring-inset ring-surface-200 transition-[background-color,color,transform] hover:bg-surface-100 hover:text-surface-950 active:scale-95 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 motion-reduce:active:scale-100';
+    'flex h-9 w-9 items-center justify-center rounded-lg text-surface-500 ring-1 ring-inset ring-surface-200 transition-[background-color,color,transform] hover:bg-surface-100 hover:text-surface-950 active:scale-95 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 motion-reduce:active:scale-100';
 
   return (
-    <ol className="divide-y divide-surface-100 overflow-hidden rounded-xl bg-surface-0 ring-1 ring-inset ring-surface-200">
-      {items.map((item, index) => (
-        <li key={item.key} className="flex items-center gap-3 px-3.5 py-2.5">
-          <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 font-mono text-[12px] font-semibold tabular-nums text-brand-700">
-            {index + 1}
-          </span>
-          <span className="min-w-0 flex-1 truncate text-[14px] font-semibold tracking-[-0.01em] text-surface-900">{item.label}</span>
-          <span className="flex flex-shrink-0 gap-1.5">
-            <button type="button" onClick={() => move(index, -1)} disabled={index === 0} aria-label={`Move ${item.label} up`} className={moveButton}>
-              <ArrowUp size={14} strokeWidth={2.4} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              onClick={() => move(index, 1)}
-              disabled={index === items.length - 1}
-              aria-label={`Move ${item.label} down`}
-              className={moveButton}
-            >
-              <ArrowDown size={14} strokeWidth={2.4} aria-hidden="true" />
-            </button>
-          </span>
-        </li>
-      ))}
+    <ol className="divide-y divide-surface-100 overflow-hidden rounded-2xl bg-surface-0 ring-1 ring-inset ring-surface-200">
+      {items.map((item, index) => {
+        const Icon = item.icon;
+        return (
+          <li key={item.key} className="flex items-center gap-3 px-3.5 py-2.5 sm:gap-3.5 sm:px-4">
+            <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-surface-950 font-mono text-[12px] font-semibold tabular-nums text-surface-0">
+              {index + 1}
+            </span>
+            {Icon && <Icon size={17} strokeWidth={1.8} className="hidden flex-shrink-0 text-surface-400 sm:block" aria-hidden="true" />}
+            <span className="min-w-0 flex-1 text-pretty text-[14px] font-semibold leading-snug tracking-[-0.01em] text-surface-950">{item.label}</span>
+            <span className="flex flex-shrink-0 gap-1.5">
+              <button type="button" onClick={() => move(index, -1)} disabled={index === 0} aria-label={`Move ${item.label} up`} className={moveButton}>
+                <ArrowUp size={15} strokeWidth={2.4} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={() => move(index, 1)}
+                disabled={index === items.length - 1}
+                aria-label={`Move ${item.label} down`}
+                className={moveButton}
+              >
+                <ArrowDown size={15} strokeWidth={2.4} aria-hidden="true" />
+              </button>
+            </span>
+          </li>
+        );
+      })}
     </ol>
   );
 }

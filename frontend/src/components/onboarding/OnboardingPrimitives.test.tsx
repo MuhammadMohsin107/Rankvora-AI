@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
+import { Search } from 'lucide-react';
 import { describe, expect, it, vi } from 'vitest';
 import {
   ActionButton,
@@ -18,6 +19,7 @@ import {
   SuggestionRow,
   TagInput,
   TextField,
+  ToggleCard,
   furthestReachable,
   stepsOwed,
 } from './OnboardingPrimitives';
@@ -382,5 +384,51 @@ describe('PriorityList', () => {
     render(<PriorityList items={items} onReorder={() => undefined} />);
     expect(screen.getByRole('button', { name: 'Move Search visibility up' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Move Performance down' })).toBeDisabled();
+  });
+});
+
+describe('CheckCard rank', () => {
+  it('shows where a chosen tile stands in an order, on the tile itself', () => {
+    render(<CheckCard id="c" checked label="Search visibility" icon={Search} rank={2} onToggle={() => undefined} />);
+    const tile = screen.getByRole('checkbox', { name: /Search visibility/ }).closest('label') as HTMLElement;
+    expect(within(tile).getByText('2')).toBeInTheDocument();
+  });
+
+  it('shows no number when there is no order to show', () => {
+    render(<CheckCard id="c" checked label="Search visibility" icon={Search} onToggle={() => undefined} />);
+    const tile = screen.getByRole('checkbox', { name: /Search visibility/ }).closest('label') as HTMLElement;
+    expect(within(tile).queryByText(/^\d$/)).not.toBeInTheDocument();
+  });
+
+  it('does not let the number change the tile’s accessible name', () => {
+    render(<CheckCard id="c" checked label="Search visibility" icon={Search} rank={1} onToggle={() => undefined} />);
+    expect(screen.getByRole('checkbox', { name: 'Search visibility' })).toBeInTheDocument();
+  });
+});
+
+describe('ToggleCard', () => {
+  it('is a switch that reports on and off', () => {
+    const onToggle = vi.fn();
+    render(<ToggleCard id="t" checked={false} label="Re-analyze automatically" onToggle={onToggle} />);
+    const control = screen.getByRole('switch', { name: /Re-analyze automatically/ });
+    expect(control).toHaveAttribute('aria-checked', 'false');
+    fireEvent.click(control);
+    expect(onToggle).toHaveBeenCalledWith(true);
+  });
+
+  it('shows its state, and its description', () => {
+    render(<ToggleCard id="t" checked label="Re-analyze automatically" description="Runs on the schedule below." onToggle={() => undefined} />);
+    expect(screen.getByRole('switch')).toBeChecked();
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByText('Runs on the schedule below.')).toBeInTheDocument();
+  });
+});
+
+describe('PriorityList wrapping and marks', () => {
+  it('keeps a long name whole instead of cutting it off', () => {
+    const long = 'Product & collection content';
+    render(<PriorityList items={[{ key: 'content', label: long, icon: Search }]} onReorder={() => undefined} />);
+    const name = screen.getByText(long);
+    expect(name.className).not.toMatch(/truncate/);
   });
 });
