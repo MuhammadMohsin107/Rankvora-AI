@@ -223,6 +223,9 @@ export default function Onboarding() {
   }, [stopCount]);
 
   // ── Initial load ───────────────────────────────────────────────────
+  // Runs once on arrival: it reads and then clears the ?google= result from the address, so re-running
+  // when the address changes would be wrong. Hence no `location.search` in the dependencies below.
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     let cancelled = false;
 
@@ -259,6 +262,7 @@ export default function Onboarding() {
       cancelled = true;
     };
   }, [navigate]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   // ── Catalogue-derived suggestions ──────────────────────────────────
   // Fetched once, in parallel with the merchant reading step 1, so steps 2–4 are ready when they

@@ -1,9 +1,11 @@
 import cors from 'cors';
 import express from 'express';
 import { env } from './config/env.js';
+import { bodyDefault } from './middleware/bodyDefault.js';
 import { cloudflareEdge } from './middleware/cloudflareEdge.js';
 import { REQUEST_ID_HEADER, requestLog } from './middleware/requestLog.js';
 import { clientErrorsRouter } from './routes/client-errors.js';
+import { cspReportRouter } from './routes/csp-report.js';
 import { healthRouter } from './routes/health.js';
 import { authRouter } from './routes/auth.js';
 import { shopifyRouter } from './routes/shopify.js';
@@ -46,6 +48,10 @@ export const app = express();
 // from loopback, which made the sign-in rate limits one bucket shared by every visitor.
 app.set('trust proxy', env.trustProxy);
 
+// Express 5 reads query strings with the plain parser by default; 'extended' (qs) is what Express 4 used,
+// so `?a[b]=1` and `?a[]=1` keep arriving as nested values exactly as before.
+app.set('query parser', 'extended');
+
 // On Cloudflare only (worker.ts switches it on): the caller's address from CF-Connecting-IP, and the
 // security headers nginx adds on the server. Before everything else, so no middleware and no rate
 // limiter ever sees the address the request arrived with. A no-op on Node.
@@ -77,6 +83,7 @@ app.use(cors({
 // Captures the exact raw bytes alongside the parsed body — Shopify webhook signatures are
 // computed over the raw request body, and re-serializing the parsed JSON would not match.
 app.use(express.json({ verify: (req, _res, buf) => { (req as express.Request).rawBody = Buffer.from(buf); } }));
+app.use(bodyDefault);
 
 // All Rankvora AI APIs mount under /api.
 app.use('/api', healthRouter);
@@ -113,6 +120,8 @@ app.use('/api/dashboard', dashboardRouter);
 app.use('/api/reports', reportsRouter);
 // Render crashes reported by the frontend's ErrorBoundary, written to this log.
 app.use('/api/client-errors', clientErrorsRouter);
+// Content-policy violations reported by the browser (report-only for now; see cloudflare/shell.ts).
+app.use('/api/csp-report', cspReportRouter);
 
 app.use(notFound);
 app.use(errorHandler);

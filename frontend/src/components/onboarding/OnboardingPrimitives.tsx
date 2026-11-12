@@ -1,5 +1,4 @@
-import { useEffect, useId, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
+import { useId, useState, type KeyboardEvent, type ReactNode } from 'react';
 import {
   AlertTriangle,
   ArrowDown,
@@ -445,6 +444,7 @@ export function FormSection({
     <section
       role="group"
       aria-labelledby={headingId}
+      // oxlint-disable-next-line jsx-a11y/role-supports-aria-props -- kept for the error styling hook; not announced by role=group
       aria-invalid={error ? true : undefined}
       className={`row-span-3 grid min-w-0 grid-rows-subgrid gap-y-0 ${className}`}
     >
@@ -774,79 +774,8 @@ export function QuietNote({ children }: { children: ReactNode }) {
 }
 
 // ─── Pop-ups ─────────────────────────────────────────────────────────
-
-export interface ToastMessage {
-  id: string;
-  tone: 'success' | 'info';
-  message: string;
-}
-
-/** How long a pop-up stays before it leaves by itself — long enough to read two lines without rushing. */
-const TOAST_MS = 9000;
-
-function Toast({ toast, onDismiss }: { toast: ToastMessage; onDismiss: (id: string) => void }) {
-  // Held while the pointer or keyboard focus is on it, so a merchant who is still reading is not
-  // cut off. The clock starts again from the full time when they let go.
-  const [held, setHeld] = useState(false);
-
-  useEffect(() => {
-    if (held) return;
-    const timer = window.setTimeout(() => onDismiss(toast.id), TOAST_MS);
-    return () => window.clearTimeout(timer);
-  }, [held, onDismiss, toast.id]);
-
-  const success = toast.tone === 'success';
-  const Icon = success ? Check : Info;
-  return (
-    <div
-      onMouseEnter={() => setHeld(true)}
-      onMouseLeave={() => setHeld(false)}
-      onFocus={() => setHeld(true)}
-      onBlur={() => setHeld(false)}
-      className={`pointer-events-auto flex items-start gap-2.5 rounded-lg border px-3 py-2.5 shadow-[0_16px_40px_-16px_rgba(15,23,42,0.35)] motion-safe:animate-scale-in ${
-        success ? 'border-success-100 bg-success-50 text-success-700' : 'border-info-100 bg-info-50 text-info-700'
-      }`}
-    >
-      <Icon size={14} className="mt-px flex-shrink-0" aria-hidden="true" />
-      <p className="min-w-0 flex-1 text-[12px] leading-[1.5]">{toast.message}</p>
-      <button
-        type="button"
-        onClick={() => onDismiss(toast.id)}
-        aria-label="Dismiss"
-        className="-mr-1 -mt-0.5 flex-shrink-0 rounded p-1 opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-      >
-        <X size={13} aria-hidden="true" />
-      </button>
-    </div>
-  );
-}
-
-/**
- * Short-lived messages, shown over the page instead of inside it.
- *
- * For what is worth saying once and is not part of the form: "Google connected", "none of this is
- * needed". Left inline, each of those sat in the step for good and pushed the real content down.
- * Anything the merchant must ACT on — a failed connection, a missing answer — stays inline, where it
- * cannot disappear before it is read.
- *
- * Rendered into the document body rather than where it is used: a step sits inside an animated
- * wrapper, and a transformed ancestor would make `fixed` position the pop-up against the step
- * instead of the window.
- */
-export function ToastStack({ toasts, onDismiss }: { toasts: ToastMessage[]; onDismiss: (id: string) => void }) {
-  return createPortal(
-    <div
-      role="status"
-      aria-live="polite"
-      className="pointer-events-none fixed right-4 top-4 z-50 flex w-[min(26rem,calc(100vw-2rem))] flex-col gap-2"
-    >
-      {toasts.map((toast) => (
-        <Toast key={toast.id} toast={toast} onDismiss={onDismiss} />
-      ))}
-    </div>,
-    document.body,
-  );
-}
+// Moved to components/Toast.tsx so the whole app can use them; re-exported for the setup steps.
+export { ToastStack, type ToastMessage } from '../Toast';
 
 // ─── Choice cards ────────────────────────────────────────────────────
 
@@ -987,6 +916,7 @@ export function MultiSelectChips({
     <div
       role="group"
       aria-label={label}
+      // oxlint-disable-next-line jsx-a11y/role-supports-aria-props -- kept for the error styling hook; not announced by role=group
       aria-invalid={invalid || undefined}
       aria-describedby={describedBy}
       className={`flex flex-wrap gap-1.5 rounded-lg border p-1.5 ${

@@ -50,7 +50,7 @@ export function signShopifyState(
 }
 
 export function verifyShopifyState(token: string): ShopifyStatePayload {
-  const payload = jwt.verify(token, env.jwtAccessSecret) as jwt.JwtPayload;
+  const payload = jwt.verify(token, env.jwtAccessSecret, { algorithms: ["HS256"] }) as jwt.JwtPayload;
   if (
     payload.type !== "shopify_state" ||
     typeof payload.sub !== "number" ||
@@ -105,7 +105,7 @@ export function verifyGoogleState(token: string): {
   storeId: number;
   returnTo?: GoogleReturnTo;
 } {
-  const payload = jwt.verify(token, env.jwtAccessSecret) as jwt.JwtPayload;
+  const payload = jwt.verify(token, env.jwtAccessSecret, { algorithms: ["HS256"] }) as jwt.JwtPayload;
   if (
     payload.type !== "google_state" ||
     typeof payload.sub !== "number" ||

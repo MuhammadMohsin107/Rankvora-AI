@@ -111,6 +111,14 @@ Shopify opens the app in an iframe in the merchant's admin. What that changes:
   instead of drawing the app's own sidebar and header, and the app is always light.
 - **Pages carry a per-shop framing policy.** The Worker (`backend/src/cloudflare/shell.ts`) answers every
   page request and adds `Content-Security-Policy: frame-ancestors` naming the shop that is showing the app.
+- **A content policy, in report-only mode.** The same page response carries `Content-Security-Policy-Report-Only`
+  (`contentSecurityPolicy()` in `shell.ts`): scripts only from this site, `cdn.shopify.com` and the page's own
+  inline script (named by hash, computed per response). The browser blocks nothing; it POSTs what it *would*
+  have blocked to `/api/csp-report` (`routes/csp-report.ts`), which logs one line per report with the query
+  string removed (the page address carries Shopify's `id_token`). **To enforce it:** open the app in a real
+  embedded session on staging, read the `[scorelo-csp] would block …` lines (`npm run cf:logs:staging`), add
+  whatever legitimate source they name to the policy, and once they stay quiet change the header name in
+  `serveWebsite()` to `Content-Security-Policy` (merging it with the `frame-ancestors` value).
 - **Outside the admin** (local development with `MOCK_AUTH`, a visit to the bare site) none of this applies;
   the bare site only says to open the app from the Shopify admin. Nothing on it asks for a store address.
 
@@ -128,6 +136,8 @@ npm run typecheck
 npm run build           # Node build into dist/
 
 cd ../frontend
+npm run lint            # oxlint; config and the reason each rule is off are in .oxlintrc.json
+npm test                # Vitest + Testing Library in jsdom (npm run test:watch while developing)
 npm run build           # type-check + production build into dist/
 ```
 

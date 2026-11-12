@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import ts from 'typescript';
+import { parse as parseJsonc, printParseErrorCode, type ParseError } from 'jsonc-parser';
 
 const backend = path.resolve(import.meta.dirname, '../..');
 const read = (relative: string) => fs.readFileSync(path.resolve(backend, relative), 'utf8');
@@ -38,11 +38,10 @@ interface Config extends WorkerConfig {
   env: Record<string, WorkerConfig>;
 }
 
-// TypeScript's own JSON-with-comments reader, so comments and trailing commas are read exactly as
-// Wrangler reads them.
-const parsed = ts.parseConfigFileTextToJson('wrangler.jsonc', read('wrangler.jsonc'));
-if (parsed.error) throw new Error(`wrangler.jsonc does not parse: ${ts.flattenDiagnosticMessageText(parsed.error.messageText, '\n')}`);
-const config = parsed.config as Config;
+// A JSON-with-comments reader, so comments and trailing commas are read the way Wrangler reads them.
+const parseErrors: ParseError[] = [];
+const config = parseJsonc(read('wrangler.jsonc'), parseErrors, { allowTrailingComma: true }) as Config;
+if (parseErrors.length > 0) throw new Error(`wrangler.jsonc does not parse: ${parseErrors.map((error) => `${printParseErrorCode(error.error)} at character ${error.offset}`).join('; ')}`);
 const workerSource = read(config.main);
 
 /** Every place the Worker runs: local development (the top level) and each environment. */

@@ -17,9 +17,23 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     plugins: [react()],
+    build: {
+      rollupOptions: {
+        output: {
+          // React and the router change far less often than the app's own code, so they get their own
+          // files: a deploy that only touches a page leaves them in the browser's cache.
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return undefined
+            if (/node_modules[\\/](react-router|react-router-dom|@remix-run)[\\/]/.test(id)) return 'router'
+            if (/node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'react'
+            return undefined
+          },
+        },
+      },
+    },
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './src'),
+        '@': path.resolve(import.meta.dirname, './src'),
       },
     },
     server: {

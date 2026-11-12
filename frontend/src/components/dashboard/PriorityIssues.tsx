@@ -122,6 +122,7 @@ export default function PriorityIssues({ issues, heading = 'Priority issues', he
         className={`${height === 'panel' ? '' : 'max-h-[420px] xl:max-h-none'} min-h-0 flex-1 overflow-y-auto [scrollbar-color:var(--c-surface-300)_transparent] [scrollbar-width:thin] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500`}
         ref={scrollChaining}
         role="region"
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region must be focusable so a keyboard can scroll it
         tabIndex={0}
         aria-label="Priority issues list"
       >

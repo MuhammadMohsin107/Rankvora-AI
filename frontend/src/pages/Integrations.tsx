@@ -501,6 +501,7 @@ function ShopifyPanel({ status, busy, shopInput, shopInputError, onShopInputChan
         </div>
       ) : status.status === 'not_connected' ? (
         <div className="mt-2 max-w-lg">
+          {/* oxlint-disable-next-line jsx-a11y/no-static-element-interactions -- Enter inside the text field submits the form */}
           <div className="mt-1.5 flex flex-wrap items-end gap-2" onKeyDown={(event) => { if (event.key === 'Enter') onConnect(); }}>
             <div className="min-w-[16rem] flex-1">
               <TextField

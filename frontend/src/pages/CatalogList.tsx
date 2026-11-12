@@ -19,6 +19,7 @@ import { SearchField, SelectField } from '../components/polaris/fields';
 
 type Tab = 'all' | 'critical' | 'warnings' | 'passing';
 type Sort = 'worst' | 'name' | 'best' | 'updated';
+const TABS: readonly Tab[] = ['all', 'critical', 'warnings', 'passing'];
 const SORTS: readonly Sort[] = ['worst', 'best', 'updated', 'name'];
 const SORT_LABELS: Record<Sort, string> = { worst: 'Needs most work first', best: 'Healthiest first', updated: 'Recently updated', name: 'Name A–Z' };
 
@@ -85,7 +86,6 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [movesState, setMovesState] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [tab, setTab] = useState<Tab>('all');
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<Sort>('worst');
   /**
@@ -102,6 +102,15 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
   // The move the table is filtered to, read from the address: ?area=content/product-descriptions&issue=…
   const area = searchParams.get('area');
   const issue = searchParams.get('issue');
+  // The tab lives in the address too (?tab=critical), so a reload, a shared link or the back button
+  // keeps it. 'all' is the default and is left out; an unknown value falls back to it.
+  const tabParam = searchParams.get('tab');
+  const tab: Tab = TABS.includes(tabParam as Tab) ? (tabParam as Tab) : 'all';
+  const setTab = (next: Tab) => {
+    const params = new URLSearchParams(searchParams);
+    if (next === 'all') params.delete('tab'); else params.set('tab', next);
+    setSearchParams(params, { replace: true });
+  };
   const move = area && issue ? { route: `/${area}`, title: issue } : null;
 
   const load = useCallback(async (fresh = false) => {
@@ -132,9 +141,23 @@ export default function CatalogList({ kind }: { kind: CatalogKind }) {
 
   const selectMove = (next: PriorityIssue) => {
     const same = move && move.route === next.route && move.title === next.title;
-    setSearchParams(same ? {} : { area: next.route.replace(/^\//, ''), issue: next.title });
+    // Only the move's own parameters change; the chosen tab stays.
+    const params = new URLSearchParams(searchParams);
+    if (same) {
+      params.delete('area');
+      params.delete('issue');
+    } else {
+      params.set('area', next.route.replace(/^\//, ''));
+      params.set('issue', next.title);
+    }
+    setSearchParams(params);
   };
-  const clearMove = () => setSearchParams({});
+  const clearMove = () => {
+    const params = new URLSearchParams(searchParams);
+    params.delete('area');
+    params.delete('issue');
+    setSearchParams(params);
+  };
 
   // The items the table works on: every item, or only those the chosen move names.
   const base = useMemo(() => {

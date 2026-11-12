@@ -33,6 +33,7 @@ function monotonePath(points: Point[]): string {
     slope[i] = (points[i + 1].y - points[i].y) / dx[i];
   }
 
+  // oxlint-disable-next-line unicorn/no-new-array -- n is a length here
   const tangent: number[] = new Array(n);
   tangent[0] = slope[0];
   tangent[n - 1] = slope[n - 2];
@@ -192,6 +193,7 @@ export default function ScoreTrend({ data }: Props) {
             </div>
           )}
 
+          {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- hover tooltip on a chart; the same numbers are in the table beside it */}
           <svg
             ref={svgRef}
             viewBox={`0 0 ${width} ${height}`}

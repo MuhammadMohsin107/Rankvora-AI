@@ -1,0 +1,29 @@
+{
+  // Run with `npm run lint`. Correctness problems are errors; suspicious patterns are warnings.
+  // Rules below are off on purpose — each one flags a pattern this codebase uses deliberately.
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "react-hooks", "jsx-a11y", "unicorn", "oxc"],
+  "categories": { "correctness": "error", "suspicious": "warn" },
+  "env": { "browser": true, "es2022": true },
+  "rules": {
+    // The new JSX transform needs no `import React`.
+    "react/react-in-jsx-scope": "off",
+    // React-Compiler-era rules. This app keeps the latest callback in a ref and re-runs effects on a
+    // route change on purpose; `react-hooks/exhaustive-deps` below is the check that matters.
+    "react/set-state-in-effect": "off",
+    "react/refs": "off",
+    "react/exhaustive-effect-dependencies": "off",
+    "react/memo-dependencies": "off",
+    // Style only. `.sort()` is fine here (ES2020 target has no toSorted), shadowed names are local, and
+    // XHR/FileReader callbacks use the on* form.
+    "unicorn/no-array-sort": "off",
+    "unicorn/consistent-function-scoping": "off",
+    "unicorn/prefer-add-event-listener": "off",
+    "eslint/no-shadow": "off",
+    // Many controls are a `role="tab"` / `role="region"` on the element the design needs. The jsx-a11y
+    // rules that check real behaviour (labels, alt text, keyboard handlers) stay on.
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "react-hooks/exhaustive-deps": "warn"
+  },
+  "ignorePatterns": ["dist", "node_modules", "public"]
+}

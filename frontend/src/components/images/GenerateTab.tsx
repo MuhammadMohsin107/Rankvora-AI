@@ -155,6 +155,7 @@ export default function GenerateTab({ product, ai, canWrite, onBusyChange, onAdd
       {!generating && selected && (
         <div className="space-y-2.5">
           <figure className="overflow-hidden rounded-xl border border-surface-200 bg-surface-50">
+            {/* oxlint-disable-next-line jsx-a11y/img-redundant-alt -- "picture" tells a screen reader this is generated artwork, not a product photo */}
             <img src={selected.image.dataUrl} alt={`AI-drawn picture for ${product.title}`} className="mx-auto max-h-80 w-auto object-contain" />
             <figcaption className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 border-t border-surface-200 bg-surface-0 px-3 py-1.5 text-[11px] text-surface-500">
               <span>Drawn by {selected.provider} · {selected.model}</span>
