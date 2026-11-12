@@ -316,6 +316,57 @@ export const REQUIRED_FIELD_MESSAGE: Record<RequiredField, string> = {
   automationConsent: 'Choose how changes to your store are approved.',
 };
 
+/**
+ * The longest value the server accepts for each free-text answer. MIRRORS `saveOnboardingStepSchema`
+ * in backend/src/schemas/onboarding.schema.ts. The server still decides; these let a field stop the
+ * merchant at the limit, as they type, instead of a save failing a step later with a generic message.
+ */
+export const FIELD_LIMITS = {
+  organizationName: 255,
+  brandName: 255,
+  primaryDomain: 512,
+  /** One brand alias. */
+  brandedTerm: 80,
+  /** One target keyword. */
+  keyword: 60,
+  /** One protected page path. */
+  protectedPath: 512,
+} as const;
+
+export const STOREFRONT_ADDRESS_MESSAGE = 'Enter a valid storefront address, for example https://example.com';
+
+/**
+ * Why a storefront address cannot be saved, or null when it can (including when it is blank: the
+ * field is optional, and Shopify's own domain is used when it is empty).
+ *
+ * MIRRORS `normaliseDomain` in backend/src/services/onboarding.service.ts: a bare host is accepted
+ * and given a scheme, anything that will not parse as a URL is refused, and so is a hostname without
+ * a dot (a typo or an intranet name, which no crawler could ever audit).
+ */
+export function storefrontAddressProblem(value: string | null | undefined): string | null {
+  const text = (value ?? '').trim();
+  if (!text) return null;
+  try {
+    const parsed = new URL(/^https?:\/\//i.test(text) ? text : `https://${text}`);
+    return parsed.hostname.includes('.') ? null : STOREFRONT_ADDRESS_MESSAGE;
+  } catch {
+    return STOREFRONT_ADDRESS_MESSAGE;
+  }
+}
+
+/** An answer that is present but cannot be saved, by field. Only the storefront address can be. */
+export type InvalidField = 'primaryDomain';
+
+/** The answers `step` holds that are filled in but not acceptable, with what to do about each. */
+export function invalidAnswers(step: number, draft: StepPayload): Partial<Record<InvalidField, string>> {
+  const problems: Partial<Record<InvalidField, string>> = {};
+  if (step === 1) {
+    const problem = storefrontAddressProblem(draft.primaryDomain);
+    if (problem) problems.primaryDomain = problem;
+  }
+  return problems;
+}
+
 /** A blank string, a whitespace-only one and an empty list are all "not answered". */
 function isAnswered(draft: StepPayload, field: RequiredField): boolean {
   const value = draft[field];
