@@ -346,7 +346,7 @@
  * The auth pages are the one surface with a palette of their own: a world-map panel on the left
  * (AuthWorldMap.tsx) on a deep-blue stage where a live node network moves (AuthBackdrop.tsx), and
  * a light form side on the right that fades into it. None of it follows the app theme — it is brand colour, not theme colour — so it
- * lives on its own class, and AuthLayout, AuthBackdrop, AuthField and AuthSubmitButton read only
+ * lives on its own class, and AuthLayout, AuthBackdrop and AuthWorldMap read only
  * these. Re-skinning the auth pages means editing here and nowhere else. */
 .auth-shell {
   /* The stage the network animates on. */
@@ -364,18 +364,11 @@
   --auth-panel-border: rgba(140, 170, 255, 0.22);
   --auth-panel-scrim: linear-gradient(100deg, rgba(3, 6, 18, 0.42) 0%, rgba(3, 6, 18, 0.18) 50%, rgba(3, 6, 18, 0) 80%);
   --auth-panel-ink: #ffffff;
-  --auth-panel-muted: rgba(238, 242, 255, 0.92);
   --auth-pill-ink: #1d1f3d;
 
   /* Accent: links, focus rings and the panel's dot. */
   --auth-accent:       #6d4cf0;
   --auth-accent-hover: #5b3bd9;
-  --auth-ring:         rgba(109, 76, 240, 0.20);
-
-  /* Submit button. */
-  --auth-btn-from: #7357f6;
-  --auth-btn-to:   #5236d6;
-  --auth-btn-glow: rgba(109, 76, 240, 0.55);
 }
 
 /* ── The form sheet stays LIGHT in every theme ────────────────────────────────
@@ -605,23 +598,6 @@
     padding-inline: 0;
   }
 
-  /* Title · supporting line · actions, on one row from `sm` up. */
-  .page-head {
-    @apply flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between;
-  }
-
-  /* 17/18px. The page already announces itself in the sidebar, the breadcrumb and the browser
-   * tab, so the title's job here is to anchor the page, not to be read first. Dropping it from
-   * 20/22 gives back a line of vertical space on every screen, and the hierarchy still holds
-   * because the supporting line under it is 12px and semi-muted. */
-  .page-title {
-    @apply text-[17px] font-semibold leading-[1.2] tracking-[-0.02em] text-surface-950 md:text-[18px];
-  }
-
-  .page-subtitle {
-    @apply mt-0.5 max-w-2xl text-[12px] leading-[1.4] text-surface-500;
-  }
-
   /* Vertical rhythm between the major blocks of a page. */
   .section-stack {
     @apply space-y-3;
@@ -688,69 +664,6 @@
     @apply shadow-md;
   }
 
-  .badge {
-    @apply inline-flex items-center px-1.5 py-0.5 rounded text-[10.5px] font-semibold tracking-wide uppercase;
-  }
-  /* Minimal badges: subtle backgrounds, text mostly dark gray */
-  .badge-critical {
-    @apply bg-critical-50 text-critical-700 border border-critical-100;
-  }
-  .badge-warning {
-    @apply bg-warning-50 text-warning-700 border border-warning-100;
-  }
-  .badge-success {
-    @apply bg-success-50 text-success-700 border border-success-100;
-  }
-  .badge-info {
-    @apply bg-info-50 text-info-700 border border-info-100;
-  }
-  .badge-neutral {
-    @apply bg-surface-100 text-surface-600 border border-surface-200;
-  }
-
-  /* Professional buttons */
-  /* `text-surface-0`, NOT `text-white`. The label has to invert with its own background: brand-600
-     is a DARK indigo (#4f46e5) in light mode and a LIGHT lavender (#8b87f5) in dark, so a fixed
-     white label goes from 8.6:1 contrast to about 2.2:1 — the "Re-analyze" and "Review evidence"
-     buttons were legible in light mode and barely readable in dark. surface-0 is white in light
-     and near-black in dark, which is ~8.6:1 both ways. Light mode is therefore unchanged. */
-  /* Control heights: 32px standard, 28px compact (.btn-xs). Both clear the 24px minimum for a
-     comfortable pointer target while giving back 4-8px per control against the old 36px. */
-  .btn-primary {
-    @apply inline-flex min-h-[32px] items-center justify-center gap-1.5 rounded-md bg-brand-600 px-3 py-1.5 text-[12.5px] font-medium text-surface-0 shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.2)] border border-brand-700
-      transition-all duration-200 hover:bg-brand-500 hover:shadow-[0_2px_4px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
-      active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none;
-  }
-
-  .btn-secondary {
-    @apply inline-flex min-h-[32px] items-center justify-center gap-1.5 rounded-md border border-surface-200 bg-surface-0 px-3 py-1.5 text-[12.5px] font-medium text-surface-700 shadow-sm
-      transition-all duration-200 hover:border-surface-300 hover:bg-surface-50 hover:text-surface-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
-      active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none;
-  }
-
-  .btn-outline {
-    @apply inline-flex min-h-[32px] items-center justify-center gap-1.5 rounded-md border border-surface-200 bg-transparent px-3 py-1.5 text-[12.5px] font-medium text-surface-700
-      transition-all duration-200 hover:border-surface-300 hover:bg-surface-50 hover:text-surface-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
-      active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-transparent;
-  }
-
-  .btn-ghost {
-    @apply inline-flex min-h-[32px] items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium text-surface-600
-      transition-all duration-200 hover:bg-surface-100 hover:text-surface-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
-      active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-transparent;
-  }
-
-  .btn-destructive {
-    @apply inline-flex min-h-[32px] items-center justify-center gap-1.5 rounded-md border border-critical-200 bg-critical-50 px-3 py-1.5 text-[12.5px] font-medium text-critical-700 shadow-sm
-      transition-all duration-200 hover:border-critical-300 hover:bg-critical-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-critical-500 focus-visible:ring-offset-2
-      active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none;
-  }
-
-  /* Row-level and toolbar actions. Pair with any .btn-* above. */
-  .btn-xs {
-    @apply min-h-[28px] gap-1 px-2 py-1 text-[11.5px];
-  }
-
     button {
       font-family: inherit;
     }
@@ -786,11 +699,6 @@
     }
   }
 
-  .stagger-1 { animation-delay: 0.05s; }
-  .stagger-2 { animation-delay: 0.1s; }
-  .stagger-3 { animation-delay: 0.15s; }
-  .stagger-4 { animation-delay: 0.2s; }
-  .stagger-5 { animation-delay: 0.25s; }
 }
 
 /* ─── Authentication experience ───────────────────────────────────────────────
@@ -801,24 +709,6 @@
 @keyframes auth-rise {
   from { opacity: 0; transform: translate3d(0, 24px, 0); }
   to   { opacity: 1; transform: translate3d(0, 0, 0); }
-}
-
-@keyframes auth-btn-sheen {
-  0%   { transform: translateX(-150%) skewX(-15deg); opacity: 0; }
-  20%  { opacity: 1; }
-  100% { transform: translateX(300%) skewX(-15deg); opacity: 0; }
-}
-
-/* ── Error shake ─────────────────────────────────────────────────────────────
-   A gentle horizontal shake applied to the field wrapper when a validation
-   error fires. Short enough not to distract, strong enough to be noticed. */
-@keyframes auth-field-shake {
-  0%, 100% { transform: translateX(0); }
-  16%       { transform: translateX(-5px); }
-  33%       { transform: translateX(4px); }
-  50%       { transform: translateX(-3px); }
-  66%       { transform: translateX(2px); }
-  83%       { transform: translateX(-1px); }
 }
 
 @keyframes auth-drift {
@@ -876,76 +766,11 @@
     animation: auth-pulse 3.2s ease-out infinite;
   }
 
-  /* ── Input base ── */
-  .auth-input {
-    transition:
-      border-color 0.18s ease,
-      box-shadow 0.18s ease,
-      background-color 0.22s ease;
-  }
-
-  /* ── Field group: micro-lift on focus-within ── */
-  .auth-field-group {
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .auth-field-group:focus-within {
-    transform: translateY(-2px);
-  }
-  /* Error shake: applied via JS by adding the class on submit with errors. */
-  .auth-field-group.auth-shake {
-    animation: auth-field-shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97);
-  }
-
-  /* ── Submit button hover / active ── */
-  .auth-submit-btn:hover:not(:disabled) {
-    box-shadow:
-      0 0 0 1px rgba(124, 58, 237, 0.30),
-      inset 0 1px 0 rgba(255, 255, 255, 0.18),
-      0 16px 32px -8px rgba(124, 58, 237, 0.55) !important;
-    background: linear-gradient(90deg, #8b5cf6 0%, #6d28d9 100%) !important;
-    transform: translateY(-2px) scale(1.008);
-  }
-  .auth-submit-btn:active:not(:disabled) {
-    transform: translateY(1px) scale(0.995);
-    box-shadow:
-      0 0 0 1px rgba(124, 58, 237, 0.20),
-      inset 0 2px 4px rgba(0, 0, 0, 0.18),
-      0 4px 12px -4px rgba(124, 58, 237, 0.35) !important;
-  }
-
-  /* ── Sheen sweep on button hover ── */
-  .auth-btn-sheen::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: linear-gradient(
-      105deg,
-      transparent 25%,
-      rgba(255, 255, 255, 0.18) 45%,
-      rgba(255, 255, 255, 0.32) 50%,
-      rgba(255, 255, 255, 0.18) 55%,
-      transparent 75%
-    );
-    transform: translateX(-150%) skewX(-15deg);
-    opacity: 0;
-    pointer-events: none;
-  }
-  .auth-submit-btn:hover:not(:disabled) .auth-btn-sheen::after {
-    animation: auth-btn-sheen 0.85s ease-out forwards;
-  }
-
   /* ── Reduced motion overrides ── */
   @media (prefers-reduced-motion: reduce) {
     .auth-rise          { animation: none !important; opacity: 1; transform: none; }
     .auth-drift         { animation: none !important; }
     .auth-pulse         { animation: none !important; opacity: 0; }
-    .auth-field-group.auth-shake { animation: none !important; }
-    .auth-submit-btn:hover:not(:disabled) .auth-btn-sheen::after { animation: none !important; }
-    .auth-submit-btn    { transition: none !important; }
-    .auth-field-group   { transition: none !important; }
-    .auth-field-group:focus-within { transform: none; }
-    .auth-input         { transition: none !important; }
   }
 }
 
