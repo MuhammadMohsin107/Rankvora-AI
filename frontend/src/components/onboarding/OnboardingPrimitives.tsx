@@ -781,6 +781,11 @@ export function TextArea({
  * With an `action`, the value is offered as a one-click answer. It is never written into the field
  * on its own: a value the merchant did not choose would be saved as theirs the moment they pressed
  * Continue, and would come back on every reload looking like something they typed.
+ *
+ * ONCE USED, IT IS GONE. A suggestion has done its job when the merchant takes it, and leaving an
+ * "In use" note under the field only repeats what the field already shows. It is not a one-way door:
+ * `applied` is read from the field's current value, so if the merchant later changes that value to
+ * something else the suggestion is offered again.
  */
 export function DetectedNote({
   children,
@@ -789,25 +794,20 @@ export function DetectedNote({
   children: ReactNode;
   action?: { label: string; applied: boolean; onApply: () => void };
 }) {
+  if (action?.applied) return null;
   return (
     <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-brand-50/70 px-3.5 py-2.5 ring-1 ring-inset ring-brand-100">
       <Sparkles size={14} className="flex-shrink-0 text-brand-600" aria-hidden="true" />
       <p className="min-w-[10rem] flex-1 text-pretty text-[12.5px] leading-[1.5] text-surface-700">{children}</p>
-      {action &&
-        (action.applied ? (
-          <span className="inline-flex flex-shrink-0 items-center gap-1 text-[12px] font-semibold text-success-700">
-            <Check size={13} strokeWidth={2.6} aria-hidden="true" />
-            In use
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={action.onApply}
-            className="flex-shrink-0 rounded-lg bg-surface-0 px-2.5 py-1 text-[12px] font-semibold text-brand-700 shadow-[0_1px_2px_var(--c-shadow-sm)] ring-1 ring-inset ring-brand-200 transition-[background-color,transform] hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 active:scale-[0.97] motion-reduce:active:scale-100"
-          >
-            {action.label}
-          </button>
-        ))}
+      {action && (
+        <button
+          type="button"
+          onClick={action.onApply}
+          className="flex-shrink-0 rounded-lg bg-surface-0 px-2.5 py-1 text-[12px] font-semibold text-brand-700 shadow-[0_1px_2px_var(--c-shadow-sm)] ring-1 ring-inset ring-brand-200 transition-[background-color,transform] hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 active:scale-[0.97] motion-reduce:active:scale-100"
+        >
+          {action.label}
+        </button>
+      )}
     </div>
   );
 }
@@ -1241,8 +1241,11 @@ export function TagInput({
  * Suggestions derived from the merchant's own store, offered one click at a time.
  *
  * Each chip carries the reason it was suggested (`hint`) because a merchant deciding whether a term
- * belongs in their targets needs to know which part of their catalogue it came from. Already-added
- * suggestions are shown as added rather than hidden, so the list does not reflow under the cursor.
+ * belongs in their targets needs to know which part of their catalogue it came from.
+ *
+ * A suggestion that has been added is REMOVED from the row — it is in the field now, and the row is
+ * only for what is still on offer. When nothing is left the whole row goes. (Removing a term from
+ * the field puts its suggestion back, since the match is against the field's current values.)
  */
 export function SuggestionRow({
   label,
@@ -1258,9 +1261,9 @@ export function SuggestionRow({
   disabled?: boolean;
 }) {
   const headingId = useId();
-  if (suggestions.length === 0) return null;
-
   const lowered = selected.map((value) => value.toLowerCase());
+  const remaining = suggestions.filter((suggestion) => !lowered.includes(suggestion.value.toLowerCase()));
+  if (remaining.length === 0) return null;
 
   return (
     <div className="rounded-2xl border border-dashed border-surface-300 bg-surface-50/70 px-4 py-3.5">
@@ -1269,26 +1272,19 @@ export function SuggestionRow({
         {label}
       </p>
       <div className="mt-2.5 flex flex-wrap gap-1.5" role="group" aria-labelledby={headingId}>
-        {suggestions.map((suggestion) => {
-          const added = lowered.includes(suggestion.value.toLowerCase());
-          return (
-            <button
-              key={suggestion.value}
-              type="button"
-              disabled={disabled || added}
-              onClick={() => onAdd(suggestion.value)}
-              title={suggestion.hint}
-              className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium ring-1 ring-inset transition-[background-color,color,transform] duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 active:scale-[0.97] motion-reduce:active:scale-100 ${
-                added
-                  ? 'cursor-default bg-success-50 text-success-700 ring-success-100'
-                  : 'cursor-pointer bg-surface-0 text-surface-700 ring-surface-200 hover:bg-brand-50 hover:text-brand-800 hover:ring-brand-200'
-              }`}
-            >
-              {added ? <Check size={13} strokeWidth={2.6} aria-hidden="true" /> : <Plus size={13} strokeWidth={2.6} aria-hidden="true" />}
-              {suggestion.value}
-            </button>
-          );
-        })}
+        {remaining.map((suggestion) => (
+          <button
+            key={suggestion.value}
+            type="button"
+            disabled={disabled}
+            onClick={() => onAdd(suggestion.value)}
+            title={suggestion.hint}
+            className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg bg-surface-0 px-3 text-[13px] font-medium text-surface-700 ring-1 ring-inset ring-surface-200 transition-[background-color,color,transform] duration-150 hover:bg-brand-50 hover:text-brand-800 hover:ring-brand-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:active:scale-100"
+          >
+            <Plus size={13} strokeWidth={2.6} aria-hidden="true" />
+            {suggestion.value}
+          </button>
+        ))}
       </div>
     </div>
   );

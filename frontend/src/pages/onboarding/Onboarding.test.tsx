@@ -445,3 +445,104 @@ describe('Onboarding · the completion screen', () => {
     expect(button('Finish setup')).toBeEnabled();
   });
 });
+
+describe('Onboarding · a used suggestion goes away', () => {
+  beforeEach(() => { vi.mocked(fetchOnboarding).mockResolvedValue(snapshot()); });
+
+  const storeNote = () => screen.queryByText(/Your Shopify store name is/);
+  const domainNote = () => screen.queryByText(/Your Shopify primary domain is/);
+
+  it('removes the store-name note once "Use this" has been pressed, and keeps the value', async () => {
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Confirm your store' });
+    expect(storeNote()).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Use this' })[0]);
+    expect(screen.getByLabelText('Store name')).toHaveValue('Northline Home');
+    expect(storeNote()).not.toBeInTheDocument();
+    expect(screen.queryByText('In use')).not.toBeInTheDocument();
+  });
+
+  it('removes only the note that was used', async () => {
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Confirm your store' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Use this' })[0]);
+    expect(storeNote()).not.toBeInTheDocument();
+    expect(domainNote()).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Use this' }));
+    expect(screen.getByLabelText('Storefront address')).toHaveValue('https://northline.example');
+    expect(domainNote()).not.toBeInTheDocument();
+  });
+
+  it('offers the suggestion again if the field is changed to something else', async () => {
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Confirm your store' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Use this' })[0]);
+    expect(storeNote()).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Store name'), { target: { value: 'Something else' } });
+    expect(storeNote()).toBeInTheDocument();
+  });
+
+  it('removes the detected-country note once the market is added', async () => {
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Confirm your store' });
+    const add = await screen.findByRole('button', { name: 'Add Canada' });
+    fireEvent.click(add);
+    expect(screen.queryByText(/billing address is in Canada/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Remove Canada' })).toBeInTheDocument();
+  });
+
+  it('removes an alias suggestion once it has been added to the field', async () => {
+    vi.mocked(fetchOnboardingSuggestions).mockResolvedValue({ ...suggestions(), brandedTerms: ['Northline Home Co'] });
+    vi.mocked(fetchOnboarding).mockResolvedValue(
+      snapshot({
+        currentStep: 2,
+        progress: [1, 2, 3, 4, 5].map((step) => ({ step, status: step === 1 ? ('complete' as const) : ('pending' as const), required: step !== 4 })),
+      }),
+    );
+    open();
+    const chip = await screen.findByRole('button', { name: 'Northline Home Co' });
+    fireEvent.click(chip);
+    expect(screen.getByRole('button', { name: 'Remove Northline Home Co' })).toBeInTheDocument();
+    // The chip that was just used is no longer on offer, and neither is the row that held it.
+    expect(screen.queryByRole('button', { name: 'Northline Home Co' })).not.toBeInTheDocument();
+    expect(screen.queryByText('From your store name')).not.toBeInTheDocument();
+  });
+});
+
+describe('Onboarding · Languages to audit', () => {
+  beforeEach(() => { vi.mocked(fetchOnboarding).mockResolvedValue(snapshot()); });
+
+  it('is offered when Shopify names the store’s languages', async () => {
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Confirm your store' });
+    expect(await screen.findByText('Languages to audit')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /English \(en\)/ })).toBeInTheDocument();
+  });
+
+  it('is left out, with no apology in its place, when the languages could not be read', async () => {
+    vi.mocked(fetchOnboardingSuggestions).mockResolvedValue({ ...suggestions(), languages: null });
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Confirm your store' });
+    await screen.findByText('Imported from Shopify');
+    await waitFor(() => expect(screen.queryByText('Reading your store…')).not.toBeInTheDocument());
+    expect(screen.queryByText('Languages to audit')).not.toBeInTheDocument();
+    expect(screen.queryByText(/languages could not be read/i)).not.toBeInTheDocument();
+  });
+
+  it('is left out when the store reports no languages at all', async () => {
+    vi.mocked(fetchOnboardingSuggestions).mockResolvedValue({ ...suggestions(), languages: [] });
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Confirm your store' });
+    await waitFor(() => expect(screen.queryByText('Reading your store…')).not.toBeInTheDocument());
+    expect(screen.queryByText('Languages to audit')).not.toBeInTheDocument();
+    expect(screen.queryByText(/no enabled languages/i)).not.toBeInTheDocument();
+  });
+
+  it('is left out when the suggestions could not be loaded at all', async () => {
+    vi.mocked(fetchOnboardingSuggestions).mockRejectedValue(new Error('offline'));
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Confirm your store' });
+    await waitFor(() => expect(screen.queryByText('Reading your store…')).not.toBeInTheDocument());
+    expect(screen.queryByText('Languages to audit')).not.toBeInTheDocument();
+  });
+});

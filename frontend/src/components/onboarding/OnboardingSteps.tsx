@@ -378,45 +378,38 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
           </FormField>
         )}
 
-        <FormSection
-          className="md:col-span-2"
-          title="Languages to audit"
-          badge="optional"
-        >
-          {suggestionsLoading && <SuggestionsPending />}
+        {/* Shown only when there is something to choose: while the store is being read, or once it has
+            named at least one language. If Shopify would not say, or reports none, a heading over an
+            apology gives the merchant nothing to do, so the whole section stays out of the way. */}
+        {(suggestionsLoading || (locales !== null && locales.length > 0)) && (
+          <FormSection className="md:col-span-2" title="Languages to audit" badge="optional">
+            {suggestionsLoading && <SuggestionsPending />}
 
-          {!suggestionsLoading && locales && locales.length > 0 && (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {locales.map((locale, index) => (
-                <div key={locale.locale} className={lastCardSpan(index, locales.length, { sm: 2, lg: 3 })}>
-                  <CheckCard
-                    id={`onboarding-locale-${locale.locale}`}
-                    checked={languages.includes(locale.locale)}
-                    label={locale.name ? `${locale.name} (${locale.locale})` : locale.locale}
-                    description={[locale.primary ? 'Primary' : null, locale.published ? 'Published' : 'Not published']
-                      .filter(Boolean)
-                      .join(' · ')}
-                    onToggle={(next) =>
-                      patch({
-                        targetLanguages: next
-                          ? [...languages, locale.locale]
-                          : languages.filter((item) => item !== locale.locale),
-                      })
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {!suggestionsLoading && locales && locales.length === 0 && (
-            <QuietNote>Shopify reported no enabled languages for this store.</QuietNote>
-          )}
-
-          {!suggestionsLoading && suggestions && locales === null && (
-            <UnavailableNote>Your store’s languages could not be read.</UnavailableNote>
-          )}
-        </FormSection>
+            {!suggestionsLoading && locales && locales.length > 0 && (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {locales.map((locale, index) => (
+                  <div key={locale.locale} className={lastCardSpan(index, locales.length, { sm: 2, lg: 3 })}>
+                    <CheckCard
+                      id={`onboarding-locale-${locale.locale}`}
+                      checked={languages.includes(locale.locale)}
+                      label={locale.name ? `${locale.name} (${locale.locale})` : locale.locale}
+                      description={[locale.primary ? 'Primary' : null, locale.published ? 'Published' : 'Not published']
+                        .filter(Boolean)
+                        .join(' · ')}
+                      onToggle={(next) =>
+                        patch({
+                          targetLanguages: next
+                            ? [...languages, locale.locale]
+                            : languages.filter((item) => item !== locale.locale),
+                        })
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </FormSection>
+        )}
       </FormGrid>
     </div>
   );

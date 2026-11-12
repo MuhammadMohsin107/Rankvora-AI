@@ -340,10 +340,24 @@ describe('SuggestionRow', () => {
     expect(onAdd).toHaveBeenCalledWith('linen shirt');
   });
 
-  it('keeps an added suggestion on screen, marked as added and not clickable again', () => {
+  it('removes a suggestion once it has been added, and leaves the rest on offer', () => {
     render(<SuggestionRow label="Suggestions" suggestions={suggestions} selected={['Linen Shirt']} onAdd={() => undefined} />);
-    expect(screen.getByRole('button', { name: 'linen shirt' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'linen shirt' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'wool coat' })).toBeEnabled();
+  });
+
+  it('removes the whole row when every suggestion has been added', () => {
+    const { container } = render(
+      <SuggestionRow label="Suggestions" suggestions={suggestions} selected={['linen shirt', 'WOOL COAT']} onAdd={() => undefined} />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('puts a suggestion back when its term is taken out of the field', () => {
+    const { rerender } = render(<SuggestionRow label="Suggestions" suggestions={suggestions} selected={['linen shirt']} onAdd={() => undefined} />);
+    expect(screen.queryByRole('button', { name: 'linen shirt' })).not.toBeInTheDocument();
+    rerender(<SuggestionRow label="Suggestions" suggestions={suggestions} selected={[]} onAdd={() => undefined} />);
+    expect(screen.getByRole('button', { name: 'linen shirt' })).toBeInTheDocument();
   });
 
   it('renders nothing when there is nothing to suggest', () => {
@@ -361,10 +375,25 @@ describe('DetectedNote', () => {
     expect(onApply).toHaveBeenCalledTimes(1);
   });
 
-  it('says "In use" once applied, with no button', () => {
-    render(<DetectedNote action={{ label: 'Use this', applied: true, onApply: () => undefined }}>Note</DetectedNote>);
-    expect(screen.getByText('In use')).toBeInTheDocument();
+  it('removes itself once the suggestion has been used', () => {
+    const { container } = render(
+      <DetectedNote action={{ label: 'Use this', applied: true, onApply: () => undefined }}>Your Shopify store name is “Northline”.</DetectedNote>,
+    );
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByText('In use')).not.toBeInTheDocument();
+  });
+
+  it('comes back if the field is changed to something else', () => {
+    const action = (applied: boolean) => ({ label: 'Use this', applied, onApply: () => undefined });
+    const { rerender } = render(<DetectedNote action={action(true)}>Your Shopify store name is “Northline”.</DetectedNote>);
     expect(screen.queryByRole('button', { name: 'Use this' })).not.toBeInTheDocument();
+    rerender(<DetectedNote action={action(false)}>Your Shopify store name is “Northline”.</DetectedNote>);
+    expect(screen.getByRole('button', { name: 'Use this' })).toBeInTheDocument();
+  });
+
+  it('keeps a purely informational note (no action) on screen', () => {
+    render(<DetectedNote>Shopify did not return a primary domain for this store.</DetectedNote>);
+    expect(screen.getByText('Shopify did not return a primary domain for this store.')).toBeInTheDocument();
   });
 });
 
