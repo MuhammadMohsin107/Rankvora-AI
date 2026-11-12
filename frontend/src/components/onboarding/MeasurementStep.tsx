@@ -62,26 +62,28 @@ function SourceCard({
   children?: ReactNode;
 }) {
   return (
-    <li className="rounded-xl border border-surface-200 bg-surface-0 px-3.5 py-3">
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-200/70">
-          <Icon size={16} strokeWidth={1.9} aria-hidden="true" />
+    <li className="rounded-2xl bg-surface-0 px-4 py-4 ring-1 ring-inset ring-surface-200 transition-shadow duration-200 hover:shadow-[0_12px_28px_-22px_var(--c-shadow-lg)]">
+      <div className="flex items-start gap-3.5">
+        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
+          <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-            <h3 className="text-[13px] font-semibold text-surface-900">{title}</h3>
+          <div className="flex min-h-10 flex-wrap items-center justify-between gap-x-3 gap-y-1">
+            <h3 className="text-[14px] font-semibold tracking-[-0.01em] text-surface-950">{title}</h3>
             <span
-              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${
-                status.tone === 'good'
-                  ? 'bg-success-50 text-success-700 ring-1 ring-inset ring-success-100'
-                  : 'bg-surface-100 text-surface-600 ring-1 ring-inset ring-surface-200'
+              className={`inline-flex items-center gap-1.5 text-[12.5px] font-medium ${
+                status.tone === 'good' ? 'text-success-700' : 'text-surface-500'
               }`}
             >
-              {status.tone === 'good' && <Check size={10} strokeWidth={3} aria-hidden="true" />}
+              {status.tone === 'good' ? (
+                <Check size={13} strokeWidth={3} aria-hidden="true" />
+              ) : (
+                <span className="h-1.5 w-1.5 rounded-full bg-surface-300" aria-hidden="true" />
+              )}
               {status.label}
             </span>
           </div>
-          {children && <div className="mt-2.5">{children}</div>}
+          {children && <div className="mt-3">{children}</div>}
         </div>
       </div>
     </li>
@@ -207,10 +209,10 @@ export default function MeasurementStep({ notice }: MeasurementStepProps) {
       <QuietNote>Skipped for now.</QuietNote>
     ) : (
       <div className="flex flex-wrap items-center gap-2">
-        <ActionButton onClick={() => void connect()} loading={busy === 'connect'}>
+        <ActionButton onClick={() => void connect()} loading={busy === 'connect'} className="h-10 px-4 text-[13px]">
           {label}
         </ActionButton>
-        <ActionButton variant="ghost" onClick={() => setLater((previous) => ({ ...previous, [key]: true }))}>
+        <ActionButton variant="ghost" onClick={() => setLater((previous) => ({ ...previous, [key]: true }))} className="h-10 px-4 text-[13px]">
           Set up later
         </ActionButton>
       </div>
@@ -228,7 +230,7 @@ export default function MeasurementStep({ notice }: MeasurementStepProps) {
           Checking your connections…
         </QuietNote>
       ) : (
-        <ul className="space-y-2.5">
+        <ul className="space-y-3">
           <SourceCard
             icon={Search}
             title="Google Search Console"

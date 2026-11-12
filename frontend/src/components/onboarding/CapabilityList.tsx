@@ -57,11 +57,11 @@ export default function CapabilityList({
   if (rows.length === 0) return null;
 
   return (
-    <ul className="divide-y divide-surface-100 overflow-hidden rounded-lg border border-surface-200 bg-surface-0">
+    <ul className="divide-y divide-surface-100 overflow-hidden rounded-xl bg-surface-0 ring-1 ring-inset ring-surface-200">
       {rows.map((capability) => {
         const { icon: Icon, tone } = ROW_ICON[capability.status];
         return (
-          <li key={capability.key} className={`flex items-start gap-2.5 ${compact ? 'px-2.5 py-1.5' : 'px-3 py-2'}`}>
+          <li key={capability.key} className={`flex items-start gap-3 ${compact ? 'px-3 py-2' : 'px-4 py-3'}`}>
             <span
               aria-hidden="true"
               className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full ring-1 ring-inset ${tone}`}
@@ -69,18 +69,18 @@ export default function CapabilityList({
               <Icon size={11} strokeWidth={3} />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="flex flex-wrap items-baseline gap-x-2 text-[12.5px] font-semibold text-surface-900">
+              <p className="flex flex-wrap items-baseline gap-x-2 text-[13.5px] font-semibold tracking-[-0.01em] text-surface-900">
                 {capability.label}
-                <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-surface-500">
+                <span className="text-[11.5px] font-medium text-surface-500">
                   {CAPABILITY_STATUS_LABEL[capability.status]}
                 </span>
               </p>
-              <p className="mt-0.5 text-[11.5px] leading-[1.45] text-surface-500">{readableDetail(capability.detail)}</p>
+              <p className="mt-0.5 text-pretty text-[12.5px] leading-[1.5] text-surface-500">{readableDetail(capability.detail)}</p>
             </div>
             {capability.action && capability.status !== 'unavailable' && (
               <Link
                 to={capability.action.href}
-                className="inline-flex flex-shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11.5px] font-semibold text-brand-700 transition-colors hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                className="inline-flex flex-shrink-0 items-center gap-1 rounded-lg px-2.5 py-1 text-[12.5px] font-semibold text-brand-700 transition-colors hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
               >
                 {capability.action.label}
                 <ArrowRight size={11} aria-hidden="true" />

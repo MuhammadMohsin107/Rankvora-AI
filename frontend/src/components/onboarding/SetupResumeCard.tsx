@@ -70,16 +70,17 @@ export default function SetupResumeCard() {
   };
 
   return (
-    <section className="overflow-hidden rounded-xl border border-brand-200/80 bg-brand-50/40">
-      <div className="flex flex-wrap items-start gap-x-4 gap-y-3 px-4 py-3.5">
-        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-700 ring-1 ring-inset ring-brand-200/70">
-          <Sparkles size={17} strokeWidth={2} aria-hidden="true" />
+    <section className="relative overflow-hidden rounded-2xl bg-surface-0 ring-1 ring-inset ring-brand-200/80">
+      <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-brand-100/80 blur-3xl" />
+      <div className="relative flex flex-wrap items-start gap-x-4 gap-y-3 px-4 py-4 sm:px-5">
+        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
+          <Sparkles size={18} strokeWidth={1.9} aria-hidden="true" />
         </span>
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-            <h2 className="text-[13px] font-bold tracking-tight text-surface-950">Finish setup</h2>
-            <span className="text-[11px] font-semibold tabular-nums text-brand-700">
+            <h2 className="text-[15px] font-semibold tracking-[-0.02em] text-surface-950">Finish setup</h2>
+            <span className="text-[12px] font-medium tabular-nums text-brand-700">
               {done} of {total} done
             </span>
           </div>
@@ -101,7 +102,7 @@ export default function SetupResumeCard() {
                 <li key={entry.step} className="flex min-w-[96px] flex-1 flex-col gap-1.5">
                   <span
                     aria-hidden="true"
-                    className={`h-1 rounded-full ${complete ? 'bg-success-500' : 'bg-surface-200'}`}
+                    className={`h-1.5 rounded-full transition-colors duration-500 ${complete ? 'bg-success-500' : 'bg-surface-200'}`}
                   />
                   <span className="flex items-baseline gap-1.5 leading-tight">
                     <span

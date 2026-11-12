@@ -185,7 +185,8 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
       {/* ── Imported from Shopify · read-only ─────────────────────────── */}
       {shop && (
         <FormSection title="Imported from Shopify">
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Two groups so neither leaves an orphan in its last row: who the store is, then what it holds. */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <FactTile label="Store" value={shop.name || null} icon={Store} />
             <FactTile label="Storefront" value={shop.primaryUrl ?? shop.myshopifyDomain} icon={Globe2} />
             <FactTile
@@ -196,12 +197,14 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
             <FactTile label="Currency" value={shop.currencyCode} icon={CircleDollarSign} />
             <FactTile label="Timezone" value={shop.ianaTimezone} icon={Clock3} />
             <FactTile label="Billing country" value={shop.country} icon={MapPin} />
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
             <FactTile label="Published products" value={countValue(content?.publishedProducts)} icon={Boxes} />
             <FactTile label="Published collections" value={countValue(content?.publishedCollections)} icon={Boxes} />
             <FactTile label="Articles" value={countValue(content?.articles)} icon={Newspaper} />
             <FactTile label="Pages" value={countValue(content?.pages)} icon={FileText} />
           </div>
-          <p className="mt-1.5 text-[11.5px] leading-[1.45] text-surface-500">
+          <p className="mt-2.5 text-[12px] leading-[1.45] text-surface-500">
             Articles and pages include unpublished ones.
           </p>
         </FormSection>
@@ -352,7 +355,7 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
           {suggestionsLoading && <SuggestionsPending />}
 
           {!suggestionsLoading && locales && locales.length > 0 && (
-            <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {locales.map((locale, index) => (
                 <div key={locale.locale} className={lastCardSpan(index, locales.length, { sm: 2, lg: 3 })}>
                   <CheckCard
@@ -603,7 +606,7 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
           badge="required"
           error={errors.priorityPillars}
         >
-          <div className="grid gap-2.5 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             {pillarKeys.map((key) => {
               const goal = PILLAR_GOALS[key];
               return (
@@ -619,7 +622,7 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
           </div>
           {chosenPillars.length > 1 && (
             <div className="mt-2.5">
-              <p className="mb-1.5 text-[11.5px] leading-[1.45] text-surface-500">
+              <p className="mb-2 text-[12.5px] font-medium leading-[1.45] text-surface-600">
                 Priority order
               </p>
               <PriorityList
@@ -678,7 +681,7 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
             <UnavailableNote>Your catalogue could not be read.</UnavailableNote>
           )}
           {!suggestionsLoading && !catalogueUnread && (
-            <div className="grid gap-2.5 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <LabelledSelect
                 id="onboarding-priority-product"
                 value=""
@@ -730,15 +733,18 @@ export function StepMeasurement({ notice }: StepProps) {
 
 /** A permission and what it is set to, as a plain row — not a control. */
 function PermissionRow({ label, state, tone }: { label: string; state: string; tone: 'on' | 'review' | 'off' }) {
-  const chip = {
-    on: 'bg-success-50 text-success-700 ring-success-100',
-    review: 'bg-brand-50 text-brand-700 ring-brand-200/70',
-    off: 'bg-surface-100 text-surface-600 ring-surface-200',
+  const look = {
+    on: { dot: 'bg-success-500', text: 'text-success-700' },
+    review: { dot: 'bg-brand-500', text: 'text-brand-700' },
+    off: { dot: 'bg-surface-300', text: 'text-surface-500' },
   }[tone];
   return (
-    <li className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 px-3 py-2">
-      <p className="min-w-0 flex-1 text-[12.5px] font-semibold text-surface-900">{label}</p>
-      <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ring-1 ring-inset ${chip}`}>{state}</span>
+    <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3">
+      <p className="min-w-0 flex-1 text-[13.5px] font-medium tracking-[-0.01em] text-surface-900">{label}</p>
+      <span className={`inline-flex flex-shrink-0 items-center gap-2 text-[12.5px] font-semibold ${look.text}`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${look.dot}`} aria-hidden="true" />
+        {state}
+      </span>
     </li>
   );
 }
@@ -780,7 +786,7 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
           badge="required"
           error={errors.automationConsent}
         >
-          <div className="grid gap-2.5 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             {legacy && (
               <ChoiceCard
                 name="automation-consent"
@@ -814,7 +820,7 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
           className="md:col-span-2"
           title="Permissions"
         >
-          <ul className="divide-y divide-surface-100 overflow-hidden rounded-lg border border-surface-200 bg-surface-0">
+          <ul className="divide-y divide-surface-100 overflow-hidden rounded-xl bg-surface-0 ring-1 ring-inset ring-surface-200">
             <PermissionRow
               label="Analyze your published store content"
               state="On"
@@ -862,9 +868,9 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
             onToggle={(next) => patch({ autoAnalysis: next })}
           />
           {monitoring && (
-            <div className="mt-2.5 grid gap-2.5 sm:grid-cols-2">
+            <div className="mt-3.5 grid gap-3 sm:grid-cols-2">
               <div>
-                <label htmlFor="onboarding-frequency" className="mb-1 block text-[12px] font-semibold text-surface-800">
+                <label htmlFor="onboarding-frequency" className="mb-1.5 block text-[13px] font-semibold text-surface-900">
                   How often
                 </label>
                 <SelectField
@@ -876,7 +882,7 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
                 />
               </div>
               <div>
-                <label htmlFor="onboarding-scan-hour" className="mb-1 block text-[12px] font-semibold text-surface-800">
+                <label htmlFor="onboarding-scan-hour" className="mb-1.5 block text-[13px] font-semibold text-surface-900">
                   Preferred time
                 </label>
                 <LabelledSelect
@@ -886,14 +892,14 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
                   placeholder="Any time it is due"
                   onChange={(value) => patch({ preferredScanHour: value === '' ? null : Number(value) })}
                 />
-                <p className="mt-1 text-[11.5px] leading-[1.45] text-surface-500">
+                <p className="mt-1.5 text-[12px] leading-[1.45] text-surface-500">
                   {timeZone ? `Store timezone (${timeZone})` : 'UTC'}
                 </p>
               </div>
             </div>
           )}
           {monitoring && nextScan && (
-            <p className="mt-2 text-[12px] leading-[1.5] text-surface-600">Next scan: {nextScan}</p>
+            <p className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-surface-50 px-3 py-1.5 text-[12.5px] leading-[1.5] text-surface-600 ring-1 ring-inset ring-surface-200/70">Next scan: <span className="font-semibold text-surface-900">{nextScan}</span></p>
           )}
         </FormSection>
 
@@ -902,7 +908,7 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
           title="Alerts"
           badge="optional"
         >
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {alerts.map((option, index) => (
               <ChoiceCard
                 key={option}

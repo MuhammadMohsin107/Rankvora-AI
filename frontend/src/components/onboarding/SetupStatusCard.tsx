@@ -69,7 +69,7 @@ export default function SetupStatusCard() {
   if (todo.length === 0 && !schedule.enabled) return null;
 
   return (
-    <section className="rounded-xl border border-surface-200 bg-surface-0">
+    <section className="rounded-2xl bg-surface-0 ring-1 ring-inset ring-surface-200">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 px-4 py-2.5">
         <p className="flex items-center gap-2 text-[12px] text-surface-600">
           <CalendarClock size={14} className="flex-shrink-0 text-surface-400" aria-hidden="true" />
