@@ -77,6 +77,11 @@ async function open(url = '/products', kind: 'product' | 'collection' | 'article
     </MemoryRouter>,
   );
   await screen.findByRole('tablist');
+  // The page's controls attach their `change` listeners in an effect (components/polaris/fields.tsx).
+  // `findBy*` resolves as soon as the markup is there, and under load React may not have run those
+  // effects yet, so an event fired straight away would reach an element nobody is listening to. This
+  // flushes them, which is what makes the sort test below deterministic.
+  await act(async () => {});
 }
 
 const where = () => screen.getByTestId('where').textContent;
