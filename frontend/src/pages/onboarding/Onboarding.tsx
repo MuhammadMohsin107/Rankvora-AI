@@ -53,12 +53,13 @@ import {
  * these has nothing to navigate to yet, and a sidebar full of empty dashboards is a distraction
  * from the only task on screen.
  *
- * TWO PANES, ONE RAISED SURFACE. A progress rail sits beside the step on large screens, drawn
- * directly on the page wash with no border of its own, so the step card is the only lifted thing
- * on screen and is unambiguously the thing to act on. Below `lg` the rail becomes a segmented bar
- * across the top of the card. The step's fields pair up in two columns, so most steps fit with
- * little scrolling, and the action bar is pinned to the bottom of the card so the primary action
- * is always in reach on the longer ones.
+ * A GUIDE AND ONE RAISED SURFACE. On large screens a guide sits beside the step — a progress bar and
+ * the five steps on one vertical line — drawn directly on the page with no border of its own, so the
+ * sheet the step sits on is the only lifted thing on screen and is unambiguously the thing to act on.
+ * Below `lg` the guide becomes a segmented bar above the sheet. The step's fields pair up in two
+ * columns, so most steps fit with little scrolling, and the actions live in a dock that floats under
+ * the sheet and stays in reach while a long step scrolls. The look is described in
+ * components/onboarding/OnboardingPrimitives.tsx.
  *
  * FOUR STEPS ARE REQUIRED, ONE IS NOT. Confirming the store, the business, the priorities and the
  * permissions must be answered before Continue will move. The measurement step (4) is optional: a
@@ -416,23 +417,23 @@ export default function Onboarding() {
   if (loadError) {
     return (
       <Frame scrollRef={scrollRef}>
-        <Card>
-          <div className="px-5 py-6 text-center sm:px-8 sm:py-7">
-            <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-warning-50 text-warning-700 ring-1 ring-inset ring-warning-100">
-              <AlertTriangle size={20} strokeWidth={1.9} aria-hidden="true" />
-            </span>
-            <h1 className="mt-3.5 text-[17px] font-semibold tracking-[-0.02em] text-surface-950">
+        <Sheet>
+          <div className="px-6 py-10 text-center sm:px-10 sm:py-12">
+            <StateMark tone="warning">
+              <AlertTriangle size={22} strokeWidth={1.8} aria-hidden="true" />
+            </StateMark>
+            <h1 className="mt-5 text-balance text-[22px] font-semibold leading-[1.15] tracking-[-0.03em] text-surface-950">
               Setup could not be loaded
             </h1>
-            <p className="mx-auto mt-1.5 max-w-md text-[12.5px] leading-[1.55] text-surface-500">{loadError}</p>
-            <div className="mt-4 flex justify-center">
+            <p className="mx-auto mt-2 max-w-md text-pretty text-[14px] leading-[1.6] text-surface-500">{loadError}</p>
+            <div className="mt-6 flex justify-center">
               <ActionButton onClick={() => window.location.reload()}>
                 <RefreshCw size={16} aria-hidden="true" />
                 Try again
               </ActionButton>
             </div>
           </div>
-        </Card>
+        </Sheet>
       </Frame>
     );
   }
@@ -444,16 +445,16 @@ export default function Onboarding() {
   if (!snapshot.connected) {
     return (
       <Frame scrollRef={scrollRef}>
-        <Card>
-          <div className="px-5 py-6 sm:px-8 sm:py-7">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-200/70">
-              <Store size={20} strokeWidth={1.9} aria-hidden="true" />
-            </span>
-            <h1 className="mt-3.5 text-[18px] font-semibold leading-[1.15] tracking-[-0.02em] text-surface-950 sm:text-[21px]">
+        <Sheet>
+          <div className="px-6 py-10 sm:px-10 sm:py-12">
+            <StateMark tone="brand">
+              <Store size={22} strokeWidth={1.8} aria-hidden="true" />
+            </StateMark>
+            <h1 className="mt-5 text-balance text-[26px] font-semibold leading-[1.1] tracking-[-0.03em] text-surface-950 sm:text-[32px]">
               Connect Shopify first
             </h1>
 
-            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="mt-7 flex flex-col gap-2.5 sm:flex-row sm:items-center">
               <ActionButton onClick={() => navigate('/integrations')}>
                 Connect Shopify
                 <ArrowRight size={16} aria-hidden="true" />
@@ -463,7 +464,7 @@ export default function Onboarding() {
               </ActionButton>
             </div>
           </div>
-        </Card>
+        </Sheet>
       </Frame>
     );
   }
@@ -488,25 +489,24 @@ export default function Onboarding() {
       // back to the app the merchant came from.
       exit={editing ? { label: 'Save and close', onClick: () => void onSaveAndClose(), disabled: busy } : undefined}
     >
-      <Card>
+      {/* Below `lg` the guide is gone, so progress rides on top of the step instead. */}
+      <div className="mb-3 rounded-2xl bg-surface-0/80 px-4 pb-2 pt-1 ring-1 ring-inset ring-surface-200/70 backdrop-blur-sm lg:hidden">
+        <Stepper current={step} steps={stepperSteps} onJump={jump} />
+      </div>
+
+      <Sheet>
         {editing && (
-          <div className="flex items-start gap-2 rounded-t-xl border-b border-success-100 bg-success-50 px-3.5 py-1.5 sm:px-5">
-            <Check size={15} className="mt-px flex-shrink-0 text-success-700" aria-hidden="true" />
-            <p className="text-[12px] leading-[1.45] text-success-700">
-              Setup is complete. Edit any step.
-            </p>
+          <div className="relative flex items-center gap-2 border-b border-success-100 bg-success-50 px-5 py-2.5 sm:px-9">
+            <Check size={15} className="flex-shrink-0 text-success-700" aria-hidden="true" />
+            <p className="text-[12.5px] font-medium leading-[1.45] text-success-700">Setup is complete. Edit any step.</p>
           </div>
         )}
 
-        <div className="border-b border-surface-200 lg:hidden">
-          <Stepper current={step} steps={stepperSteps} onJump={jump} />
-        </div>
-
         <StepHeader step={step} total={TOTAL_STEPS} title={meta.title} purpose={meta.purpose} icon={STEP_ICONS[step]} />
 
-        {/* Keyed on the step so each one enters rather than swapping in place — the card is the only
+        {/* Keyed on the step so each one enters rather than swapping in place — the sheet is the only
             thing that changes between steps, and without this the transition is invisible. */}
-        <div key={step} className="px-3.5 py-3.5 motion-safe:animate-fade-in sm:px-5 sm:py-4">
+        <div key={step} className="relative px-5 pb-8 pt-7 motion-safe:animate-fade-in sm:px-9 sm:pb-10">
           <StepComponent
             draft={draft}
             patch={patch}
@@ -517,68 +517,82 @@ export default function Onboarding() {
             notice={googleNotice}
           />
         </div>
+      </Sheet>
 
-        <footer className="sticky bottom-0 z-10 rounded-b-xl border-t border-surface-200 bg-surface-0/95 px-3.5 py-2 backdrop-blur-sm sm:px-5">
-          {saveError && (
-            <p
-              role="alert"
-              className="mb-2 flex items-start gap-2 rounded-lg bg-critical-50 px-3 py-1.5 text-[12px] font-medium leading-[1.5] text-critical-700"
-            >
-              <AlertTriangle size={14} className="mt-px flex-shrink-0" aria-hidden="true" />
-              {saveError}
-            </p>
+      {/* The action dock floats under the sheet and stays in reach while a long step scrolls. It is a
+          separate surface from the sheet, so the primary action never sits inside the form it
+          submits. */}
+      <footer className="sticky bottom-3 z-10 mt-4 rounded-2xl bg-surface-0/85 p-2.5 shadow-[0_18px_40px_-20px_var(--c-shadow-lg),0_2px_8px_-2px_var(--c-shadow-md)] ring-1 ring-inset ring-surface-200/80 backdrop-blur-xl sm:p-3">
+        {saveError && (
+          <p
+            role="alert"
+            className="mb-2.5 flex items-start gap-2 rounded-xl bg-critical-50 px-3.5 py-2.5 text-[13px] font-medium leading-[1.5] text-critical-700 ring-1 ring-inset ring-critical-100"
+          >
+            <AlertTriangle size={15} className="mt-0.5 flex-shrink-0" aria-hidden="true" />
+            {saveError}
+          </p>
+        )}
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          {step > 1 && (
+            <ActionButton variant="ghost" onClick={() => void goTo(step - 1)} disabled={busy}>
+              <ArrowLeft size={16} aria-hidden="true" />
+              Back
+            </ActionButton>
           )}
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            {step > 1 && (
-              <ActionButton variant="ghost" onClick={() => void goTo(step - 1)} disabled={busy}>
-                <ArrowLeft size={16} aria-hidden="true" />
-                Back
+          <p className="hidden px-1 text-[12.5px] font-medium tabular-nums text-surface-500 sm:block">
+            {step} / {TOTAL_STEPS}
+          </p>
+
+          {/* ml-auto keeps the forward action on the right even when the bar wraps on a phone.
+              There is nothing beside it: every step is required, so the only way forward is
+              through this button. */}
+          <div className="ml-auto flex flex-1 items-center justify-end gap-2.5 sm:flex-none">
+            {step < TOTAL_STEPS ? (
+              <ActionButton loading={busy} onClick={() => void goTo(step + 1)} className="flex-1 sm:min-w-44 sm:flex-none">
+                {busy ? 'Saving…' : editing ? 'Next' : step === 1 ? 'Confirm and continue' : 'Continue'}
+                {!busy && <ArrowRight size={16} aria-hidden="true" />}
+              </ActionButton>
+            ) : (
+              <ActionButton loading={busy} onClick={() => void onFinish()} className="flex-1 sm:min-w-44 sm:flex-none">
+                {busy ? 'Saving…' : editing ? 'Save changes' : 'Finish setup'}
+                {!busy && <Check size={16} aria-hidden="true" />}
               </ActionButton>
             )}
-
-            {/* ml-auto keeps the forward action on the right even when the bar wraps on a phone.
-                There is nothing beside it: every step is required, so the only way forward is
-                through this button. */}
-            <div className="ml-auto flex flex-1 items-center justify-end gap-2.5 sm:flex-none">
-              {step < TOTAL_STEPS ? (
-                <ActionButton loading={busy} onClick={() => void goTo(step + 1)} className="flex-1 sm:flex-none">
-                  {busy ? 'Saving…' : editing ? 'Next' : step === 1 ? 'Confirm and continue' : 'Continue'}
-                  {!busy && <ArrowRight size={16} aria-hidden="true" />}
-                </ActionButton>
-              ) : (
-                <ActionButton loading={busy} onClick={() => void onFinish()} className="flex-1 sm:flex-none">
-                  {busy ? 'Saving…' : editing ? 'Save changes' : 'Finish setup'}
-                  {!busy && <Check size={16} aria-hidden="true" />}
-                </ActionButton>
-              )}
-            </div>
           </div>
-        </footer>
-      </Card>
+        </div>
+      </footer>
     </Frame>
   );
 }
 
 /**
- * The page frame: logo, an optional progress rail, and the step card.
+ * The page frame: an ambient backdrop, the logo, the guide, and the step.
  *
+ * SCROLLING IS NOT NEGOTIABLE, and none of the design below changes it.
  * `h-full`, not `min-h-full`: outside the Shopify admin html, body and #root are fixed to the viewport
  * with overflow hidden, so this div must be exactly viewport-high to become the scroll container. With
- * `min-h-full` it grew to fit the card and the bottom of a long step was clipped with no way to scroll
+ * `min-h-full` it grew to fit the sheet and the bottom of a long step was clipped with no way to scroll
  * to it.
  *
  * `min-h-screen` is for INSIDE the admin, where the page itself scrolls and #root has no fixed height
- * (index.css, data-embedded): `h-full` then resolves to the card's own height and the backdrop would stop
- * partway down the window. A full viewport minimum keeps it full-bleed, and a longer step simply makes
- * the page scroll.
+ * (index.css, data-embedded): `h-full` then resolves to the sheet's own height and the backdrop would
+ * stop partway down the window. A full viewport minimum keeps it full-bleed, and a longer step simply
+ * makes the page scroll.
  *
  * There, too, this wrapper must NOT be a scroll container, which `.onboarding-frame` in index.css sees
  * to. Left as `overflow-y: auto` with `overscroll-behavior: contain`, it was a scroller that had nothing
  * to scroll, and the browser still handed it the mouse wheel and refused to pass it on to the page — so
  * a step taller than the window could not be scrolled at all.
  *
- * Without a rail (loading, errors, not connected) the card is centred at a reading width.
+ * THE BACKDROP is drawn from theme tokens only, so it follows light and dark mode: two soft brand
+ * glows on the page wash and a fine grain over the top that breaks the flatness of a plain gradient.
+ * The glows and grain are `fixed`, so they hold still while a long step scrolls over them. Nothing in
+ * it resembles a chart or a figure — a backdrop that looked like data would be a picture of a
+ * measurement nobody took, behind a form where the merchant has told us nothing yet.
+ *
+ * Without a guide (loading, errors, not connected) the sheet is centred at a reading width.
  */
 function Frame({
   children,
@@ -596,71 +610,37 @@ function Frame({
   scrollRef: RefObject<HTMLDivElement | null>;
 }) {
   return (
-    <div
-      ref={scrollRef}
-      className="onboarding-frame h-full min-h-screen overflow-y-auto overscroll-contain bg-surface-50"
-      /**
-       * Three layers, front to back.
-       *
-       * 1. `onboarding-bg.svg` — a bespoke, purely decorative backdrop: a sweep of hairline arcs
-       *    over a fading dot field. Drawn for this app rather than sourced, so there is no licence
-       *    to honour and no stock photograph to date the product. It carries NO text and nothing
-       *    that reads as a measurement — a backdrop resembling a chart would be a picture of data
-       *    nobody produced, behind a form where the merchant has told us nothing yet.
-       *
-       * 2–3. The brand wash, kept from before and still built from theme tokens, so the colour
-       *    follows light and dark mode rather than being fixed by the artwork.
-       *
-       * The SVG's inks are mid-tone indigo and the logo's emerald at low alpha, which sit
-       * correctly on both washes — an SVG used as a CSS background cannot read the page's custom
-       * properties, so a token-coloured artwork is not available without shipping two files.
-       *
-       * The dot texture is the FIRST layer and lives here rather than in the file: a 28px grid
-       * stated in CSS pixels stays crisp at any viewport, where the same dots inside a `cover`-
-       * scaled artwork would grow with the window and coarsen on a large display.
-       *
-       * `cover` + `fixed` on the artwork: the background box for a fixed layer is the viewport, so
-       * it is full-bleed on an ultrawide and on a laptop alike, and it holds still while the step
-       * scrolls over it — a backdrop that scrolled with a long step would read as wallpaper.
-       */
-      style={{
-        backgroundImage: [
-          'radial-gradient(circle at 1px 1px, rgba(99,102,241,0.09) 1px, transparent 0)',
-          'url(/onboarding-bg.svg)',
-          'radial-gradient(1100px 460px at 50% -160px, var(--c-brand-100), transparent 70%)',
-          'radial-gradient(700px 420px at 0% 100%, var(--c-brand-50), transparent 65%)',
-        ].join(', '),
-        backgroundSize: '28px 28px, cover, auto, auto',
-        backgroundPosition: 'top center, top center, top center, bottom left',
-        backgroundRepeat: 'repeat, no-repeat, no-repeat, no-repeat',
-        backgroundAttachment: 'fixed, fixed, scroll, scroll',
-      }}
-    >
-      {/* Compacted to the density the rest of the app uses. Setup was laid out like a marketing
-          page — 1180px wide on a 6-unit gutter, with a 6-unit gap to the rail — and on a laptop
-          that pushed the action bar off the fold on the longer steps, so merchants scrolled to
-          find Continue on every one of the five. */}
-      <div className="mx-auto flex min-h-full w-full max-w-[1080px] flex-col px-3 py-3 sm:px-5 lg:py-4">
-        <header className="mb-3 flex items-center justify-between gap-3">
+    <div ref={scrollRef} className="onboarding-frame relative h-full min-h-screen overflow-y-auto overscroll-contain bg-surface-50">
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -left-32 -top-40 h-[34rem] w-[34rem] rounded-full bg-brand-200/40 blur-[110px]" />
+        <div className="absolute -bottom-48 -right-24 h-[30rem] w-[30rem] rounded-full bg-brand-100/60 blur-[120px]" />
+        <div className="absolute inset-0 opacity-[0.035] mix-blend-multiply" style={{ backgroundImage: GRAIN }} />
+      </div>
+
+      <div className="relative mx-auto flex min-h-full w-full max-w-[1120px] flex-col px-4 py-5 sm:px-6 lg:py-8">
+        <header className="mb-6 flex items-center justify-between gap-3 lg:mb-9">
           <RankvoraLogo />
           {exit && (
             // Tighter on a phone: the logo and this button share a 320px row, and "Save and close"
             // at full padding pushed the pair past the viewport.
-            <ActionButton
-              variant="secondary"
-              onClick={exit.onClick}
-              disabled={exit.disabled}
-              className="px-3 text-[13px] sm:px-4"
-            >
+            <ActionButton variant="secondary" onClick={exit.onClick} disabled={exit.disabled} className="h-10 px-3.5 text-[13px] sm:px-5">
               {exit.label}
             </ActionButton>
           )}
         </header>
 
         {rail ? (
-          <div className="grid flex-1 items-start gap-4 lg:grid-cols-[212px_minmax(0,1fr)] xl:gap-5">
-            <aside className="hidden lg:sticky lg:top-4 lg:block">{rail}</aside>
-            <div className="min-w-0">{children}</div>
+          <div className="grid flex-1 items-start gap-8 lg:grid-cols-[236px_minmax(0,1fr)] lg:gap-14">
+            <aside className="hidden lg:sticky lg:top-8 lg:block">
+              {rail}
+              <p className="mt-9 flex items-start gap-2.5 border-t border-surface-200/80 pt-5 text-pretty text-[12.5px] leading-[1.55] text-surface-500">
+                <ShieldCheck size={16} strokeWidth={1.8} className="mt-px flex-shrink-0 text-success-600" aria-hidden="true" />
+                <span>
+                  Rankvora never changes your store without your approval. Your answers save as you move between steps.
+                </span>
+              </p>
+            </aside>
+            <div className="min-w-0 pb-4">{children}</div>
           </div>
         ) : (
           <div className="mx-auto w-full max-w-2xl">{children}</div>
@@ -670,71 +650,89 @@ function Frame({
   );
 }
 
+/** A fine monochrome grain, as an inline SVG so it needs no file and stays crisp at any size. */
+const GRAIN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
+
+/**
+ * The one raised surface on the page: the step sits on it.
+ *
+ * `overflow-hidden` clips the corner glow to the rounded edge. It is safe here because the action
+ * dock is NOT inside the sheet — the sticky footer is what once forbade it.
+ */
+function Sheet({ children }: { children: ReactNode }) {
+  return (
+    <div className="relative overflow-hidden rounded-[22px] bg-surface-0 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_36px_70px_-40px_var(--c-shadow-lg),0_10px_28px_-16px_var(--c-shadow-md)] ring-1 ring-inset ring-surface-900/[0.07]">
+      <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-brand-100/70 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-300/70 to-transparent" />
+      <div className="relative">{children}</div>
+    </div>
+  );
+}
+
+/** The large mark above a full-screen message (an error, a prompt to connect). */
+function StateMark({ tone, children }: { tone: 'brand' | 'warning'; children: ReactNode }) {
+  const look =
+    tone === 'warning'
+      ? 'bg-warning-50 text-warning-700 ring-warning-100'
+      : 'bg-brand-50 text-brand-600 ring-brand-100';
+  return (
+    <span className={`mx-auto flex h-14 w-14 items-center justify-center rounded-2xl ring-1 ring-inset sm:mx-0 ${look}`}>
+      {children}
+    </span>
+  );
+}
+
 /**
  * What the merchant sees for the one request that decides which step opens.
  *
  * A skeleton of the real layout rather than a spinner on a line: the page it resolves into is a
- * rail beside a card, so showing that shape immediately means nothing jumps when the data lands.
+ * guide beside a sheet, so showing that shape immediately means nothing jumps when the data lands.
  */
 function LoadingFrame({ scrollRef }: { scrollRef: RefObject<HTMLDivElement | null> }) {
-  const bar = 'animate-pulse rounded-md bg-surface-200 motion-reduce:animate-none';
+  const bar = 'animate-pulse rounded-md bg-surface-200/80 motion-reduce:animate-none';
   return (
     <Frame
       scrollRef={scrollRef}
       rail={
-        <div className="flex flex-col gap-4" aria-hidden="true">
-          <div className="flex items-center gap-3">
-            <div className={`${bar} h-[44px] w-[44px] rounded-full`} />
-            <div className="flex-1 space-y-2">
-              <div className={`${bar} h-3 w-24`} />
-              <div className={`${bar} h-3 w-20`} />
-            </div>
+        <div className="flex flex-col gap-7" aria-hidden="true">
+          <div className="space-y-2.5">
+            <div className={`${bar} h-3.5 w-28`} />
+            <div className={`${bar} h-1.5 w-full rounded-full`} />
+            <div className={`${bar} h-3 w-20`} />
           </div>
-          <div className="space-y-4 px-3">
+          <div className="space-y-5">
             {[0, 1, 2, 3, 4].map((index) => (
               <div key={index} className="flex items-center gap-3.5">
-                <div className={`${bar} h-7 w-7 rounded-full`} />
-                <div className={`${bar} h-3 flex-1`} style={{ maxWidth: `${120 - index * 8}px` }} />
+                <div className={`${bar} h-7 w-7 flex-shrink-0 rounded-full`} />
+                <div className={`${bar} h-3.5 flex-1`} style={{ maxWidth: `${132 - index * 9}px` }} />
               </div>
             ))}
           </div>
         </div>
       }
     >
-      <Card>
-        <div role="status" aria-live="polite" className="px-4 py-4 sm:px-6 sm:py-5">
+      <Sheet>
+        <div role="status" aria-live="polite" className="px-5 py-7 sm:px-9 sm:py-9">
           <span className="sr-only">Loading your store…</span>
           <div aria-hidden="true">
-            <div className="flex items-start gap-4">
-              <div className={`${bar} h-11 w-11 flex-shrink-0 rounded-xl`} />
-              <div className="min-w-0 flex-1 space-y-3">
-                <div className={`${bar} h-2.5 w-20`} />
-                <div className={`${bar} h-6 w-56 max-w-full`} />
-                <div className={`${bar} h-3 w-full max-w-md`} />
-              </div>
+            <div className="flex items-center gap-3">
+              <div className={`${bar} h-10 w-10 flex-shrink-0 rounded-xl`} />
+              <div className={`${bar} h-3 w-20`} />
             </div>
-            <div className="mt-6 grid gap-x-5 gap-y-5 md:grid-cols-2">
+            <div className={`${bar} mt-5 h-8 w-72 max-w-full`} />
+            <div className={`${bar} mt-3 h-3.5 w-full max-w-md`} />
+            <div className="mt-9 grid gap-x-7 gap-y-8 md:grid-cols-2">
               {[0, 1, 2, 3].map((index) => (
-                <div key={index} className="space-y-2">
-                  <div className={`${bar} h-3 w-32`} />
-                  <div className={`${bar} h-2.5 w-44 max-w-full`} />
-                  <div className={`${bar} h-9 w-full rounded-lg`} />
+                <div key={index} className="space-y-2.5">
+                  <div className={`${bar} h-3.5 w-32`} />
+                  <div className={`${bar} h-3 w-44 max-w-full`} />
+                  <div className={`${bar} h-11 w-full rounded-xl`} />
                 </div>
               ))}
             </div>
           </div>
         </div>
-      </Card>
+      </Sheet>
     </Frame>
-  );
-}
-
-/** No `overflow-hidden`: it would stop the action bar from sticking. Corners are rounded on the
- * first and last children instead. */
-function Card({ children }: { children: ReactNode }) {
-  return (
-    <div className="rounded-xl border border-surface-200 bg-surface-0 shadow-[0_18px_44px_-32px_var(--c-shadow-lg)]">
-      {children}
-    </div>
   );
 }
