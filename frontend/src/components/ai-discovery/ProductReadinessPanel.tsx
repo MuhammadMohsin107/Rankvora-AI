@@ -9,6 +9,7 @@ import {
 import { ApiError } from '../../lib/api';
 import { cardClass } from '../dashboard/scoreTone';
 import { Button, MetricTile, StatusBadge } from '../workflows/WorkflowPrimitives';
+import Donut from '../ui/Donut';
 
 /**
  * ─── Per-product AI readiness ────────────────────────────────────────
@@ -218,7 +219,7 @@ export default function ProductReadinessPanel() {
 
       {!loading && !error && data && data.summary.analyzed > 0 && (
         <>
-          <div className="grid grid-cols-2 gap-2.5 px-3 py-2.5 lg:grid-cols-4">
+          <div className="grid items-center gap-2.5 px-3 py-2.5 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]">
             <MetricTile
               label="Average readiness"
               value={data.summary.averageScore === null ? '—' : `${data.summary.averageScore}%`}
@@ -231,9 +232,21 @@ export default function ProductReadinessPanel() {
                     : 'critical'
               }
             />
-            <MetricTile label="Critical" value={data.summary.critical.toLocaleString()} tone={data.summary.critical > 0 ? 'critical' : 'neutral'} />
-            <MetricTile label="Needs work" value={data.summary.needsWork.toLocaleString()} tone={data.summary.needsWork > 0 ? 'warning' : 'neutral'} />
-            <MetricTile label="Ready" value={data.summary.healthy.toLocaleString()} tone={data.summary.healthy > 0 ? 'success' : 'neutral'} />
+            {/* The split of the assessed products, from the same counts the filter below uses. */}
+            <div className="sm:justify-self-center">
+              <Donut
+                label="Products by AI readiness"
+                size={96}
+                stroke={12}
+                center={data.summary.analyzed.toLocaleString()}
+                sub="products"
+                segments={[
+                  { label: 'Ready', value: data.summary.healthy, color: 'var(--c-success-600)' },
+                  { label: 'Needs work', value: data.summary.needsWork, color: 'var(--c-warning-500)' },
+                  { label: 'Critical', value: data.summary.critical, color: 'var(--c-critical-600)' },
+                ]}
+              />
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5 border-t border-surface-100 px-3 py-1.5">
