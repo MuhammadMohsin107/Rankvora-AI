@@ -158,7 +158,7 @@ describe('Onboarding · the flow', () => {
   it('opens on step 1 with the guide beside it', async () => {
     open();
     expect(await screen.findByRole('heading', { level: 1, name: 'Confirm your store' })).toBeInTheDocument();
-    expect(screen.getByText('Step 1 of 5')).toBeInTheDocument();
+    expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
     const guide = screen.getAllByRole('navigation', { name: 'Setup progress' })[0];
     expect(within(guide).getByRole('button', { name: /Confirm your store/ })).toHaveAttribute('aria-current', 'step');
   });
@@ -196,7 +196,7 @@ describe('Onboarding · the flow', () => {
     expect(screen.getByLabelText('Store name')).toHaveAttribute('aria-invalid', 'true');
     expect(saveOnboardingStep).not.toHaveBeenCalled();
     // Still on step 1.
-    expect(screen.getByText('Step 1 of 5')).toBeInTheDocument();
+    expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
   });
 
   it('clears the flag the moment the field is touched', async () => {
@@ -228,7 +228,7 @@ describe('Onboarding · the flow', () => {
     expect(payload).toMatchObject({ step: 1, organizationName: 'Northline Home', targetCountries: ['Canada'] });
     // Nothing from another step travels with it.
     expect(payload).not.toHaveProperty('brandName');
-    expect(screen.getByText('Step 2 of 5')).toBeInTheDocument();
+    expect(screen.getByText('Step 2 of 4')).toBeInTheDocument();
   });
 
   it('keeps an earlier answer when the merchant goes Back', async () => {
@@ -256,7 +256,7 @@ describe('Onboarding · the flow', () => {
     await answerStepOne();
     fireEvent.click(button('Confirm and continue'));
     await waitFor(() => expect(screen.getByText(/couldn't save that/i)).toBeInTheDocument());
-    expect(screen.getByText('Step 1 of 5')).toBeInTheDocument();
+    expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
   });
 
   it('opens at the first step still owed when some are already answered', async () => {
@@ -339,6 +339,30 @@ describe('Onboarding · step 3, priorities', () => {
     );
   };
   const tile = (name: RegExp) => screen.getByRole('checkbox', { name }).closest('label') as HTMLElement;
+
+  it('goes straight to Permissions: setup has four steps and no measurement step', async () => {
+    atStepThree({ priorityPillars: ['seo'] });
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Priorities' });
+    expect(screen.getByText('Step 3 of 4')).toBeInTheDocument();
+    expect(screen.queryByText('Measurement')).not.toBeInTheDocument();
+    fireEvent.click(button('Continue'));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Permissions & monitoring' })).toBeInTheDocument();
+    expect(screen.getByText('Step 4 of 4')).toBeInTheDocument();
+    expect(saveOnboardingStep).toHaveBeenCalledWith(expect.objectContaining({ step: 3 }));
+  });
+
+  it('resumes at Permissions when the server says the next step is the one setup no longer shows', async () => {
+    vi.mocked(fetchOnboarding).mockResolvedValue(
+      snapshot({
+        ...answered({ priorityPillars: ['seo'] }),
+        currentStep: 4,
+        progress: [1, 2, 3, 4, 5].map((step) => ({ step, status: step <= 3 ? ('complete' as const) : ('pending' as const), required: step !== 4 })),
+      }),
+    );
+    open();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Permissions & monitoring' })).toBeInTheDocument();
+  });
 
   it('numbers the chosen tiles in the order they will be looked at', async () => {
     atStepThree({ priorityPillars: ['speed', 'seo'] });
@@ -654,7 +678,7 @@ describe('Onboarding · taking the answers', () => {
       expect(await screen.findByText('Check the highlighted answer on this step.')).toBeInTheDocument();
       expect(screen.getByText('Enter a valid storefront address, for example https://example.com')).toBeInTheDocument();
       expect(saveOnboardingStep).not.toHaveBeenCalled();
-      expect(screen.getByText('Step 1 of 5')).toBeInTheDocument();
+      expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
     });
 
     it('lets the merchant through once it is corrected', async () => {

@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
-  BarChart3,
   Building2,
   Check,
   RefreshCw,
@@ -23,7 +22,6 @@ import {
 import {
   PILLAR_GOALS,
   StepBusiness,
-  StepMeasurement,
   StepPermissions,
   StepPriorities,
   StepStore,
@@ -31,12 +29,12 @@ import {
 } from '../../components/onboarding/OnboardingSteps';
 import SetupComplete, { type CompletionRow } from '../../components/onboarding/SetupComplete';
 import { isPillarVisible } from '../../config/modules';
-import { describeGoogleOutcome } from '../../data/google.repository';
 import {
   REQUIRED_FIELD_MESSAGE,
   STEP_META,
   consentLabel,
-  TOTAL_STEPS,
+  LAST_STEP,
+  SHOWN_STEPS,
   completeOnboarding,
   describeOnboardingError,
   fetchOnboarding,
@@ -100,8 +98,6 @@ const STEP_FIELDS: Record<number, Array<keyof StepPayload>> = {
   1: ['organizationName', 'primaryDomain', 'targetCountries', 'targetLanguages', 'primaryMarket'],
   2: ['brandName', 'brandedTerms', 'industries', 'sellsDescription', 'contentLanguage'],
   3: ['priorityPillars', 'targetKeywords', 'competitorDomains', 'priorityResources', 'customerQuestions'],
-  // Nothing is stored for measurement: whether a source is connected is read from the connection.
-  4: [],
   5: ['automationConsent', 'alertFrequency', 'protectedPaths', 'autoAnalysis', 'analysisFrequency', 'preferredScanHour'],
 };
 
@@ -109,7 +105,6 @@ const STEP_COMPONENTS: Record<number, (props: StepProps) => ReactElement> = {
   1: StepStore,
   2: StepBusiness,
   3: StepPriorities,
-  4: StepMeasurement,
   5: StepPermissions,
 };
 
@@ -117,7 +112,6 @@ const STEP_ICONS: Record<number, LucideIcon> = {
   1: Store,
   2: Building2,
   3: Target,
-  4: BarChart3,
   5: ShieldCheck,
 };
 
@@ -132,14 +126,13 @@ const STEP_ICONS: Record<number, LucideIcon> = {
  */
 function openingStep(state: OnboardingSnapshot): number {
   if (state.completedAt) return 1;
+  // Only the steps setup shows. The server's optional measurement step is not one of them, so it is
+  // never the place a merchant resumes at.
   const firstOpen = [...state.progress]
+    .filter((entry) => SHOWN_STEPS.includes(entry.step))
     .sort((a, b) => a.step - b.step)
-    // The first step still owed — OR the optional step the merchant has reached but not passed. The
-    // stored pointer only moves past an optional step once they have continued from it, so resuming
-    // after step 3 lands on measurement (which they have not seen) and resuming after step 4 does
-    // not drag them back to it just because Google is still unconnected.
-    .find((entry) => entry.status !== 'complete' && (entry.required || entry.step === state.currentStep));
-  return firstOpen?.step ?? TOTAL_STEPS;
+    .find((entry) => entry.status !== 'complete' && entry.required);
+  return firstOpen?.step ?? LAST_STEP;
 }
 
 /**
@@ -170,13 +163,6 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const location = useLocation();
   const scrollRef = useRef<HTMLDivElement>(null);
-  /**
-   * Set when Google has just sent the merchant back from connecting. Read from the URL ONCE, then the
-   * parameters are stripped, so a refresh does not replay a message about something already seen.
-   */
-  const [googleNotice, setGoogleNotice] = useState<ReturnType<typeof describeGoogleOutcome>>(null);
-  const returnedFromGoogle = useRef(false);
-
   const [snapshot, setSnapshot] = useState<OnboardingSnapshot | null>(null);
   const [suggestions, setSuggestions] = useState<OnboardingSuggestions | null>(null);
   const [suggestionsLoading, setSuggestionsLoading] = useState(true);
@@ -242,12 +228,9 @@ export default function Onboarding() {
   useEffect(() => {
     let cancelled = false;
 
-    // Coming back from Google: remember the outcome, and clear it from the address.
-    const params = new URLSearchParams(location.search);
-    const outcome = describeGoogleOutcome(params.get('google'), params.get('reason'));
-    if (outcome) {
-      returnedFromGoogle.current = true;
-      setGoogleNotice(outcome);
+    // A Google connection started before setup stopped showing measurement can still send the merchant
+    // back here. There is nowhere to show its outcome now, so the parameters are just cleared.
+    if (new URLSearchParams(location.search).has('google')) {
       window.history.replaceState(window.history.state, '', window.location.pathname);
     }
 
@@ -259,8 +242,7 @@ export default function Onboarding() {
         // A completed setup is not redirected away — the gate never sends anyone here once it is
         // finished, so arriving with `completedAt` set means the merchant came deliberately to
         // change an answer. The page becomes an edit surface, and saving leaves it complete.
-        // Returning from Google always lands on measurement, which is where they were.
-        const opening = returnedFromGoogle.current ? 4 : openingStep(state);
+        const opening = openingStep(state);
         setSnapshot(state);
         setStep(opening);
 
@@ -391,7 +373,7 @@ export default function Onboarding() {
     setBusy(false);
     if (saved) {
       setFieldErrors({});
-      setStep(Math.min(TOTAL_STEPS, Math.max(1, target)));
+      setStep(SHOWN_STEPS.includes(target) ? target : step);
     }
   };
 
@@ -417,7 +399,7 @@ export default function Onboarding() {
 
   const onFinish = async () => {
     if (busy) return;
-    if (!requireAnswers(TOTAL_STEPS)) return;
+    if (!requireAnswers(LAST_STEP)) return;
 
     // Every step, not just this one. An answer can be cleared on a step the merchant went back to,
     // and the server refuses to finish while any of them is short — so rather than let it 400,
@@ -426,13 +408,13 @@ export default function Onboarding() {
     if (unanswered !== null) {
       setStep(unanswered);
       flagMissing(unanswered);
-      setSaveError(`${STEP_META[unanswered - 1].title} still needs an answer.`);
+      setSaveError(`${STEP_META.find((entry) => entry.step === unanswered)?.title ?? 'A step'} still needs an answer.`);
       return;
     }
 
     setBusy(true);
     try {
-      const saved = await persist(TOTAL_STEPS);
+      const saved = await persist(LAST_STEP);
       if (!saved) {
         setBusy(false);
         return;
@@ -517,11 +499,16 @@ export default function Onboarding() {
     );
   }
 
-  const meta = STEP_META[step - 1];
+  const meta = STEP_META.find((entry) => entry.step === step) ?? STEP_META[0];
   const StepComponent = STEP_COMPONENTS[step];
+  // Where this step sits among the ones shown (the server's numbers skip one).
+  const position = Math.max(0, SHOWN_STEPS.indexOf(step));
+  const previousStep = SHOWN_STEPS[position - 1];
+  const nextStep = SHOWN_STEPS[position + 1];
   const editing = Boolean(snapshot.completedAt);
-  const stepperSteps = STEP_META.map((entry) => ({
+  const stepperSteps = STEP_META.map((entry, index) => ({
     step: entry.step,
+    number: index + 1,
     title: entry.title,
     status: snapshot.progress.find((progress) => progress.step === entry.step)?.status ?? 'pending',
     optional: entry.optional,
@@ -550,7 +537,7 @@ export default function Onboarding() {
           </div>
         )}
 
-        <StepHeader step={step} total={TOTAL_STEPS} title={meta.title} purpose={meta.purpose} icon={STEP_ICONS[step]} />
+        <StepHeader step={position + 1} total={SHOWN_STEPS.length} title={meta.title} purpose={meta.purpose} icon={STEP_ICONS[step]} />
 
         {/* Keyed on the step so each one enters rather than swapping in place — the sheet is the only
             thing that changes between steps, and without this the transition is invisible. */}
@@ -564,7 +551,6 @@ export default function Onboarding() {
             suggestionsFailed={suggestionsFailed}
             onRetrySuggestions={() => void loadSuggestions()}
             errors={fieldErrors}
-            notice={googleNotice}
           />
         </div>
       </Sheet>
@@ -584,8 +570,8 @@ export default function Onboarding() {
         )}
 
         <div className="flex flex-wrap items-center gap-2.5">
-          {step > 1 && (
-            <ActionButton variant="ghost" onClick={() => void goTo(step - 1)} disabled={busy}>
+          {previousStep !== undefined && (
+            <ActionButton variant="ghost" onClick={() => void goTo(previousStep)} disabled={busy}>
               <ArrowLeft size={16} aria-hidden="true" />
               Back
             </ActionButton>
@@ -595,8 +581,8 @@ export default function Onboarding() {
               There is nothing beside it: every step is required, so the only way forward is
               through this button. */}
           <div className="ml-auto flex flex-1 items-center justify-end gap-2.5 sm:flex-none">
-            {step < TOTAL_STEPS ? (
-              <ActionButton loading={busy} onClick={() => void goTo(step + 1)} className="flex-1 sm:min-w-48 sm:flex-none">
+            {nextStep !== undefined ? (
+              <ActionButton loading={busy} onClick={() => void goTo(nextStep)} className="flex-1 sm:min-w-48 sm:flex-none">
                 {busy ? 'Saving…' : editing ? 'Next' : step === 1 ? 'Confirm and continue' : 'Continue'}
                 {!busy && <ArrowRight size={16} aria-hidden="true" />}
               </ActionButton>

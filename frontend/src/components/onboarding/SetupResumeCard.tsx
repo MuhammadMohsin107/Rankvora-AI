@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Check, Sparkles } from 'lucide-react';
 import { Button } from '../workflows/WorkflowPrimitives';
 import {
+  SHOWN_STEPS,
   STEP_META,
   fetchOnboardingShared,
   reopenOnboarding,
@@ -49,7 +50,7 @@ export default function SetupResumeCard() {
 
   // REQUIRED steps only. Measurement is optional: a merchant who chose to set it up later has
   // nothing outstanding, and this card must not tell them otherwise.
-  const required = snapshot.progress.filter((entry) => entry.required);
+  const required = snapshot.progress.filter((entry) => entry.required && SHOWN_STEPS.includes(entry.step));
   const outstanding = required.filter((entry) => entry.status !== 'complete');
   if (outstanding.length === 0) return null;
 
@@ -93,8 +94,8 @@ export default function SetupResumeCard() {
               page's own header says when they arrive. Two states only — done or not — so the strip
               can never show progress the count above it disagrees with. */}
           <ol className="mt-3 flex flex-wrap gap-x-3 gap-y-2" aria-label="Setup progress">
-            {snapshot.progress.map((entry) => {
-              const title = STEP_META[entry.step - 1]?.title ?? `Step ${entry.step}`;
+            {snapshot.progress.filter((entry) => SHOWN_STEPS.includes(entry.step)).map((entry, index) => {
+              const title = STEP_META.find((meta) => meta.step === entry.step)?.title ?? `Step ${index + 1}`;
               const complete = entry.status === 'complete';
               // An optional step that is not done reads as optional, not as something left undone.
               const optional = !entry.required && !complete;
@@ -115,7 +116,7 @@ export default function SetupResumeCard() {
                       ) : (
                         <span aria-hidden="true" className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-surface-300" />
                       )}
-                      Step {entry.step}
+                      Step {index + 1}
                     </span>
                     <span className={`text-[11px] font-medium ${complete ? 'text-success-700' : 'text-surface-500'}`}>
                       {title}

@@ -566,6 +566,26 @@
   .sidebar-scroll::-webkit-scrollbar-thumb:hover {
     background: rgba(0, 0, 0, 0.2);
   }
+
+  /* A long list inside a step (the industries): a slim scrollbar that is always visible, so it is
+   * obvious there is more below. Firefox takes the first two lines; the rest is Chrome, Edge, Safari. */
+  .onboarding-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-brand-300) transparent;
+  }
+  .onboarding-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  .onboarding-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .onboarding-scroll::-webkit-scrollbar-thumb {
+    background: var(--c-brand-300);
+    border-radius: 6px;
+  }
+  .onboarding-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--c-brand-500);
+  }
 }
 
 @layer components {

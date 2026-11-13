@@ -21,7 +21,15 @@ import { api, ApiError } from '../lib/api';
 export type StepStatus = 'complete' | 'pending';
 export type SignalConfidence = 'high' | 'medium' | 'low';
 
-export const TOTAL_STEPS = 5;
+/**
+ * The steps the merchant is shown, as the server numbers them. The server still has five (step 4,
+ * measurement, is optional and never blocks finishing); setup no longer shows it, so the screen
+ * counts four and the answers stay stored under the same numbers — nothing saved is renumbered.
+ */
+export const SHOWN_STEPS: readonly number[] = [1, 2, 3, 5];
+
+/** The last shown step, where setup is finished. */
+export const LAST_STEP = 5;
 
 /**
  * The steps that block finishing. MIRRORS `REQUIRED_STEPS` in the backend: measurement (4) is not
@@ -387,7 +395,7 @@ export function missingRequired(step: number, draft: StepPayload): RequiredField
  */
 export function firstUnansweredStep(draft: StepPayload): number | null {
   // Only steps with required fields can be returned: measurement has none, so it never is.
-  for (let step = 1; step <= TOTAL_STEPS; step += 1) {
+  for (const step of SHOWN_STEPS) {
     if (missingRequired(step, draft).length > 0) return step;
   }
   return null;
@@ -401,7 +409,6 @@ export const STEP_META: Array<{ step: number; title: string; purpose?: string; o
   { step: 1, title: 'Confirm your store' },
   { step: 2, title: 'Your business' },
   { step: 3, title: 'Priorities' },
-  { step: 4, title: 'Measurement', optional: true },
   { step: 5, title: 'Permissions & monitoring' },
 ];
 

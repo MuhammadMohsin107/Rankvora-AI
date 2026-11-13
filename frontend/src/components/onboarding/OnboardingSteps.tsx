@@ -45,7 +45,6 @@ import {
   ToggleCard,
   UnavailableNote,
 } from './OnboardingPrimitives';
-import MeasurementStep from './MeasurementStep';
 import {
   AUTOMATION_CONSENT_OPTIONS,
   FIELD_LIMITS,
@@ -66,19 +65,20 @@ import {
 } from '../../data/onboarding.repository';
 
 /**
- * ─── The five steps ──────────────────────────────────────────────────
+ * ─── The four steps ──────────────────────────────────────────────────
  *
  *   1  Confirm your store     what Shopify told us, shown read-only, and the markets that matter
  *   2  Your business          brand, aliases, industry, content language
  *   3  Priorities             what to improve first, plus optional keywords and priority products
  *                             (competitors and the questions customers ask are no longer asked here)
- *   4  Measurement            Search Console / Analytics / performance — OPTIONAL (MeasurementStep)
- *   5  Permissions            how changes are approved, what to leave alone, when to re-scan
+ *   4  Permissions            how changes are approved, what to leave alone, when to re-scan
+ *
+ * (The server also has a measurement step, numbered 4 there. Setup does not show it: Search Console and
+ * Analytics are connected from the Integrations page. This step is the server's step 5.)
  *
  * Each step edits a slice of one draft object held by the page. They never fetch their own answers
  * and never save them — that belongs to the page, so a merchant moving between steps cannot lose an
- * answer to a component unmounting. (Step 4 reads connection state itself: that is not an answer
- * the merchant gave, it is the real state of their Google connection.)
+ * answer to a component unmounting.
  *
  * IMPORTED FACTS AND EDITABLE PREFERENCES ARE KEPT APART. What Shopify reported is shown in its own
  * block, read-only and labelled as imported; what the merchant decides sits in fields. Mixing the two
@@ -108,8 +108,6 @@ export interface StepProps {
    * arrival would tell them they had done something wrong before they had done anything at all.
    */
   errors: Partial<Record<RequiredField | InvalidField, string>>;
-  /** The outcome of a Google connection the merchant has just come back from, shown on step 4. */
-  notice?: { tone: 'success' | 'error' | 'info'; message: string } | null;
 }
 
 /**
@@ -662,7 +660,7 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
           badge="optional"
           className="md:col-span-2"
           extras={
-            <div className="mt-2 space-y-2 empty:hidden">
+            <div className="mt-1.5 space-y-1.5 empty:hidden">
               {suggestionsLoading && <SuggestionsPending />}
               {!suggestionsLoading && keywordSuggestions.length > 0 && (
                 <SuggestionRow
@@ -749,13 +747,7 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
   );
 }
 
-// ─── Step 4 · Measurement ────────────────────────────────────────────
-
-export function StepMeasurement({ notice }: StepProps) {
-  return <MeasurementStep notice={notice ?? null} />;
-}
-
-// ─── Step 5 · Permissions and monitoring ─────────────────────────────
+// ─── Step 4 · Permissions and monitoring ─────────────────────────────
 
 /** A permission and what it is set to, as a plain row — not a control. */
 function PermissionRow({ label, state, tone }: { label: string; state: string; tone: 'on' | 'review' | 'off' }) {
@@ -765,7 +757,7 @@ function PermissionRow({ label, state, tone }: { label: string; state: string; t
     off: { dot: 'bg-surface-300', text: 'text-surface-500' },
   }[tone];
   return (
-    <li className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 px-3.5 py-2">
+    <li className="flex min-h-9 items-center justify-between gap-x-3 rounded-lg bg-surface-50 px-3.5 py-2 ring-1 ring-inset ring-surface-200/70">
       <p className="min-w-0 flex-1 text-[13px] font-medium tracking-[-0.01em] text-surface-900">{label}</p>
       <span className={`inline-flex flex-shrink-0 items-center gap-1.5 text-[12px] font-semibold ${look.text}`}>
         <span className={`h-1.5 w-1.5 rounded-full ${look.dot}`} aria-hidden="true" />
@@ -838,76 +830,43 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
           </div>
         </FormSection>
 
-        {/* Two columns, so the step stays on one screen: what Rankvora may do on the left; the two small
-            choices that go with it on the right. Plain wrappers (not grid items) — the fields inside simply stack. */}
-        <div className="grid items-start gap-x-4 md:col-span-2 md:grid-cols-2">
-          <div>
-            <FormSection
-              title="Permissions"
-            >
-              <ul className="divide-y divide-surface-100 overflow-hidden rounded-xl bg-surface-0 ring-1 ring-inset ring-surface-200">
-                <PermissionRow
-                  label="Analyze your published store content"
-                  state="On"
-                  tone="on"
-                />
-                <PermissionRow
-                  label="Prepare recommendations and drafts"
-                  state="On"
-                  tone="on"
-                />
-                <PermissionRow
-                  label="Publish changes"
-                  state={consent === 'none' ? 'Off' : 'You approve each'}
-                  tone={consent === 'none' ? 'off' : 'review'}
-                />
-                <PermissionRow
-                  label="Change URLs or theme code"
-                  state="Not offered"
-                  tone="off"
-                />
-              </ul>
-            </FormSection>
-          </div>
-          <div>
-            <FormField
-              label="Pages to leave alone"
-              htmlFor="onboarding-protected"
-              badge="optional"
-            >
-              <TagInput
-                id="onboarding-protected"
-                icon={ShieldCheck}
-                values={protectedPaths}
-                onChange={(next) => patch({ protectedPaths: next })}
-                placeholder="Type a page path, starting with /"
-                max={20}
-                maxItemLength={FIELD_LIMITS.protectedPath}
-                transform={normaliseProtectedPath}
-              />
-            </FormField>
-            <FormSection
-              title="Alerts"
-              badge="optional"
-            >
-              <div className="grid grid-cols-2 gap-2">
-                {alerts.map((option, index) => (
-                  <ChoiceCard
-                    key={option}
-                    name="alert-frequency"
-                    value={option}
-                    label={ALERT_LABELS[option] ?? option}
-                    selected={draft.alertFrequency === option}
-                    onSelect={(value) => patch({ alertFrequency: value })}
-                    className={lastCardSpan(index, alerts.length, { sm: 2, lg: 2 })}
-                  />
-                ))}
-              </div>
-            </FormSection>
-          </div>
-        </div>
+        <FormSection className="md:col-span-2" title="Permissions">
+          {/* Four equal tiles, two to a row, so the list takes two short rows instead of four tall ones. */}
+          <ul className="grid gap-2 sm:grid-cols-2">
+            <PermissionRow label="Analyze your published store content" state="On" tone="on" />
+            <PermissionRow label="Prepare recommendations and drafts" state="On" tone="on" />
+            <PermissionRow
+              label="Publish changes"
+              state={consent === 'none' ? 'Off' : 'You approve each'}
+              tone={consent === 'none' ? 'off' : 'review'}
+            />
+            <PermissionRow label="Change URLs or theme code" state="Not offered" tone="off" />
+          </ul>
+        </FormSection>
 
+        <FormSection className="md:col-span-2" title="Alerts" badge="optional">
+          <SegmentedControl
+            id="onboarding-alerts"
+            label="Alerts"
+            fill
+            value={draft.alertFrequency ?? ''}
+            options={alerts.map((option) => ({ value: option, label: ALERT_LABELS[option] ?? option }))}
+            onChange={(value) => patch({ alertFrequency: value })}
+          />
+        </FormSection>
 
+        <FormField label="Pages to leave alone" htmlFor="onboarding-protected" badge="optional" className="md:col-span-2">
+          <TagInput
+            id="onboarding-protected"
+            icon={ShieldCheck}
+            values={protectedPaths}
+            onChange={(next) => patch({ protectedPaths: next })}
+            placeholder="Type a page path, starting with /"
+            max={20}
+            maxItemLength={FIELD_LIMITS.protectedPath}
+            transform={normaliseProtectedPath}
+          />
+        </FormField>
 
         <FormSection className="md:col-span-2" title="Scheduled monitoring">
           <ToggleCard
@@ -924,6 +883,7 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
                 <SegmentedControl
                   id="onboarding-frequency"
                   label="How often"
+                  fill
                   value={frequency}
                   options={frequencies.map((option) => ({ value: option, label: option }))}
                   onChange={(value) => patch({ analysisFrequency: value })}
@@ -948,7 +908,9 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
             </div>
           )}
           {monitoring && nextScan && (
-            <p className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-surface-50 px-3 py-1.5 text-[12.5px] leading-[1.5] text-surface-600 ring-1 ring-inset ring-surface-200/70">Next scan: <span className="font-semibold text-surface-900">{nextScan}</span></p>
+            <p className="mt-2 text-[12.5px] leading-[1.4] text-surface-500">
+              Next scan: <span className="font-semibold text-surface-900">{nextScan}</span>
+            </p>
           )}
         </FormSection>
 

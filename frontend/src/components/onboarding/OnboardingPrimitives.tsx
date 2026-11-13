@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import {
   AlertTriangle,
   ArrowDown,
@@ -46,6 +46,8 @@ export type StepStatus = 'complete' | 'pending';
 
 interface StepEntry {
   step: number;
+  /** The number shown for the step, when it differs from `step` (setup skips a server step). */
+  number?: number;
   title: string;
   status: StepStatus;
   /** True for a step that never blocks finishing (measurement). It can be passed without answering. */
@@ -109,7 +111,7 @@ function StepBadge({ entry, isCurrent }: { entry: StepEntry; isCurrent: boolean 
       aria-hidden="true"
       className={`relative z-10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[12.5px] font-semibold tabular-nums transition-[background-color,box-shadow,color] duration-300 ${tone}`}
     >
-      {entry.status === 'complete' ? <Check size={15} strokeWidth={3} /> : entry.step}
+      {entry.status === 'complete' ? <Check size={15} strokeWidth={3} /> : (entry.number ?? entry.step)}
     </span>
   );
 }
@@ -277,7 +279,7 @@ export function Stepper({
                 disabled={!reachable}
                 onClick={() => reachable && !isCurrent && onJump(entry.step)}
                 aria-current={isCurrent ? 'step' : undefined}
-                aria-label={`Step ${entry.step}: ${entry.title} — ${statusLabel(entry)}`}
+                aria-label={`Step ${entry.number ?? entry.step}: ${entry.title} — ${statusLabel(entry)}`}
                 className={`group flex w-full items-center py-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0 ${
                   reachable && !isCurrent ? 'cursor-pointer' : 'cursor-default'
                 }`}
@@ -722,11 +724,32 @@ function OptionList({
   onPick: (option: ComboOption) => void;
   onHover: (index: number) => void;
 }) {
+  const listRef = useRef<HTMLDivElement>(null);
+  // Opens below its field, unless the window has no room there and has more above — then upward, with
+  // its height capped to the room it has, so a list near the bottom never runs off the screen or
+  // lengthens the page.
+  const [placement, setPlacement] = useState<{ up: boolean; maxHeight: number }>({ up: false, maxHeight: 256 });
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    const anchor = list?.offsetParent;
+    if (!list || !anchor) return;
+    const box = anchor.getBoundingClientRect();
+    const below = window.innerHeight - box.bottom - 16;
+    const above = box.top - 16;
+    const wanted = Math.min(256, list.scrollHeight + 12);
+    const up = below < wanted && above > below;
+    setPlacement({ up, maxHeight: Math.max(120, Math.min(256, up ? above : below)) });
+  }, [options.length]);
+
   return (
     <div
       id={id}
+      ref={listRef}
       role="listbox"
-      className="absolute left-0 right-0 top-full z-30 mt-1.5 max-h-64 overflow-y-auto rounded-xl bg-surface-0 p-1.5 shadow-[0_24px_48px_-20px_var(--c-shadow-lg),0_4px_14px_-6px_var(--c-shadow-md)] ring-1 ring-inset ring-surface-200"
+      style={{ maxHeight: placement.maxHeight }}
+      className={`absolute left-0 right-0 z-30 overflow-y-auto rounded-xl bg-surface-0 p-1.5 shadow-[0_24px_48px_-20px_var(--c-shadow-lg),0_4px_14px_-6px_var(--c-shadow-md)] ring-1 ring-inset ring-surface-200 ${
+        placement.up ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+      }`}
     >
       {options.length === 0 ? (
         <div role="presentation" className="px-3 py-2.5 text-[13px] text-surface-500">
@@ -1048,12 +1071,15 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
   id,
+  fill = false,
 }: {
   label: string;
   options: ReadonlyArray<{ value: T; label: string }>;
   value: T | '';
   onChange: (value: T) => void;
   id?: string;
+  /** Stretch to the width of the column, with the options sharing it equally. */
+  fill?: boolean;
 }) {
   const refs = useRef(new Map<string, HTMLButtonElement>());
   const current = options.findIndex((option) => option.value === value);
@@ -1074,7 +1100,7 @@ export function SegmentedControl<T extends string>({
   };
 
   return (
-    <div id={id} role="radiogroup" aria-label={label} className="inline-flex max-w-full flex-wrap gap-1 rounded-xl bg-surface-100 p-1">
+    <div id={id} role="radiogroup" aria-label={label} className={`max-w-full gap-1 rounded-xl bg-surface-100 p-1 ${fill ? 'flex w-full' : 'inline-flex flex-wrap'}`}>
       {options.map((option, index) => {
         const on = index === current;
         return (
@@ -1091,6 +1117,8 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(option.value)}
             onKeyDown={(event) => onKeyDown(event, index)}
             className={`h-9 rounded-lg px-3.5 text-[13px] font-medium transition-[background-color,color,box-shadow] duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
+              fill ? 'flex-1 whitespace-nowrap px-2' : ''
+            } ${
               on
                 ? 'bg-surface-0 font-semibold text-surface-950 shadow-[0_1px_3px_var(--c-shadow-md)] ring-1 ring-surface-200'
                 : 'text-surface-600 hover:text-surface-950'
@@ -1466,7 +1494,9 @@ export function MultiSelectChips({
       aria-invalid={invalid || undefined}
       aria-describedby={describedBy}
       // A flagged group is outlined OUTSIDE its box, so the chips do not move when the flag appears.
-      className={`flex flex-wrap gap-2 rounded-xl ${
+      // Equal cards in a grid, three and a half rows tall: the half row shows there is more, and the
+      // slim scrollbar beside it says how to reach it. Long lists no longer push the step off screen.
+      className={`onboarding-scroll grid max-h-[9.5rem] grid-cols-2 gap-2 overflow-y-auto rounded-xl pr-1.5 sm:grid-cols-3 lg:grid-cols-4 ${
         invalid ? 'outline outline-1 outline-offset-[6px] outline-critical-300' : ''
       }`}
     >
@@ -1478,14 +1508,15 @@ export function MultiSelectChips({
             type="button"
             aria-pressed={isSelected}
             onClick={() => onToggle(option)}
-            className={`inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg px-3.5 text-[13px] font-medium ring-1 ring-inset transition-[background-color,color,box-shadow,transform] duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 active:scale-[0.97] motion-reduce:active:scale-100 ${
+            title={option}
+            className={`inline-flex h-9 w-full min-w-0 cursor-pointer items-center justify-start gap-1.5 rounded-lg px-3 text-left text-[13px] font-medium ring-1 ring-inset transition-[background-color,color,box-shadow,transform] duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 active:scale-[0.97] motion-reduce:active:scale-100 ${
               isSelected
                 ? 'bg-brand-600 text-surface-0 ring-brand-600 shadow-[0_10px_20px_-14px_var(--c-brand-600)]'
                 : 'bg-surface-0 text-surface-700 ring-surface-200 hover:bg-brand-50 hover:text-brand-800 hover:ring-brand-200'
             }`}
           >
-            {isSelected && <Check size={14} strokeWidth={2.8} aria-hidden="true" />}
-            {option}
+            {isSelected && <Check size={14} strokeWidth={2.8} className="flex-shrink-0" aria-hidden="true" />}
+            <span className="truncate">{option}</span>
           </button>
         );
       })}
@@ -1615,13 +1646,15 @@ export function TagInput({
           className="min-w-[9rem] flex-1 bg-transparent px-1.5 py-1.5 text-[14.5px] text-surface-950 outline-none placeholder:text-surface-400 disabled:cursor-not-allowed"
         />
       </div>
-      <div className="mt-1.5 flex items-baseline justify-between gap-2">
+      <div className="mt-1 flex items-baseline justify-between gap-2">
         <p className={`text-[12px] ${notice ? 'font-medium text-warning-700' : 'text-surface-500'}`} aria-live="polite">
           {notice}
         </p>
-        <p className="flex-shrink-0 font-mono text-[11.5px] tabular-nums text-surface-400">
-          {values.length}/{max}
-        </p>
+        {values.length > 0 && (
+          <p className="flex-shrink-0 font-mono text-[11.5px] tabular-nums text-surface-400">
+            {values.length}/{max}
+          </p>
+        )}
       </div>
     </div>
   );
