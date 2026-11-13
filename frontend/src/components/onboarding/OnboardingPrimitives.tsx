@@ -689,6 +689,9 @@ function matchOptions<T extends { label: string }>(options: readonly T[], query:
   return [...starting, ...containing];
 }
 
+/** The tallest a drop-down list gets, in px: about six rows, so it never swallows the step behind it. */
+const LIST_MAX_HEIGHT = 216;
+
 /** Keeps the highlighted option in view as the arrow keys move through a long list. */
 function useScrollActiveIntoView(open: boolean, listId: string, active: number) {
   useEffect(() => {
@@ -728,7 +731,7 @@ function OptionList({
   // Opens below its field, unless the window has no room there and has more above — then upward, with
   // its height capped to the room it has, so a list near the bottom never runs off the screen or
   // lengthens the page.
-  const [placement, setPlacement] = useState<{ up: boolean; maxHeight: number }>({ up: false, maxHeight: 256 });
+  const [placement, setPlacement] = useState<{ up: boolean; maxHeight: number }>({ up: false, maxHeight: LIST_MAX_HEIGHT });
   useLayoutEffect(() => {
     const list = listRef.current;
     const anchor = list?.offsetParent;
@@ -736,9 +739,9 @@ function OptionList({
     const box = anchor.getBoundingClientRect();
     const below = window.innerHeight - box.bottom - 16;
     const above = box.top - 16;
-    const wanted = Math.min(256, list.scrollHeight + 12);
+    const wanted = Math.min(LIST_MAX_HEIGHT, list.scrollHeight + 12);
     const up = below < wanted && above > below;
-    setPlacement({ up, maxHeight: Math.max(120, Math.min(256, up ? above : below)) });
+    setPlacement({ up, maxHeight: Math.max(120, Math.min(LIST_MAX_HEIGHT, up ? above : below)) });
   }, [options.length]);
 
   return (
@@ -747,9 +750,9 @@ function OptionList({
       ref={listRef}
       role="listbox"
       style={{ maxHeight: placement.maxHeight }}
-      className={`absolute left-0 right-0 z-30 overflow-y-auto rounded-xl bg-surface-0 p-1.5 shadow-[0_24px_48px_-20px_var(--c-shadow-lg),0_4px_14px_-6px_var(--c-shadow-md)] ring-1 ring-inset ring-surface-200 ${
+      className={`onboarding-scroll absolute left-0 right-0 z-30 overflow-y-auto rounded-xl bg-surface-0 p-1 shadow-[0_24px_48px_-20px_var(--c-shadow-lg),0_4px_14px_-6px_var(--c-shadow-md)] ring-1 ring-inset ring-surface-200 ${
         placement.up ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
-      }`}
+      } sm:right-auto sm:w-full sm:max-w-md`}
     >
       {options.length === 0 ? (
         <div role="presentation" className="px-3 py-2.5 text-[13px] text-surface-500">
@@ -770,7 +773,7 @@ function OptionList({
                 onPick(option);
               }}
               onMouseEnter={() => onHover(index)}
-              className={`flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 text-[14px] ${
+              className={`flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-1.5 text-[13.5px] ${
                 index === active ? 'bg-brand-50 text-brand-900' : 'text-surface-800'
               } ${chosen ? 'font-semibold' : ''}`}
             >

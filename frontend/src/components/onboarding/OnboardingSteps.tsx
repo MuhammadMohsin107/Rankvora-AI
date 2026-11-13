@@ -216,8 +216,9 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
       {/* ── Imported from Shopify · read-only ─────────────────────────── */}
       {shop && (
         <FormSection title="Imported from Shopify">
-          {/* Ten facts in one grid: two even rows of five on a wide screen, so nothing is left alone in a last row. */}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          {/* Ten facts, three to a row, in a box two and a half rows tall: the half row and the slim scrollbar
+              say there is more, and the rest of the step stays on screen. */}
+          <div className="onboarding-scroll grid max-h-[8.5rem] grid-cols-2 gap-2 overflow-y-auto pr-1.5 sm:grid-cols-3">
             <FactTile label="Store" value={shop.name || null} icon={Store} />
             <FactTile label="Storefront" value={shop.primaryUrl ?? shop.myshopifyDomain} icon={Globe2} />
             <FactTile
