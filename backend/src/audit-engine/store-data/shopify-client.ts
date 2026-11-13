@@ -13,7 +13,7 @@ export const SHOPIFY_API_VERSION = '2026-07';
 /** Injectable so tests can drive pagination / 429 / malformed-response paths without network. */
 export type FetchLike = (
   url: string,
-  init?: { method?: string; headers?: Record<string, string>; body?: string },
+  init?: { method?: string; headers?: Record<string, string>; body?: string; signal?: AbortSignal },
 ) => Promise<Response>;
 
 export interface ShopifyClientOptions {
@@ -23,6 +23,8 @@ export interface ShopifyClientOptions {
   /** Overridable so tests don't actually sleep through backoff. */
   sleepImpl?: (ms: number) => Promise<void>;
   maxRetries?: number;
+  /** How long one request may take before it is given up on and retried. Default 45 seconds. */
+  requestTimeoutMs?: number;
 }
 
 export interface PageInfo {
@@ -53,6 +55,14 @@ const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(r
 /** Shopify caps every connection at 250 nodes per page. */
 const MAX_PAGE_SIZE = 250;
 
+/**
+ * The longest one Shopify request may take. A product page is a few megabytes and normally comes back in
+ * a few seconds; with no limit at all, a connection that simply stopped answering held the whole
+ * analysis — and the merchant's progress bar — in place until the platform's own hour-long cut-off.
+ * Timing out turns it into the ordinary network failure the retry loop below already handles.
+ */
+const DEFAULT_REQUEST_TIMEOUT_MS = 45_000;
+
 /** Start pausing once the shop's query-cost bucket drops below this fraction of its maximum. */
 const THROTTLE_FLOOR = 0.2;
 
@@ -62,6 +72,7 @@ export class ShopifyClient {
   private readonly fetchImpl: FetchLike;
   private readonly sleepImpl: (ms: number) => Promise<void>;
   private readonly maxRetries: number;
+  private readonly requestTimeoutMs: number;
   /** Serializes calls so we never burst past Shopify's leaky bucket. */
   private chain: Promise<unknown> = Promise.resolve();
 
@@ -71,6 +82,7 @@ export class ShopifyClient {
     this.fetchImpl = options.fetchImpl ?? ((url, init) => fetch(url, init));
     this.sleepImpl = options.sleepImpl ?? defaultSleep;
     this.maxRetries = options.maxRetries ?? 3;
+    this.requestTimeoutMs = options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
   }
 
   private endpoint(): string {
@@ -110,6 +122,7 @@ export class ShopifyClient {
               Accept: 'application/json',
             },
             body: JSON.stringify({ query, variables }),
+            signal: AbortSignal.timeout(this.requestTimeoutMs),
           });
         } catch (error) {
           // Network-level failure (DNS, timeout, connection reset) — transient by nature.

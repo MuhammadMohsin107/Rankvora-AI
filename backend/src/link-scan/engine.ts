@@ -15,6 +15,7 @@ import { isAllowed, parseRobots, type RobotsRules } from '../audit-engine/storef
 import { load, probe, type CheckResult, type RequestOptions } from './checker.js';
 import { KeyedGate, pooled } from './pool.js';
 import { hostsOf, isSitemapUrl, isStoreHost, normalizeLink, roleFor } from './url.js';
+import { pushInto } from '../audit-engine/checks/shared/collect.js';
 
 /**
  * ─── The complete link scan ──────────────────────────────────────────
@@ -612,7 +613,7 @@ function interleaveByHost(rows: UrlRow[]): UrlRow[] {
     } catch {
       // An unparseable address groups with the others like it.
     }
-    byHost.set(host, [...(byHost.get(host) ?? []), row]);
+    pushInto(byHost, host, row);
   }
   const queues = [...byHost.values()];
   const ordered: UrlRow[] = [];

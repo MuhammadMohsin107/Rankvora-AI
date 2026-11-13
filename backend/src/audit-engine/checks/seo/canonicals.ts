@@ -6,6 +6,7 @@ import type { CrawledPage, StorefrontCrawl } from '../../storefront/types.js';
 import { comparableFromString, comparableUrl, resolveCanonical } from '../../storefront/canonical-url.js';
 import { decodeEntities } from '../../storefront/html-parser.js';
 import { crawlScopeNote, crawlUnavailableSentence, pageName } from '../shared/crawl.js';
+import { pushInto } from '../shared/collect.js';
 import { EVIDENCE_ROW_LIMIT, formatCount, pathOf, takeEvidenceSample } from './page-inventory.js';
 
 /**
@@ -191,9 +192,14 @@ const FACET_BY_PAGE_TYPE: Record<CrawledPage['pageType'], Facet | null> = {
   other: null,
 };
 
+/** A title as comparable text: trimmed, whitespace and case folded. */
+function comparableTitle(value: string): string {
+  return value.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
 function sameTitle(a: string, b: string): boolean {
-  const norm = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase();
-  return norm(a) !== '' && norm(a) === norm(b);
+  const left = comparableTitle(a);
+  return left !== '' && left === comparableTitle(b);
 }
 
 /** Below this, two descriptions matching says nothing — "Coming soon." is not a fingerprint. */
@@ -205,10 +211,57 @@ function comparableBody(html: string): string {
   return text.length >= MIN_BODY_CHARS ? text : '';
 }
 
-/** Two pages are copies when they carry the same description or the same title. */
-function isCopy(a: InventoryItem, b: InventoryItem): boolean {
-  return (a.body !== '' && a.body === b.body) || sameTitle(a.title, b.title);
+/**
+ * Joins the pages of one group into families of copies: two pages are copies when they carry the same
+ * description or the same title, and copies of copies belong to the same family.
+ *
+ * Done by KEY, not by comparing every pair. Two pages are copies exactly when they share a key (a
+ * description or a title), so each key only needs its first page remembered and every later page with
+ * that key joined to it. That reaches the same families in one pass over the group; the pairwise
+ * version took time proportional to the square of the group, and a catalogue whose handles are all
+ * "product-1", "product-2" … is a single group of every product.
+ *
+ * Returns the families as lists of indexes into `group`, each in group order.
+ */
+function copyFamilies(group: readonly InventoryItem[]): number[][] {
+  const parent = group.map((_, index) => index);
+  const root = (start: number): number => {
+    let node = start;
+    while (parent[node] !== node) {
+      parent[node] = parent[parent[node]!]!; // halve the path as we climb, so later lookups stay short
+      node = parent[node]!;
+    }
+    return node;
+  };
+  const join = (a: number, b: number) => {
+    const rootA = root(a);
+    const rootB = root(b);
+    if (rootA !== rootB) parent[rootA] = rootB;
+  };
+
+  const firstWithBody = new Map<string, number>();
+  const firstWithTitle = new Map<string, number>();
+  group.forEach((item, index) => {
+    if (item.body !== '') {
+      const seen = firstWithBody.get(item.body);
+      if (seen === undefined) firstWithBody.set(item.body, index);
+      else join(index, seen);
+    }
+    const title = comparableTitle(item.title);
+    if (title !== '') {
+      const seen = firstWithTitle.get(title);
+      if (seen === undefined) firstWithTitle.set(title, index);
+      else join(index, seen);
+    }
+  });
+
+  const families = new Map<number, number[]>();
+  group.forEach((_, index) => pushInto(families, root(index), index));
+  return [...families.values()];
 }
+
+/** How many handles a duplicate note spells out before it says "and N more". */
+const NOTE_HANDLES_SHOWN = 8;
 
 /** Published resources Shopify let us read, plus what was skipped and why. */
 function publishedInventory(snapshot: StoreSnapshot, crawledById: Map<string, CrawledPage>) {
@@ -248,6 +301,13 @@ function publishedInventory(snapshot: StoreSnapshot, crawledById: Map<string, Cr
   } else unread.push('articles');
 
   return { items, unread, unpublished };
+}
+
+/** The handles of a family, spelled out up to a few and then counted, so one huge family cannot put a ten-thousand-handle sentence on every one of its rows. */
+function listHandles(members: readonly InventoryItem[]): string {
+  const shown = members.slice(0, NOTE_HANDLES_SHOWN).map((member) => member.handle);
+  const rest = members.length - shown.length;
+  return rest > 0 ? `${shown.join(', ')} and ${rest.toLocaleString('en-US')} more` : shown.join(', ');
 }
 
 interface CanonicalVerdict {
@@ -407,8 +467,8 @@ export const canonicalsCheck: AuditCheck = {
     for (const item of items) {
       if (!item.scope || !item.handle) continue;
       const stem = suffixOf(item.handle)?.[1] ?? item.handle;
-      const key = `${item.scope} ${stem}`;
-      groups.set(key, [...(groups.get(key) ?? []), item]);
+      const key = `${item.scope}\u0000${stem}`;
+      pushInto(groups, key, item);
     }
 
     // Within a group, pages that are copies of one another (same description or same title) form a
@@ -417,15 +477,8 @@ export const canonicalsCheck: AuditCheck = {
     const assigned = new Set<string>();
     for (const group of groups.values()) {
       if (group.length < 2) continue;
-      const parent = group.map((_, index) => index);
-      const find = (index: number): number => (parent[index] === index ? index : (parent[index] = find(parent[index]!)));
-      for (let a = 0; a < group.length; a += 1) {
-        for (let b = a + 1; b < group.length; b += 1) if (isCopy(group[a]!, group[b]!)) parent[find(a)] = find(b);
-      }
-      const clusters = new Map<number, InventoryItem[]>();
-      group.forEach((item, index) => clusters.set(find(index), [...(clusters.get(find(index)) ?? []), item]));
-      for (const cluster of clusters.values()) {
-        const members = cluster.filter((item) => !assigned.has(item.id));
+      for (const indexes of copyFamilies(group)) {
+        const members = indexes.map((index) => group[index]!).filter((item) => !assigned.has(item.id));
         if (members.length < 2) continue;
         // The original is the un-suffixed handle when it exists, otherwise the lowest suffix.
         const rank = (item: InventoryItem) => Number(suffixOf(item.handle!)?.[2] ?? -1);
@@ -447,7 +500,8 @@ export const canonicalsCheck: AuditCheck = {
         const target = verdicts.get(copy.id)?.target;
         return verdicts.get(copy.id)?.issue === 'elsewhere' && target && originalKey !== null && comparableUrl(target) === originalKey;
       });
-      const open = copies.filter((copy) => !consolidated.includes(copy));
+      const consolidatedIds = new Set(consolidated.map((copy) => copy.id));
+      const open = copies.filter((copy) => !consolidatedIds.has(copy.id));
       const members = [original, ...copies];
       for (const member of members) familyOf.set(member.id, { original, members, match });
       for (const copy of consolidated) {
@@ -478,7 +532,7 @@ export const canonicalsCheck: AuditCheck = {
       const verdict = verdicts.get(item.id) ?? null;
       const family = familyOf.get(item.id) ?? null;
       const familyNote = family
-        ? `${family.members.length} ${item.facet === 'Blog' ? 'articles' : `${item.facet.toLowerCase()}s`} with ${family.match}: ${family.members.map((member) => member.handle).join(', ')}.`
+        ? `${family.members.length} ${item.facet === 'Blog' ? 'articles' : `${item.facet.toLowerCase()}s`} with ${family.match}: ${listHandles(family.members)}.`
         : undefined;
 
       let suggested: SubPillarEvidenceRow['suggested'];
@@ -508,7 +562,7 @@ export const canonicalsCheck: AuditCheck = {
         ...(familyNote ? { note: familyNote } : {}),
       };
       rows.push(row);
-      for (const issue of issues) rowsByIssue.set(issue, [...(rowsByIssue.get(issue) ?? []), row]);
+      for (const issue of issues) pushInto(rowsByIssue, issue, row);
     }
 
     const analyzed = rows.length;

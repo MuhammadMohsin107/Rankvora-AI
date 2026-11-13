@@ -251,7 +251,7 @@ export const env = {
   // has no start-up to run at. Instead the scheduled sweep closes out jobs that cannot still be alive
   // (services/job.service.ts, failStuckJobs). Node does not run this sweep.
   /** A job 'running' longer than this is dead: the Workflow step's own timeout is one hour. */
-  stuckJobRunningMs: Number(process.env.STUCK_JOB_RUNNING_MS ?? 90 * 60_000),
+  stuckJobRunningMs: Number(process.env.STUCK_JOB_RUNNING_MS ?? 40 * 60_000),
   /** A job still 'queued' after this never started: a Workflow normally picks it up in seconds. */
   stuckJobQueuedMs: Number(process.env.STUCK_JOB_QUEUED_MS ?? 15 * 60_000),
   // ─── Weekly summary ─────────────────────────────────────────────────

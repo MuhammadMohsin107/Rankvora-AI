@@ -67,21 +67,41 @@ const CHECKS_BAND: [number, number] = [88, 96];
 const SAVING_AT = 97;
 
 /**
+ * The fewest milliseconds between two progress writes. The merchant's screen polls every few seconds, so
+ * writing after every product page, every crawled page and every check only spent database round trips
+ * (each one is a request to D1, and a Worker is allowed a limited number of them) on updates nobody
+ * could see. A step change, or the end of a phase, is always written at once.
+ */
+const PROGRESS_MIN_INTERVAL_MS = 1_500;
+
+/**
  * Writes the job's progress and stage, never moving the bar backwards and skipping writes that
- * would change nothing. Capped at 99: only a finished, saved audit is 100.
+ * would change nothing — or that came too soon after the last one. Capped at 99: only a finished,
+ * saved audit is 100.
+ *
+ * What is held back is not lost: the next write that is allowed carries the latest figures, and
+ * `force` (a new step, the start of the checks, saving) goes through whatever the clock says.
  */
 function progressWriter(jobId: number) {
-  let lastProgress = 0;
-  let lastStage = '';
-  return async (progress: number, stage: string) => {
-    const value = Math.max(lastProgress, Math.min(99, Math.round(progress)));
+  let highest = 0;
+  let writtenProgress = -1;
+  let writtenStage = '';
+  let lastWriteAt = 0;
+  return async (progress: number, stage: string, force = false) => {
+    highest = Math.max(highest, Math.min(99, Math.round(progress)));
     const text = stage.slice(0, 191);
-    if (value === lastProgress && text === lastStage) return;
-    lastProgress = value;
-    lastStage = text;
-    await db.update(jobs).set({ progress: value, stage: text }).where(eq(jobs.id, jobId));
+    if (highest === writtenProgress && text === writtenStage) return;
+    const at = Date.now();
+    if (!force && at - lastWriteAt < PROGRESS_MIN_INTERVAL_MS) return;
+    writtenProgress = highest;
+    writtenStage = text;
+    lastWriteAt = at;
+    await db.update(jobs).set({ progress: highest, stage: text }).where(eq(jobs.id, jobId));
   };
 }
+
+/** A check slower than this is logged by name, so a slow one is found in the logs rather than by a merchant waiting. */
+const SLOW_CHECK_MS = 2_000;
 
 interface PillarOutcome {
   pillar: PillarKey;
@@ -108,10 +128,12 @@ async function runChecks(
   }
 
   let done = 0;
+  const timings: Array<{ check: string; ms: number }> = [];
   for (const check of checks) {
     const outcome = byPillar.get(check.pillar);
     if (!outcome) continue;
 
+    const startedAt = Date.now();
     try {
       outcome.subPillarResults.push(await check.execute(snapshot));
     } catch (error) {
@@ -121,9 +143,16 @@ async function runChecks(
       outcome.subPillarResults.push(unavailableResult(check.subPillar, `This check could not complete: ${message}`));
     }
 
+    const ms = Date.now() - startedAt;
+    timings.push({ check: check.id, ms });
+    if (ms >= SLOW_CHECK_MS) log('audit.slow_check', { jobId, checkId: check.id, ms }, 'warn');
+
     done += 1;
     await onProgress(done, checks.length);
   }
+
+  const slowest = [...timings].sort((a, b) => b.ms - a.ms).slice(0, 3);
+  log('audit.checks_done', { jobId, checks: timings.length, totalMs: timings.reduce((sum, entry) => sum + entry.ms, 0), slowest });
 
   // Only pillars that actually produced results are persisted — an unimplemented pillar is
   // absent rather than present-with-a-zero, so the UI can show "not yet available".
@@ -302,9 +331,12 @@ export async function runAuditJob(jobId: number, deps: RunnerDeps = {}): Promise
 
     // Fetch once, normalize once, reuse across every check (master prompt: PERFORMANCE).
     const provider = await resolveProvider(job.storeId);
+    let currentStep: SnapshotStep | null = null;
     const snapshot = await provider.buildSnapshot(async (update: SnapshotProgress) => {
       const [start, end] = STEP_BANDS[update.step];
-      await writeProgress(start + (end - start) * (update.fraction ?? 0), update.label);
+      const stepChanged = update.step !== currentStep;
+      currentStep = update.step;
+      await writeProgress(start + (end - start) * (update.fraction ?? 0), update.label, stepChanged);
     });
     // Surfaced in audit metadata beside every other non-fatal problem, rather than disappearing.
     if (promptWarning) snapshot.warnings.push(promptWarning);
@@ -338,10 +370,10 @@ export async function runAuditJob(jobId: number, deps: RunnerDeps = {}): Promise
 
     const [checksStart, checksEnd] = CHECKS_BAND;
     const outcomes = await runChecks(snapshot, jobId, checks, async (done, total) => {
-      await writeProgress(checksStart + (checksEnd - checksStart) * (total === 0 ? 1 : done / total), `Running checks — ${done} of ${total}`);
+      await writeProgress(checksStart + (checksEnd - checksStart) * (total === 0 ? 1 : done / total), `Running checks — ${done} of ${total}`, done === 1);
     });
 
-    await writeProgress(SAVING_AT, 'Saving results');
+    await writeProgress(SAVING_AT, 'Saving results', true);
     const auditId = await persistAudit(job.storeId, outcomes, snapshot, checks.length);
     await db.update(jobs).set({ status: 'succeeded', progress: 100, stage: 'Complete', auditId, finishedAt: new Date() }).where(eq(jobs.id, jobId));
     log('audit.completed', { jobId, storeId: job.storeId, auditId, pillars: outcomes.length });

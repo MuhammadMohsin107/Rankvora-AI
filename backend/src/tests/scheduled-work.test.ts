@@ -63,10 +63,10 @@ async function jobInState(state: { status: string; startedAt?: Date; createdAt: 
 }
 
 describe('failStuckJobs', () => {
-  it('fails running jobs past 90 minutes and queued jobs past 15, and nothing younger or finished', async () => {
+  it('fails running jobs past 40 minutes and queued jobs past 15, and nothing younger or finished', async () => {
     const ids = {
-      runningOld: await jobInState({ status: 'running', startedAt: minutesBefore(91), createdAt: minutesBefore(92) }),
-      runningYoung: await jobInState({ status: 'running', startedAt: minutesBefore(89), createdAt: minutesBefore(90) }),
+      runningOld: await jobInState({ status: 'running', startedAt: minutesBefore(41), createdAt: minutesBefore(42) }),
+      runningYoung: await jobInState({ status: 'running', startedAt: minutesBefore(39), createdAt: minutesBefore(40) }),
       queuedOld: await jobInState({ status: 'queued', createdAt: minutesBefore(16) }),
       queuedYoung: await jobInState({ status: 'queued', createdAt: minutesBefore(14) }),
       succeededOld: await jobInState({ status: 'succeeded', startedAt: minutesBefore(500), createdAt: minutesBefore(500) }),

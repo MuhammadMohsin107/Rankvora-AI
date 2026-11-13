@@ -268,3 +268,44 @@ describe('ShopifyClient.paginate', () => {
     assert.equal((error as StoreDataError).code, 'MALFORMED_RESPONSE');
   });
 });
+
+describe('ShopifyClient · a request that never answers', () => {
+  it('gives up on it after the timeout and retries, instead of waiting forever', async () => {
+    let calls = 0;
+    const sleeps: number[] = [];
+    const client = new ShopifyClient({
+      shopDomain: 'test.myshopify.com',
+      accessToken: 'token',
+      maxRetries: 1,
+      requestTimeoutMs: 30,
+      sleepImpl: async (ms) => { sleeps.push(ms); },
+      // The first call hangs until the client aborts it; the second answers.
+      fetchImpl: (_url, init) => {
+        calls += 1;
+        if (calls > 1) return Promise.resolve(gqlResponse({ data: { ok: true }, extensions: THROTTLE_OK }));
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(init.signal?.reason ?? new Error('aborted')));
+        });
+      },
+    });
+    const data = await client.graphql<{ ok: boolean }>('{ shop { name } }');
+    assert.deepEqual(data, { ok: true });
+    assert.equal(calls, 2);
+    assert.equal(sleeps.length, 1);
+  });
+
+  it('fails with API_UNAVAILABLE when every attempt times out', async () => {
+    const client = new ShopifyClient({
+      shopDomain: 'test.myshopify.com',
+      accessToken: 'token',
+      maxRetries: 1,
+      requestTimeoutMs: 20,
+      sleepImpl: async () => undefined,
+      fetchImpl: (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(init.signal?.reason ?? new Error('aborted')));
+        }),
+    });
+    await assert.rejects(client.graphql('{ shop { name } }'), (error: unknown) => error instanceof StoreDataError && error.code === 'API_UNAVAILABLE');
+  });
+});

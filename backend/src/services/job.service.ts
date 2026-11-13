@@ -143,7 +143,7 @@ export async function failInterruptedJobs(): Promise<number> {
  * that never started at all, leaves its row 'running' or 'queued'. Left alone, that row would block
  * every later run for the store with 409. Two cut-offs, because the two states mean different things:
  *
- *   running   longer than STUCK_JOB_RUNNING_MS (90 min) — past the Workflow step's one-hour timeout
+ *   running   longer than STUCK_JOB_RUNNING_MS (40 min) — past the Workflow step's 30-minute timeout
  *   queued    longer than STUCK_JOB_QUEUED_MS (15 min)  — a Workflow picks a job up in seconds
  *
  * The update re-checks the status, so a job that finished between the read and the write keeps its

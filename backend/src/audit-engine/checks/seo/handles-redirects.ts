@@ -4,6 +4,7 @@ import { scoreSubPillar } from '../../scoring.js';
 import type { HandleResourceType, SnapshotHandle, StoreSnapshot } from '../../store-data/types.js';
 import { REDIRECTS_SCOPE } from '../../store-data/shopify.queries.js';
 import { EVIDENCE_ROW_LIMIT, formatCount, takeEvidenceSample } from './page-inventory.js';
+import { pushInto } from '../shared/collect.js';
 
 /**
  * ─── SEO · Handles & redirects ───────────────────────────────────────
@@ -263,7 +264,7 @@ export const handlesRedirectsCheck: AuditCheck = {
     const bySource = new Map<string, typeof redirects.items>();
     for (const redirect of redirects.items) {
       const key = normalizePath(redirect.path);
-      bySource.set(key, [...(bySource.get(key) ?? []), redirect]);
+      pushInto(bySource, key, redirect);
     }
 
     const rows: SubPillarEvidenceRow[] = [];
@@ -277,7 +278,7 @@ export const handlesRedirectsCheck: AuditCheck = {
       const full: SubPillarEvidenceRow = { ...row, status: primary ? ISSUES[primary].status : HEALTHY };
       if (!primary) healthy += 1;
       rows.push(full);
-      for (const issue of issues) rowsByIssue.set(issue, [...(rowsByIssue.get(issue) ?? []), full]);
+      for (const issue of issues) pushInto(rowsByIssue, issue, full);
     };
 
     for (const redirect of redirects.items) {

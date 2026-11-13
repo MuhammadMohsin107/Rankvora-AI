@@ -173,7 +173,7 @@ export class AuditWorkflow extends WorkflowEntrypoint<WorkerEnv, AuditRunParams>
       return;
     }
     const { jobId } = event.payload as { jobId: number };
-    await step.do('run audit', { retries: { limit: 0, delay: '1 second' }, timeout: '1 hour' }, async () => {
+    await step.do('run audit', { retries: { limit: 0, delay: '1 second' }, timeout: AUDIT_STEP_TIMEOUT }, async () => {
       useCloudflareServices(this.env);
       await runWithDatabase(openDatabase(this.env), () => runAuditJob(jobId));
       return { jobId };
@@ -198,3 +198,11 @@ export class AuditWorkflow extends WorkflowEntrypoint<WorkerEnv, AuditRunParams>
 }
 
 const MAX_LINK_SCAN_STEPS = 1_000;
+
+/**
+ * The longest one audit run may take. An analysis of even a very large catalogue is a matter of minutes
+ * (services/job.service.ts failStuckJobs closes a run that outlasts this by a margin), and a run that
+ * has not finished in half an hour is not slow, it is dead — with the old hour, and a sweep that waited
+ * another half hour on top of it, a merchant whose run died could not start another for ninety minutes.
+ */
+const AUDIT_STEP_TIMEOUT = '30 minutes';

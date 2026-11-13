@@ -282,3 +282,40 @@ describe('seo.canonicals · duplicate handles', () => {
     assert.deepEqual(owners.map((finding) => finding.details.issueType), ['Missing Canonical', 'Duplicate Handle']);
   });
 });
+
+describe('seo.canonicals · a very large catalogue', () => {
+  // Handles numbered "product-1", "product-2" … all share one stem, so the whole catalogue is ONE group.
+  // Comparing every pair in it took minutes at ten thousand products — long enough for a Cloudflare Worker
+  // to be cut off mid-analysis, which left the merchant's progress bar stuck at "3 of 34 checks".
+  it('checks ten thousand products that share one handle stem in well under a second', () => {
+    const products = Array.from({ length: 10_000 }, (_, i) =>
+      product(String(i + 1), i === 0 ? 'item' : `item-${i}`, i % 40 === 0 ? 'Same title' : `Item ${i}`, {
+        bodyHtml: i % 3 === 0 ? `<p>${'A shared description of the item. '.repeat(4)}${i % 50}</p>` : '',
+      }),
+    );
+    const started = Date.now();
+    const result = run(snapshot({ products }));
+    const took = Date.now() - started;
+    assert.equal(result.analyzedCount, 10_000);
+    assert.ok(took < 3_000, `took ${took} ms`);
+  });
+
+  it('names a few handles of a big family and counts the rest, instead of listing every one on every row', () => {
+    const products = Array.from({ length: 40 }, (_, i) => product(String(i + 1), i === 0 ? 'mug' : `mug-${i}`, 'Mug'));
+    const result = run(snapshot({ products }));
+    const note = result.details.evidenceRows.find((row: { id: string }) => row.id === 'product:1')?.note ?? '';
+    assert.match(note, /40 products with the same title: mug, mug-1, .* and 32 more\./);
+  });
+
+  it('still joins copies through a chain: A matches B by title, B matches C by description', () => {
+    const body = `<p>${'Same long description text. '.repeat(4)}</p>`;
+    const result = run(snapshot({
+      products: [
+        product('1', 'lamp', 'Lamp'),
+        product('2', 'lamp-1', 'Lamp', { bodyHtml: body }),
+        product('3', 'lamp-2', 'Different name', { bodyHtml: body }),
+      ],
+    }));
+    assert.equal(result.findings.find((finding) => finding.details.issueType === 'Duplicate Handle')?.affectedCount, 3);
+  });
+});
