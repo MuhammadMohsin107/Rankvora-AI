@@ -33,9 +33,6 @@ export default function SetupComplete({ rows, onContinue }: { rows: CompletionRo
       <h1 className="mx-auto mt-7 max-w-[20ch] text-balance text-[30px] font-semibold leading-[1.1] tracking-[-0.035em] text-surface-950 sm:text-[38px]">
         You’re all set
       </h1>
-      <p className="mx-auto mt-3 max-w-[46ch] text-pretty text-[15px] leading-[1.6] text-surface-500">
-        Your answers are saved and shape every analysis Rankvora runs on your store.
-      </p>
 
       {rows.length > 0 && (
         <dl className="mx-auto mt-9 max-w-xl divide-y divide-surface-100 overflow-hidden rounded-2xl bg-surface-50 text-left ring-1 ring-inset ring-surface-200/70">

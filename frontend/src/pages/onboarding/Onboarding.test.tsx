@@ -356,11 +356,10 @@ describe('Onboarding · step 3, priorities', () => {
     expect(screen.queryByText('Priority order')).not.toBeInTheDocument();
   });
 
-  it('lists the order under its own heading, with a count', async () => {
+  it('lists the order under its own heading', async () => {
     atStepThree({ priorityPillars: ['seo', 'speed'] });
     open();
     await screen.findByText('Priority order');
-    expect(screen.getByText('2 areas')).toBeInTheDocument();
   });
 
   it('renumbers the tiles when the order is changed', async () => {
@@ -416,13 +415,12 @@ describe('Onboarding · the completion screen', () => {
     expect(summary.getByText('Review every change before publishing')).toBeInTheDocument();
   });
 
-  it('only says what is true: the answers are saved, with no claim that an analysis has started', async () => {
+  it('makes no claim that an analysis has started', async () => {
     atFinish();
     open();
     await screen.findByRole('heading', { level: 1, name: 'Permissions & monitoring' });
     fireEvent.click(button('Finish setup'));
     await screen.findByRole('heading', { level: 1, name: 'You’re all set' });
-    expect(screen.getByText(/Your answers are saved/)).toBeInTheDocument();
     expect(screen.queryByText(/analysis (has|is) (started|running)|first analysis/i)).not.toBeInTheDocument();
   });
 
@@ -452,8 +450,8 @@ describe('Onboarding · the completion screen', () => {
 describe('Onboarding · a used suggestion goes away', () => {
   beforeEach(() => { vi.mocked(fetchOnboarding).mockResolvedValue(snapshot()); });
 
-  const storeNote = () => screen.queryByText(/Your Shopify store name is/);
-  const domainNote = () => screen.queryByText(/Your Shopify primary domain is/);
+  const storeNote = () => screen.queryByText(/Shopify store name:/);
+  const domainNote = () => screen.queryByText(/Shopify primary domain:/);
 
   it('removes the store-name note once "Use this" has been pressed, and keeps the value', async () => {
     open();
@@ -490,7 +488,7 @@ describe('Onboarding · a used suggestion goes away', () => {
     await screen.findByRole('heading', { level: 1, name: 'Confirm your store' });
     const add = await screen.findByRole('button', { name: 'Add Canada' });
     fireEvent.click(add);
-    expect(screen.queryByText(/billing address is in Canada/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Billing country: Canada/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Remove Canada' })).toBeInTheDocument();
   });
 
@@ -807,7 +805,7 @@ describe('Onboarding · taking the answers', () => {
       atStepFive();
       open();
       await heading('Permissions & monitoring');
-      const time = screen.getByLabelText('Preferred time');
+      const time = screen.getByLabelText(/Preferred time/);
       fireEvent.focus(time);
       fireEvent.change(time, { target: { value: '03' } });
       fireEvent.keyDown(time, { key: 'Enter' });

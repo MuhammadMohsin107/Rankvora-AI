@@ -401,7 +401,7 @@ export const STEP_META: Array<{ step: number; title: string; purpose?: string; o
   { step: 1, title: 'Confirm your store' },
   { step: 2, title: 'Your business' },
   { step: 3, title: 'Priorities' },
-  { step: 4, title: 'Measurement', purpose: 'Optional — your first analysis runs without it.', optional: true },
+  { step: 4, title: 'Measurement', optional: true },
   { step: 5, title: 'Permissions & monitoring' },
 ];
 

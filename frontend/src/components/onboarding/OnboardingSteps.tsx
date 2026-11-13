@@ -33,7 +33,6 @@ import {
   FormField,
   FormGrid,
   FormSection,
-  InfoNote,
   MultiCombobox,
   MultiSelectChips,
   PriorityList,
@@ -117,28 +116,19 @@ export interface StepProps {
  * What each pillar is called when the merchant is choosing what to improve first, with one line on
  * what it covers (the sub-pillars it audits, data/pillarMeta.ts) and its mark.
  */
-export const PILLAR_GOALS: Record<string, { label: string; description: string; icon: LucideIcon }> = {
-  seo: { label: 'Search visibility', description: 'Titles, descriptions, schema, links and indexing', icon: Search },
-  content: { label: 'Product & collection content', description: 'Descriptions, blog freshness and media', icon: FileText },
-  speed: { label: 'Store performance', description: 'Core Web Vitals, images, apps and theme weight', icon: Zap },
-  'ai-discovery': { label: 'AI discovery', description: 'How AI assistants find, read and cite your store', icon: Sparkles },
-  cro: { label: 'Conversion (CRO)', description: 'Cart, trust, returns and checkout quality', icon: Target },
+export const PILLAR_GOALS: Record<string, { label: string; icon: LucideIcon }> = {
+  seo: { label: 'Search visibility', icon: Search },
+  content: { label: 'Product & collection content', icon: FileText },
+  speed: { label: 'Store performance', icon: Zap },
+  'ai-discovery': { label: 'AI discovery', icon: Sparkles },
+  cro: { label: 'Conversion (CRO)', icon: Target },
 };
 
 /** What each way of approving changes means, in plain words. */
-const CONSENT_COPY: Record<string, { description: string; icon: LucideIcon }> = {
-  ask: { description: 'Every fix waits for your approval before it is written to Shopify.', icon: ShieldCheck },
-  none: { description: 'Rankvora only recommends. Nothing is written to your store.', icon: Lightbulb },
+const CONSENT_ICONS: Record<string, { icon: LucideIcon }> = {
+  ask: { icon: ShieldCheck },
+  none: { icon: Lightbulb },
 };
-
-/** Hostname of a URL, or null if it will not parse. Guarded because this runs during render. */
-function hostOf(url: string): string | null {
-  try {
-    return new URL(url).host;
-  } catch {
-    return null;
-  }
-}
 
 /** "1,240", or "1,240+" when Shopify only reported a lower bound. Null stays null — never zero. */
 function formatCount(total: { count: number; exact: boolean } | null | undefined): string | null {
@@ -219,7 +209,7 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
   const missing = suggestionsFailed ? 'Couldn’t be loaded' : undefined;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {suggestionsFailed && <FetchFailedNote onRetry={onRetrySuggestions} retrying={suggestionsLoading} />}
       {!snapshot.detection.available && snapshot.detection.unavailableReason && (
         <UnavailableNote>{snapshot.detection.unavailableReason}</UnavailableNote>
@@ -228,8 +218,8 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
       {/* ── Imported from Shopify · read-only ─────────────────────────── */}
       {shop && (
         <FormSection title="Imported from Shopify">
-          {/* Two groups so neither leaves an orphan in its last row: who the store is, then what it holds. */}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Ten facts in one grid: two even rows of five on a wide screen, so nothing is left alone in a last row. */}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
             <FactTile label="Store" value={shop.name || null} icon={Store} />
             <FactTile label="Storefront" value={shop.primaryUrl ?? shop.myshopifyDomain} icon={Globe2} />
             <FactTile
@@ -241,16 +231,11 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
             <FactTile label="Currency" value={shop.currencyCode} icon={CircleDollarSign} />
             <FactTile label="Timezone" value={shop.ianaTimezone} icon={Clock3} />
             <FactTile label="Billing country" value={shop.country} icon={MapPin} />
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
             <FactTile label="Published products" value={countValue(content?.publishedProducts)} icon={Boxes} missing={missing} />
             <FactTile label="Published collections" value={countValue(content?.publishedCollections)} icon={Boxes} missing={missing} />
-            <FactTile label="Articles" value={countValue(content?.articles)} icon={Newspaper} missing={missing} />
-            <FactTile label="Pages" value={countValue(content?.pages)} icon={FileText} missing={missing} />
+            <FactTile label="Articles" value={countValue(content?.articles)} icon={Newspaper} missing={missing} hint="Includes unpublished" />
+            <FactTile label="Pages" value={countValue(content?.pages)} icon={FileText} missing={missing} hint="Includes unpublished" />
           </div>
-          <p className="mt-2.5 text-[12px] leading-[1.45] text-surface-500">
-            Articles and pages include unpublished ones.
-          </p>
         </FormSection>
       )}
 
@@ -270,7 +255,7 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
                   onApply: () => patch({ organizationName: shop.name }),
                 }}
               >
-                Your Shopify store name is “{shop.name}”.
+                Shopify store name: {shop.name}
               </DetectedNote>
             ) : null
           }
@@ -300,14 +285,8 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
                   onApply: () => patch({ primaryDomain: shop.primaryUrl }),
                 }}
               >
-                Your Shopify primary domain is {shop.primaryUrl}
-                {shop.myshopifyDomain && shop.myshopifyDomain !== hostOf(shop.primaryUrl)
-                  ? ` (store address: ${shop.myshopifyDomain})`
-                  : ''}
-                .
+                Shopify primary domain: {shop.primaryUrl}
               </DetectedNote>
-            ) : shop ? (
-              <DetectedNote>Shopify did not return a primary domain for this store.</DetectedNote>
             ) : null
           }
         >
@@ -338,7 +317,7 @@ export function StepStore({ draft, patch, snapshot, suggestions, suggestionsLoad
                   onApply: () => addCountry(suggestions.detectedCountry as string),
                 }}
               >
-                Your Shopify billing address is in {suggestions.detectedCountry}.
+                Billing country: {suggestions.detectedCountry}
               </DetectedNote>
             ) : null
           }
@@ -454,7 +433,7 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {suggestionsFailed && <FetchFailedNote onRetry={onRetrySuggestions} retrying={suggestionsLoading} />}
       {!suggestionsLoading && suggestions && !suggestions.available && suggestions.unavailableReason && (
         <UnavailableNote>{suggestions.unavailableReason}</UnavailableNote>
@@ -475,7 +454,7 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
                   onApply: () => patch({ brandName: shop.name }),
                 }}
               >
-                Your Shopify store name is “{shop.name}”.
+                Shopify store name: {shop.name}
               </DetectedNote>
             ) : null
           }
@@ -546,12 +525,9 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
                 onApply: () => patch({ industries: addValue(draft.industries, derivedIndustry.value) }),
               }}
             >
-              {derivedIndustry.basis}
-              {derivedIndustry.confidence === 'low' && ' Weak match — please check.'}
+              Detected: {derivedIndustry.value}
+              {derivedIndustry.confidence === 'low' && ' · weak match'}
             </DetectedNote>
-          )}
-          {!suggestionsLoading && suggestions?.available && !derivedIndustry && (
-            <DetectedNote>Industry could not be detected — choose one.</DetectedNote>
           )}
         </FormSection>
 
@@ -569,7 +545,7 @@ export function StepBusiness({ draft, patch, snapshot, suggestions, suggestionsL
                   onApply: () => patch({ contentLanguage: primaryLocale.locale }),
                 }}
               >
-                Your store’s primary language is {languageLabel(primaryLocale.locale)}.
+                Store language: {languageLabel(primaryLocale.locale)}
               </DetectedNote>
             ) : null
           }
@@ -644,7 +620,7 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
   const catalogueUnread = !suggestionsLoading && (!suggestions || !suggestions.available);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {suggestionsFailed && <FetchFailedNote onRetry={onRetrySuggestions} retrying={suggestionsLoading} />}
       <FormGrid>
         <FormSection
@@ -662,7 +638,6 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
                   id={`onboarding-pillar-${key}`}
                   checked={chosenPillars.includes(key)}
                   label={goal?.label ?? key}
-                  description={goal?.description}
                   icon={goal?.icon}
                   rank={chosenPillars.length > 1 && chosenPillars.includes(key) ? chosenPillars.indexOf(key) + 1 : undefined}
                   onToggle={() => togglePillar(key)}
@@ -672,10 +647,7 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
           </div>
           {chosenPillars.length > 1 && (
             <div className="mt-6">
-              <p className="mb-2.5 flex items-baseline justify-between gap-3">
-                <span className="text-[13px] font-semibold tracking-[-0.01em] text-surface-950">Priority order</span>
-                <span className="text-[12px] text-surface-500">{chosenPillars.length} areas</span>
-              </p>
+              <p className="mb-2 text-[13px] font-semibold tracking-[-0.01em] text-surface-950">Priority order</p>
               <PriorityList
                 items={chosenPillars.map((key) => ({ key, label: PILLAR_GOALS[key]?.label ?? key, icon: PILLAR_GOALS[key]?.icon }))}
                 onReorder={(keys) => patch({ priorityPillars: [...keys, ...(draft.priorityPillars ?? []).filter((key) => !isPillarVisible(key))] })}
@@ -699,9 +671,6 @@ export function StepPriorities({ draft, patch, snapshot, suggestions, suggestion
                   selected={keywords}
                   onAdd={(value) => keywords.length < 10 && patch({ targetKeywords: [...keywords, value] })}
                 />
-              )}
-              {!suggestionsLoading && suggestions?.available && keywordSuggestions.length === 0 && (
-                <InfoNote>No suggestions yet.</InfoNote>
               )}
               {catalogueUnread && suggestions?.unavailableReason && (
                 <UnavailableNote>{suggestions.unavailableReason}</UnavailableNote>
@@ -796,9 +765,9 @@ function PermissionRow({ label, state, tone }: { label: string; state: string; t
     off: { dot: 'bg-surface-300', text: 'text-surface-500' },
   }[tone];
   return (
-    <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3">
-      <p className="min-w-0 flex-1 text-[13.5px] font-medium tracking-[-0.01em] text-surface-900">{label}</p>
-      <span className={`inline-flex flex-shrink-0 items-center gap-2 text-[12.5px] font-semibold ${look.text}`}>
+    <li className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 px-3.5 py-2">
+      <p className="min-w-0 flex-1 text-[13px] font-medium tracking-[-0.01em] text-surface-900">{label}</p>
+      <span className={`inline-flex flex-shrink-0 items-center gap-1.5 text-[12px] font-semibold ${look.text}`}>
         <span className={`h-1.5 w-1.5 rounded-full ${look.dot}`} aria-hidden="true" />
         {state}
       </span>
@@ -835,7 +804,7 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
   const legacy = consent === 'low_risk';
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <FormGrid>
         <FormSection
           className="md:col-span-2"
@@ -849,7 +818,6 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
                 name="automation-consent"
                 value="low_risk"
                 label={consentLabel('low_risk')}
-                description="Choose an option below to replace it."
                 icon={ShieldCheck}
                 selected
                 onSelect={() => undefined}
@@ -862,65 +830,84 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
                 name="automation-consent"
                 value={option.value}
                 label={option.label}
-                description={CONSENT_COPY[option.value]?.description}
-                icon={CONSENT_COPY[option.value]?.icon}
+                icon={CONSENT_ICONS[option.value]?.icon}
                 selected={consent === option.value}
                 onSelect={(value) => patch({ automationConsent: value as AutomationConsent })}
               />
             ))}
           </div>
-          {consent === null && !errors.automationConsent && (
-            <div className="mt-2">
-              <InfoNote>Choose one to finish setup.</InfoNote>
-            </div>
-          )}
         </FormSection>
 
-        <FormSection
-          className="md:col-span-2"
-          title="Permissions"
-        >
-          <ul className="divide-y divide-surface-100 overflow-hidden rounded-xl bg-surface-0 ring-1 ring-inset ring-surface-200">
-            <PermissionRow
-              label="Analyze your published store content"
-              state="On"
-              tone="on"
-            />
-            <PermissionRow
-              label="Prepare recommendations and drafts"
-              state="On"
-              tone="on"
-            />
-            <PermissionRow
-              label="Publish content or metadata changes"
-              state={consent === 'none' ? 'Off' : 'You approve each'}
-              tone={consent === 'none' ? 'off' : 'review'}
-            />
-            <PermissionRow
-              label="Change URLs, crawler directives or theme code"
-              state="Not offered"
-              tone="off"
-            />
-          </ul>
-        </FormSection>
+        {/* Two columns, so the step stays on one screen: what Rankvora may do on the left; the two small
+            choices that go with it on the right. Plain wrappers (not grid items) — the fields inside simply stack. */}
+        <div className="grid items-start gap-x-4 md:col-span-2 md:grid-cols-2">
+          <div>
+            <FormSection
+              title="Permissions"
+            >
+              <ul className="divide-y divide-surface-100 overflow-hidden rounded-xl bg-surface-0 ring-1 ring-inset ring-surface-200">
+                <PermissionRow
+                  label="Analyze your published store content"
+                  state="On"
+                  tone="on"
+                />
+                <PermissionRow
+                  label="Prepare recommendations and drafts"
+                  state="On"
+                  tone="on"
+                />
+                <PermissionRow
+                  label="Publish changes"
+                  state={consent === 'none' ? 'Off' : 'You approve each'}
+                  tone={consent === 'none' ? 'off' : 'review'}
+                />
+                <PermissionRow
+                  label="Change URLs or theme code"
+                  state="Not offered"
+                  tone="off"
+                />
+              </ul>
+            </FormSection>
+          </div>
+          <div>
+            <FormField
+              label="Pages to leave alone"
+              htmlFor="onboarding-protected"
+              badge="optional"
+            >
+              <TagInput
+                id="onboarding-protected"
+                icon={ShieldCheck}
+                values={protectedPaths}
+                onChange={(next) => patch({ protectedPaths: next })}
+                placeholder="Type a page path, starting with /"
+                max={20}
+                maxItemLength={FIELD_LIMITS.protectedPath}
+                transform={normaliseProtectedPath}
+              />
+            </FormField>
+            <FormSection
+              title="Alerts"
+              badge="optional"
+            >
+              <div className="grid grid-cols-2 gap-2">
+                {alerts.map((option, index) => (
+                  <ChoiceCard
+                    key={option}
+                    name="alert-frequency"
+                    value={option}
+                    label={ALERT_LABELS[option] ?? option}
+                    selected={draft.alertFrequency === option}
+                    onSelect={(value) => patch({ alertFrequency: value })}
+                    className={lastCardSpan(index, alerts.length, { sm: 2, lg: 2 })}
+                  />
+                ))}
+              </div>
+            </FormSection>
+          </div>
+        </div>
 
-        <FormField
-          label="Pages to leave alone"
-          htmlFor="onboarding-protected"
-          badge="optional"
-          className="md:col-span-2"
-        >
-          <TagInput
-            id="onboarding-protected"
-            icon={ShieldCheck}
-            values={protectedPaths}
-            onChange={(next) => patch({ protectedPaths: next })}
-            placeholder="Type a page path, starting with /"
-            max={20}
-            maxItemLength={FIELD_LIMITS.protectedPath}
-            transform={normaliseProtectedPath}
-          />
-        </FormField>
+
 
         <FormSection className="md:col-span-2" title="Scheduled monitoring">
           <ToggleCard
@@ -928,7 +915,6 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
             icon={CalendarClock}
             checked={monitoring}
             label="Re-analyze my store automatically"
-            description="Runs again on the schedule below, so your results stay up to date."
             onToggle={(next) => patch({ autoAnalysis: next })}
           />
           {monitoring && (
@@ -945,7 +931,7 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
               </div>
               <div>
                 <label htmlFor="onboarding-scan-hour" className="mb-1.5 block text-[13px] font-semibold text-surface-900">
-                  Preferred time
+                  Preferred time{timeZone ? ` (${timeZone})` : ' (UTC)'}
                 </label>
                 <Combobox
                   id="onboarding-scan-hour"
@@ -958,9 +944,6 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
                   placeholder="Any time it is due"
                   onChange={(value) => patch({ preferredScanHour: value === '' ? null : Number(value) })}
                 />
-                <p className="mt-1.5 text-[12px] leading-[1.45] text-surface-500">
-                  {timeZone ? `Store timezone (${timeZone})` : 'UTC'}
-                </p>
               </div>
             </div>
           )}
@@ -969,25 +952,7 @@ export function StepPermissions({ draft, patch, snapshot, errors }: StepProps) {
           )}
         </FormSection>
 
-        <FormSection
-          className="md:col-span-2"
-          title="Alerts"
-          badge="optional"
-        >
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {alerts.map((option, index) => (
-              <ChoiceCard
-                key={option}
-                name="alert-frequency"
-                value={option}
-                label={ALERT_LABELS[option] ?? option}
-                selected={draft.alertFrequency === option}
-                onSelect={(value) => patch({ alertFrequency: value })}
-                className={lastCardSpan(index, alerts.length, { sm: 2, lg: 4 })}
-              />
-            ))}
-          </div>
-        </FormSection>
+
       </FormGrid>
     </div>
   );

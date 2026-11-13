@@ -538,13 +538,13 @@ export default function Onboarding() {
       exit={editing ? { label: 'Save and close', onClick: () => void onSaveAndClose(), disabled: busy } : undefined}
     >
       {/* Below `lg` the guide is gone, so progress rides on top of the step instead. */}
-      <div className="mb-3 rounded-2xl bg-surface-0/80 px-4 pb-2 pt-1 ring-1 ring-inset ring-surface-200/70 backdrop-blur-sm lg:hidden">
+      <div className="mb-2 rounded-2xl bg-surface-0/80 px-4 pb-1.5 pt-1 ring-1 ring-inset ring-surface-200/70 backdrop-blur-sm lg:hidden">
         <Stepper current={step} steps={stepperSteps} onJump={jump} />
       </div>
 
       <Sheet>
         {editing && (
-          <div className="relative flex items-center gap-2 rounded-t-[22px] border-b border-success-100 bg-success-50 px-5 py-2.5 sm:px-10">
+          <div className="relative flex items-center gap-2 rounded-t-[22px] border-b border-success-100 bg-success-50 px-5 py-2 sm:px-6">
             <Check size={15} className="flex-shrink-0 text-success-700" aria-hidden="true" />
             <p className="text-[12.5px] font-medium leading-[1.45] text-success-700">Setup is complete. Edit any step.</p>
           </div>
@@ -554,7 +554,7 @@ export default function Onboarding() {
 
         {/* Keyed on the step so each one enters rather than swapping in place — the sheet is the only
             thing that changes between steps, and without this the transition is invisible. */}
-        <div key={step} className="relative px-5 pb-10 pt-8 motion-safe:animate-fade-in sm:px-10 sm:pb-12">
+        <div key={step} className="relative px-5 pb-4 pt-3 motion-safe:animate-fade-in sm:px-6 sm:pb-4">
           <StepComponent
             draft={draft}
             patch={patch}
@@ -572,7 +572,7 @@ export default function Onboarding() {
       {/* The action dock floats under the sheet and stays in reach while a long step scrolls. It is a
           separate surface from the sheet, so the primary action never sits inside the form it
           submits. */}
-      <footer className="sticky bottom-3 z-10 mt-4 rounded-2xl bg-surface-0/85 p-2.5 shadow-[0_18px_40px_-20px_var(--c-shadow-lg),0_2px_8px_-2px_var(--c-shadow-md)] ring-1 ring-inset ring-surface-200/80 backdrop-blur-xl sm:p-3">
+      <footer className="sticky bottom-2 z-10 mt-2 rounded-2xl bg-surface-0/85 p-1.5 shadow-[0_18px_40px_-20px_var(--c-shadow-lg),0_2px_8px_-2px_var(--c-shadow-md)] ring-1 ring-inset ring-surface-200/80 backdrop-blur-xl">
         {saveError && (
           <p
             role="alert"
@@ -590,10 +590,6 @@ export default function Onboarding() {
               Back
             </ActionButton>
           )}
-
-          <p className="hidden px-1 text-[12.5px] font-medium tabular-nums text-surface-500 sm:block">
-            {step} / {TOTAL_STEPS}
-          </p>
 
           {/* ml-auto keeps the forward action on the right even when the bar wraps on a phone.
               There is nothing beside it: every step is required, so the only way forward is
@@ -694,8 +690,8 @@ function Frame({
         <div className="absolute inset-0 opacity-[0.035] mix-blend-multiply" style={{ backgroundImage: GRAIN }} />
       </div>
 
-      <div className="relative mx-auto flex min-h-full w-full max-w-[1200px] flex-col px-4 py-5 sm:px-6 lg:py-8">
-        <header className={`mb-6 flex items-center justify-between gap-3 ${rail && !exit ? 'lg:hidden' : 'lg:mb-5'}`}>
+      <div className="relative mx-auto flex min-h-full w-full max-w-[1100px] flex-col px-4 py-2 sm:px-6 lg:py-3">
+        <header className={`mb-3 flex items-center justify-between gap-3 ${rail && !exit ? 'lg:hidden' : 'lg:mb-3'}`}>
           <span className={rail ? 'lg:invisible' : ''}>
             <RankvoraLogo />
           </span>
@@ -709,9 +705,9 @@ function Frame({
         </header>
 
         {rail ? (
-          <div className="grid flex-1 items-start gap-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-8">
-            <aside className="hidden lg:sticky lg:top-8 lg:block">{rail}</aside>
-            <div className="min-w-0 pb-4">{children}</div>
+          <div className="grid flex-1 items-start gap-4 lg:grid-cols-[216px_minmax(0,1fr)] lg:gap-4">
+            <aside className="hidden lg:sticky lg:top-4 lg:block">{rail}</aside>
+            <div className="min-w-0">{children}</div>
           </div>
         ) : (
           <div className="mx-auto w-full max-w-3xl">{children}</div>

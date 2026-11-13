@@ -314,13 +314,11 @@ export default function MeasurementStep({ notice }: MeasurementStepProps) {
             title="Performance measurement"
             status={{ label: 'No account needed', tone: 'neutral' }}
           >
-            <QuietNote>
-              {pagespeed.state !== 'ready'
-                ? 'Status unavailable.'
-                : pagespeed.value.storefrontUrl
-                  ? `Measures ${pagespeed.value.storefrontUrl}`
-                  : 'Measures your public storefront.'}
-            </QuietNote>
+            {pagespeed.state !== 'ready' ? (
+              <QuietNote>Status unavailable.</QuietNote>
+            ) : pagespeed.value.storefrontUrl ? (
+              <QuietNote>{pagespeed.value.storefrontUrl}</QuietNote>
+            ) : null}
           </SourceCard>
 
           <SourceCard
@@ -328,7 +326,6 @@ export default function MeasurementStep({ notice }: MeasurementStepProps) {
             title="Google Merchant Center"
             status={{ label: 'Coming later', tone: 'neutral' }}
           >
-            <QuietNote>Not available yet.</QuietNote>
           </SourceCard>
         </ul>
       )}

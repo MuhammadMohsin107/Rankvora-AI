@@ -124,7 +124,7 @@ function ProgressBar({ completed, total, className = '' }: { completed: number; 
       aria-valuemin={0}
       aria-valuemax={total}
       aria-valuenow={completed}
-      className={`h-1.5 w-full overflow-hidden rounded-full bg-brand-100 ${className}`}
+      className={`h-1 w-full overflow-hidden rounded-full bg-brand-100 ${className}`}
     >
       <div
         className="h-full rounded-full bg-brand-600 transition-[width] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none"
@@ -159,7 +159,7 @@ export function StepRail({
   return (
     <nav
       aria-label="Setup progress"
-      className="relative flex flex-col overflow-hidden rounded-[22px] bg-gradient-to-b from-brand-50 via-brand-50/60 to-surface-0 p-7 shadow-[0_36px_70px_-44px_var(--c-shadow-lg),0_10px_28px_-18px_var(--c-shadow-md)] ring-1 ring-inset ring-brand-100 lg:min-h-[38rem]"
+      className="relative flex flex-col overflow-hidden rounded-[22px] bg-gradient-to-b from-brand-50 via-brand-50/60 to-surface-0 p-4 shadow-[0_36px_70px_-44px_var(--c-shadow-lg),0_10px_28px_-18px_var(--c-shadow-md)] ring-1 ring-inset ring-brand-100"
     >
       {/* A soft light and a hairline, so the panel has a little depth instead of being a flat tint. */}
       <div aria-hidden="true" className="pointer-events-none absolute -left-16 -top-24 h-64 w-64 rounded-full bg-brand-200/50 blur-[80px]" />
@@ -168,26 +168,25 @@ export function StepRail({
       <div className="relative flex flex-1 flex-col">
         <RankvoraLogo />
 
-        <div className="mt-9">
-          <p className="text-balance text-[22px] font-semibold leading-[1.15] tracking-[-0.03em] text-surface-950">Let’s set up your store</p>
-          <p className="mt-2 text-pretty text-[13px] leading-[1.55] text-surface-500">Your answers shape how Rankvora analyses it.</p>
+        <div className="mt-5">
+          <p className="text-balance text-[18px] font-semibold leading-[1.15] tracking-[-0.03em] text-surface-950">Let’s set up your store</p>
         </div>
 
-        <div className="mt-7">
-          <div className="flex items-end justify-between gap-3">
-            <p className="text-[44px] font-semibold leading-none tracking-[-0.04em] tabular-nums text-surface-950">
+        <div className="mt-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="text-[22px] font-semibold leading-none tracking-[-0.03em] tabular-nums text-surface-950">
               {percent}
-              <span className="ml-0.5 text-[20px] font-medium text-surface-400">%</span>
+              <span className="ml-0.5 text-[12px] font-medium text-surface-400">%</span>
             </p>
-            <p className="pb-1 text-[12.5px] font-medium tabular-nums text-surface-500">
+            <p className="text-[11.5px] font-medium tabular-nums text-surface-500">
               {completed} of {steps.length}
             </p>
           </div>
-          <ProgressBar completed={completed} total={steps.length} className="mt-3" />
-          <p className="mt-2.5 text-[12.5px] text-surface-500">{progressSentence(steps, completed)}</p>
+          <ProgressBar completed={completed} total={steps.length} className="mt-1.5" />
+          <p className="sr-only">{progressSentence(steps, completed)}</p>
         </div>
 
-        <ol className="mb-8 mt-8 flex flex-col">
+        <ol className="mb-3 mt-3 flex flex-col">
           {steps.map((entry, index) => {
             const isCurrent = entry.step === current;
             const reachable = entry.step <= furthest;
@@ -208,7 +207,7 @@ export function StepRail({
                   disabled={!reachable}
                   onClick={() => reachable && !isCurrent && onJump(entry.step)}
                   aria-current={isCurrent ? 'step' : undefined}
-                  className={`group relative flex w-full items-start gap-4 rounded-xl py-2.5 pr-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-brand-50 ${
+                  className={`group relative flex w-full items-start gap-3.5 rounded-xl py-1.5 pr-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-brand-50 ${
                     reachable && !isCurrent ? 'cursor-pointer' : isCurrent ? 'cursor-default' : 'cursor-not-allowed'
                   }`}
                 >
@@ -221,7 +220,11 @@ export function StepRail({
                     >
                       {entry.title}
                     </span>
-                    <span className={`mt-1 block text-[12px] leading-tight ${isCurrent ? 'text-brand-700' : 'text-surface-500'}`}>
+                    <span
+                      className={`mt-1 block text-[12px] leading-tight ${isCurrent ? 'text-brand-700' : 'text-surface-500'} ${
+                        !isCurrent && entry.status !== 'complete' && !entry.optional ? 'sr-only' : ''
+                      }`}
+                    >
                       {isCurrent && entry.status !== 'complete' ? 'In progress' : statusLabel(entry)}
                     </span>
                   </span>
@@ -231,9 +234,9 @@ export function StepRail({
           })}
         </ol>
 
-        <p className="mt-auto flex items-start gap-2.5 border-t border-brand-100 pt-5 text-pretty text-[12.5px] leading-[1.55] text-surface-500">
+        <p className="mt-auto flex items-start gap-2 border-t border-brand-100 pt-3 text-pretty text-[11.5px] leading-[1.45] text-surface-500">
           <ShieldCheck size={16} strokeWidth={1.8} className="mt-px flex-shrink-0 text-success-600" aria-hidden="true" />
-          <span>Rankvora never changes your store without your approval. Your answers save as you move between steps.</span>
+          <span>Nothing changes without your approval.</span>
         </p>
       </div>
     </nav>
@@ -319,27 +322,29 @@ export function StepHeader({
   icon?: LucideIcon;
 }) {
   return (
-    <header className="relative px-5 pb-1 pt-6 sm:px-10 sm:pt-10">
+    <header className="relative px-5 pb-0 pt-3.5 sm:px-6 sm:pt-4">
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute right-6 top-3 select-none text-[120px] font-semibold leading-none tracking-[-0.06em] text-surface-100 tabular-nums sm:right-10 sm:text-[148px]"
+        className="pointer-events-none absolute right-6 top-1 select-none text-[64px] font-semibold leading-none tracking-[-0.06em] text-surface-100 tabular-nums sm:right-6 sm:text-[68px]"
       >
         {String(step).padStart(2, '0')}
       </span>
       <div className="relative flex items-center gap-3">
         {Icon && (
-          <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-600 text-surface-0 shadow-[0_10px_22px_-12px_var(--c-brand-600)]">
-            <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-brand-600 text-surface-0 shadow-[0_10px_22px_-12px_var(--c-brand-600)]">
+            <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
           </span>
         )}
-        <p className="text-[12.5px] font-medium tabular-nums text-surface-500">
-          Step {step} of {total}
-        </p>
+        <div className="min-w-0">
+          <p className="text-[12px] font-medium tabular-nums leading-tight text-surface-500">
+            Step {step} of {total}
+          </p>
+          <h1 className="mt-0.5 text-balance text-[21px] font-semibold leading-[1.1] tracking-[-0.03em] text-surface-950 sm:text-[24px]">
+            {title}
+          </h1>
+        </div>
       </div>
-      <h1 className="relative mt-5 max-w-[16ch] text-balance text-[28px] font-semibold leading-[1.08] tracking-[-0.035em] text-surface-950 sm:max-w-none sm:text-[36px]">
-        {title}
-      </h1>
-      {purpose && <p className="relative mt-2.5 max-w-[56ch] text-pretty text-[14.5px] leading-[1.55] text-surface-500">{purpose}</p>}
+      {purpose && <p className="relative mt-1.5 max-w-[64ch] text-pretty text-[13px] leading-[1.45] text-surface-500">{purpose}</p>}
     </header>
   );
 }
@@ -379,7 +384,7 @@ export function FormGrid({ children }: { children: ReactNode }) {
   // row gap here would also open up the space between a label and its control. The distance between
   // one question and the next is each field's own bottom padding instead, and the last row's is
   // pulled back with the negative margin so the sheet's padding stays the bottom edge.
-  return <div className="onboarding-stagger -mb-9 grid gap-x-8 gap-y-0 md:grid-cols-2">{children}</div>;
+  return <div className="onboarding-stagger -mb-3.5 grid gap-x-4 gap-y-0 md:grid-cols-2">{children}</div>;
 }
 
 /**
@@ -430,17 +435,17 @@ export function FormField({
 }) {
   return (
     // Always four children, even when a hint or extras are absent, so the subgrid rows line up.
-    <div className={`row-span-4 grid min-w-0 grid-rows-subgrid gap-y-0 pb-9 ${className}`}>
+    <div className={`row-span-4 grid min-w-0 grid-rows-subgrid gap-y-0 pb-3.5 ${className}`}>
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-        <label htmlFor={htmlFor} className="text-[14px] font-semibold tracking-[-0.01em] text-surface-950">
+        <label htmlFor={htmlFor} className="text-[13.5px] font-semibold tracking-[-0.01em] text-surface-950">
           {label}
         </label>
         {badge && <Badge tone={badge}>{badge === 'required' ? 'Required' : 'Optional'}</Badge>}
       </div>
-      <p id={`${htmlFor}-hint`} className="mt-1 text-pretty text-[12.5px] leading-[1.45] text-surface-500">
+      <p id={`${htmlFor}-hint`} className="mt-0.5 text-pretty text-[12px] leading-[1.4] text-surface-500">
         {hint}
       </p>
-      <div className="mt-2.5 min-w-0">
+      <div className="mt-1.5 min-w-0">
         {children}
         {error && <FieldError id={`${htmlFor}-error`}>{error}</FieldError>}
       </div>
@@ -475,7 +480,7 @@ export function FormSection({
       aria-labelledby={headingId}
       // oxlint-disable-next-line jsx-a11y/role-supports-aria-props -- kept for the error styling hook; not announced by role=group
       aria-invalid={error ? true : undefined}
-      className={`row-span-3 grid min-w-0 grid-rows-subgrid gap-y-0 pb-9 ${className}`}
+      className={`row-span-3 grid min-w-0 grid-rows-subgrid gap-y-0 pb-3.5 ${className}`}
     >
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
         <h2 id={headingId} className="text-[14px] font-semibold tracking-[-0.01em] text-surface-950">
@@ -483,14 +488,14 @@ export function FormSection({
         </h2>
         {badge && <Badge tone={badge}>{badge === 'required' ? 'Required' : 'Optional'}</Badge>}
       </div>
-      <p className="mt-1 text-pretty text-[12.5px] leading-[1.45] text-surface-500">{description}</p>
+      <p className="mt-0.5 text-pretty text-[12px] leading-[1.4] text-surface-500">{description}</p>
       {/* `self-start`, not the default stretch. A card is `h-full`, and a percentage height only
           resolves against a parent whose height is definite — which a grid item that stretches to
           its row track is. With stretch, a lone card followed by anything else (the Scheduled
           monitoring switch, then its two selects) was sized to the WHOLE block, so it ballooned and
           the selects were pushed out of the row onto the next section. Sized to its own content,
           `h-full` resolves to auto and a card is only as tall as its text. */}
-      <div className="mt-2.5 min-w-0 self-start">
+      <div className="mt-1.5 min-w-0 self-start">
         {children}
         {error && <FieldError>{error}</FieldError>}
       </div>
@@ -536,7 +541,7 @@ export function ActionButton({
       onClick={onClick}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={`inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-6 text-[14.5px] font-semibold tracking-[-0.01em] transition-[background-color,box-shadow,transform,color] duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none motion-reduce:active:scale-100 ${tone} ${className}`}
+      className={`inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-5 text-[14px] font-semibold tracking-[-0.01em] transition-[background-color,box-shadow,transform,color] duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none motion-reduce:active:scale-100 ${tone} ${className}`}
     >
       {loading && <Loader2 size={16} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />}
       {children}
@@ -551,24 +556,22 @@ export function ActionButton({
  * did not say; when the request itself failed, nothing was reported because nothing was heard, and
  * `missing` lets the caller say that instead.
  */
-export function FactTile({ label, value, icon: Icon, missing = 'Not reported by Shopify' }: { label: string; value: string | null; icon?: LucideIcon; missing?: string }) {
+export function FactTile({ label, value, icon: Icon, missing = 'Not reported by Shopify', hint }: { label: string; value: string | null; icon?: LucideIcon; missing?: string; hint?: string }) {
   return (
-    <div className="flex items-start gap-3 rounded-2xl bg-surface-50 px-4 py-3.5 ring-1 ring-inset ring-surface-200/70">
-      {Icon && (
-        <span className="mt-px flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-surface-0 text-surface-500 ring-1 ring-inset ring-surface-200">
-          <Icon size={15} strokeWidth={1.9} aria-hidden="true" />
-        </span>
+    <div className="min-w-0 rounded-xl bg-surface-50 px-2.5 py-1.5 ring-1 ring-inset ring-surface-200/70" title={hint}>
+      <p className="flex items-center gap-1.5 text-[11px] font-medium text-surface-500">
+        {Icon && <Icon size={12} strokeWidth={2} className="flex-shrink-0" aria-hidden="true" />}
+        <span className="truncate">{label}</span>
+      </p>
+      {value ? (
+        <p className="mt-0.5 truncate text-[13.5px] font-semibold tracking-[-0.01em] text-surface-950" title={value}>
+          {value}
+        </p>
+      ) : (
+        <p className="mt-0.5 truncate text-[13px] text-surface-400" title={missing}>
+          {missing}
+        </p>
       )}
-      <div className="min-w-0">
-        <p className="text-[11.5px] font-medium text-surface-500">{label}</p>
-        {value ? (
-          <p className="mt-0.5 truncate text-[14px] font-semibold tracking-[-0.01em] text-surface-950" title={value}>
-            {value}
-          </p>
-        ) : (
-          <p className="mt-0.5 text-[13px] text-surface-400">{missing}</p>
-        )}
-      </div>
     </div>
   );
 }
@@ -581,7 +584,7 @@ export function FactTile({ label, value, icon: Icon, missing = 'Not reported by 
  * it is focused, and the leading icon (when there is one) sits in the padding the input reserves.
  */
 const controlBase =
-  'w-full rounded-xl border-0 bg-surface-50 text-[14.5px] text-surface-950 outline-none ring-1 ring-inset transition-[box-shadow,background-color] duration-150 placeholder:text-surface-400 focus:bg-surface-0 focus:ring-2';
+  'w-full rounded-lg border-0 bg-surface-50 text-[14px] text-surface-950 outline-none ring-1 ring-inset transition-[box-shadow,background-color] duration-150 placeholder:text-surface-400 focus:bg-surface-0 focus:ring-2';
 
 /** Neutral or flagged. Kept in one place so every control in the flow marks a missing answer the
  * same way — a red ring that survives focus, rather than a border that disappears when tabbed to. */
@@ -648,7 +651,7 @@ export function TextField({
         aria-invalid={invalid || undefined}
         onChange={(event) => onChange(event.target.value)}
         onBlur={onBlur}
-        className={`${controlBase} ${controlTone(invalid)} h-12 ${icon ? 'pl-11' : 'pl-4'} pr-4`}
+        className={`${controlBase} ${controlTone(invalid)} h-10 ${icon ? 'pl-10' : 'pl-3.5'} pr-3.5`}
       />
     </div>
   );
@@ -865,7 +868,7 @@ export function Combobox({
         onClick={show}
         onBlur={close}
         onKeyDown={onKeyDown}
-        className={`${controlBase} ${controlTone(invalid)} h-12 ${icon ? 'pl-11' : 'pl-4'} pr-11 disabled:cursor-not-allowed disabled:bg-surface-100 disabled:opacity-60 disabled:hover:bg-surface-100`}
+        className={`${controlBase} ${controlTone(invalid)} h-10 ${icon ? 'pl-10' : 'pl-3.5'} pr-10 disabled:cursor-not-allowed disabled:bg-surface-100 disabled:opacity-60 disabled:hover:bg-surface-100`}
       />
       <ChevronDown
         size={16}
@@ -898,7 +901,7 @@ function chipWell(invalid: boolean | undefined, disabled: boolean, hasIcon: bool
     : invalid
       ? 'bg-critical-50/50 ring-critical-300 hover:ring-critical-400 focus-within:ring-critical-500 focus-within:shadow-[0_0_0_4px_var(--c-critical-100)]'
       : 'group bg-surface-50 ring-surface-200 hover:bg-surface-0 hover:ring-surface-300 focus-within:ring-brand-500 focus-within:shadow-[0_0_0_4px_var(--c-brand-100)]';
-  return `flex min-h-12 flex-wrap items-center gap-1.5 rounded-xl py-1.5 pr-2 ring-1 ring-inset transition-[box-shadow,background-color] duration-150 focus-within:bg-surface-0 focus-within:ring-2 ${
+  return `flex min-h-10 flex-wrap items-center gap-1.5 rounded-lg py-1 pr-2 ring-1 ring-inset transition-[box-shadow,background-color] duration-150 focus-within:bg-surface-0 focus-within:ring-2 ${
     hasIcon ? 'pl-3' : 'pl-2'
   } ${tone}`;
 }
@@ -1087,7 +1090,7 @@ export function SegmentedControl<T extends string>({
             tabIndex={on || (current < 0 && index === 0) ? 0 : -1}
             onClick={() => onChange(option.value)}
             onKeyDown={(event) => onKeyDown(event, index)}
-            className={`h-10 rounded-lg px-4 text-[13.5px] font-medium transition-[background-color,color,box-shadow] duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
+            className={`h-9 rounded-lg px-3.5 text-[13px] font-medium transition-[background-color,color,box-shadow] duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
               on
                 ? 'bg-surface-0 font-semibold text-surface-950 shadow-[0_1px_3px_var(--c-shadow-md)] ring-1 ring-surface-200'
                 : 'text-surface-600 hover:text-surface-950'
@@ -1159,9 +1162,9 @@ export function DetectedNote({
 }) {
   if (action?.applied) return null;
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-brand-50/70 px-3.5 py-2.5 ring-1 ring-inset ring-brand-100">
+    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg bg-brand-50/70 px-3 py-1.5 ring-1 ring-inset ring-brand-100">
       <Sparkles size={14} className="flex-shrink-0 text-brand-600" aria-hidden="true" />
-      <p className="min-w-[10rem] flex-1 text-pretty text-[12.5px] leading-[1.5] text-surface-700">{children}</p>
+      <p className="min-w-[10rem] flex-1 text-pretty text-[12px] leading-[1.4] text-surface-700">{children}</p>
       {action && (
         <button
           type="button"
@@ -1178,18 +1181,18 @@ export function DetectedNote({
 /** Says plainly that something could not be read. Never replaced by a placeholder value. */
 export function UnavailableNote({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-start gap-2.5 rounded-xl bg-warning-50 px-3.5 py-2.5 ring-1 ring-inset ring-warning-100">
-      <AlertTriangle size={15} className="mt-px flex-shrink-0 text-warning-700" aria-hidden="true" />
-      <p className="text-pretty text-[12.5px] leading-[1.5] text-warning-700">{children}</p>
+    <div className="flex items-start gap-2 rounded-lg bg-warning-50 px-3 py-1.5 ring-1 ring-inset ring-warning-100">
+      <AlertTriangle size={14} className="mt-px flex-shrink-0 text-warning-700" aria-hidden="true" />
+      <p className="text-pretty text-[12px] leading-[1.4] text-warning-700">{children}</p>
     </div>
   );
 }
 
 export function InfoNote({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-start gap-2.5 rounded-xl bg-info-50 px-3.5 py-2.5 ring-1 ring-inset ring-info-100">
-      <Info size={15} className="mt-px flex-shrink-0 text-info-700" aria-hidden="true" />
-      <p className="text-pretty text-[12.5px] leading-[1.5] text-info-700">{children}</p>
+    <div className="flex items-start gap-2 rounded-lg bg-info-50 px-3 py-1.5 ring-1 ring-inset ring-info-100">
+      <Info size={14} className="mt-px flex-shrink-0 text-info-700" aria-hidden="true" />
+      <p className="text-pretty text-[12px] leading-[1.4] text-info-700">{children}</p>
     </div>
   );
 }
@@ -1203,7 +1206,7 @@ export function InfoNote({ children }: { children: ReactNode }) {
  */
 export function FetchFailedNote({ onRetry, retrying }: { onRetry: () => void; retrying: boolean }) {
   return (
-    <div role="alert" className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2.5 rounded-xl bg-warning-50 px-4 py-3 ring-1 ring-inset ring-warning-100">
+    <div role="alert" className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-warning-50 px-3.5 py-2 ring-1 ring-inset ring-warning-100">
       <AlertTriangle size={16} className="flex-shrink-0 text-warning-700" aria-hidden="true" />
       <p className="min-w-[12rem] flex-1 text-pretty text-[13px] leading-[1.5] text-warning-700">
         We couldn’t load your store’s details to suggest answers. You can still fill everything in yourself.
@@ -1233,7 +1236,7 @@ export { ToastStack, type ToastMessage } from '../Toast';
 // ─── Choice tiles ────────────────────────────────────────────────────
 
 function cardClasses(selected: boolean, className = '') {
-  return `group relative flex h-full cursor-pointer items-start gap-3.5 rounded-2xl p-4 ring-1 ring-inset transition-[background-color,box-shadow,transform] duration-200 motion-safe:hover:-translate-y-px ${
+  return `group relative flex h-full cursor-pointer items-center gap-3 rounded-xl p-3 ring-1 ring-inset transition-[background-color,box-shadow,transform] duration-200 motion-safe:hover:-translate-y-px ${
     selected
       ? 'bg-brand-50/70 ring-2 ring-brand-500 shadow-[0_10px_20px_-18px_var(--c-brand-600)]'
       : 'bg-surface-0 ring-surface-200 hover:bg-surface-50/70 hover:ring-surface-300 hover:shadow-[0_12px_26px_-20px_var(--c-shadow-lg)]'
@@ -1249,11 +1252,11 @@ function TileIcon({ icon: Icon, selected, rank }: { icon: LucideIcon; selected: 
   return (
     <span aria-hidden="true" className="relative flex-shrink-0">
       <span
-        className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors duration-200 ${
+        className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors duration-200 ${
           selected ? 'bg-brand-600 text-surface-0' : 'bg-surface-100 text-surface-600 group-hover:bg-surface-200/70'
         }`}
       >
-        <Icon size={18} strokeWidth={1.8} />
+        <Icon size={16} strokeWidth={1.8} />
       </span>
       {rank !== undefined && (
         <span className="absolute -left-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1 text-[11px] font-semibold tabular-nums leading-none text-surface-0 ring-2 ring-surface-0">
@@ -1315,10 +1318,10 @@ export function ChoiceCard({
       />
       {icon && <TileIcon icon={icon} selected={selected} />}
       <span className="min-w-0 flex-1">
-        <span className={`block text-[14px] font-semibold leading-snug tracking-[-0.01em] ${selected ? 'text-brand-900' : 'text-surface-950'}`}>
+        <span className={`block text-[13.5px] font-semibold leading-snug tracking-[-0.01em] ${selected ? 'text-brand-900' : 'text-surface-950'}`}>
           {label}
         </span>
-        {description && <span className="mt-1 block text-pretty text-[12.5px] leading-[1.5] text-surface-500">{description}</span>}
+        {description && <span className="mt-0.5 block text-pretty text-[12px] leading-[1.4] text-surface-500">{description}</span>}
       </span>
       <Indicator selected={selected} shape="round" />
     </label>
@@ -1355,10 +1358,10 @@ export function CheckCard({
       />
       {icon && <TileIcon icon={icon} selected={checked} rank={rank} />}
       <span className="min-w-0 flex-1">
-        <span className={`block text-[14px] font-semibold leading-snug tracking-[-0.01em] ${checked ? 'text-brand-900' : 'text-surface-950'}`}>
+        <span className={`block text-[13.5px] font-semibold leading-snug tracking-[-0.01em] ${checked ? 'text-brand-900' : 'text-surface-950'}`}>
           {label}
         </span>
-        {description && <span className="mt-1 block text-pretty text-[12.5px] leading-[1.5] text-surface-500">{description}</span>}
+        {description && <span className="mt-0.5 block text-pretty text-[12px] leading-[1.4] text-surface-500">{description}</span>}
       </span>
       <Indicator selected={checked} shape="square" />
     </label>
@@ -1401,10 +1404,10 @@ export function ToggleCard({
       />
       {icon && <TileIcon icon={icon} selected={checked} />}
       <span className="min-w-0 flex-1">
-        <span className={`block text-[14px] font-semibold leading-snug tracking-[-0.01em] ${checked ? 'text-brand-900' : 'text-surface-950'}`}>
+        <span className={`block text-[13.5px] font-semibold leading-snug tracking-[-0.01em] ${checked ? 'text-brand-900' : 'text-surface-950'}`}>
           {label}
         </span>
-        {description && <span className="mt-1 block text-pretty text-[12.5px] leading-[1.5] text-surface-500">{description}</span>}
+        {description && <span className="mt-0.5 block text-pretty text-[12px] leading-[1.4] text-surface-500">{description}</span>}
       </span>
       <span
         aria-hidden="true"
@@ -1475,7 +1478,7 @@ export function MultiSelectChips({
             type="button"
             aria-pressed={isSelected}
             onClick={() => onToggle(option)}
-            className={`inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl px-4 text-[13.5px] font-medium ring-1 ring-inset transition-[background-color,color,box-shadow,transform] duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 active:scale-[0.97] motion-reduce:active:scale-100 ${
+            className={`inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg px-3.5 text-[13px] font-medium ring-1 ring-inset transition-[background-color,color,box-shadow,transform] duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 active:scale-[0.97] motion-reduce:active:scale-100 ${
               isSelected
                 ? 'bg-brand-600 text-surface-0 ring-brand-600 shadow-[0_10px_20px_-14px_var(--c-brand-600)]'
                 : 'bg-surface-0 text-surface-700 ring-surface-200 hover:bg-brand-50 hover:text-brand-800 hover:ring-brand-200'
@@ -1614,7 +1617,7 @@ export function TagInput({
       </div>
       <div className="mt-1.5 flex items-baseline justify-between gap-2">
         <p className={`text-[12px] ${notice ? 'font-medium text-warning-700' : 'text-surface-500'}`} aria-live="polite">
-          {notice ?? 'Press Enter or comma to add.'}
+          {notice}
         </p>
         <p className="flex-shrink-0 font-mono text-[11.5px] tabular-nums text-surface-400">
           {values.length}/{max}
@@ -1653,12 +1656,12 @@ export function SuggestionRow({
   if (remaining.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-dashed border-surface-300 bg-surface-50/70 px-4 py-3.5">
-      <p id={headingId} className="flex items-center gap-1.5 text-[12px] font-medium text-surface-600">
+    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+      <p id={headingId} className="flex flex-shrink-0 items-center gap-1.5 text-[12px] font-medium text-surface-600">
         <Sparkles size={13} className="text-brand-600" aria-hidden="true" />
         {label}
       </p>
-      <div className="mt-2.5 flex flex-wrap gap-1.5" role="group" aria-labelledby={headingId}>
+      <div className="flex flex-wrap gap-1.5" role="group" aria-labelledby={headingId}>
         {remaining.map((suggestion) => (
           <button
             key={suggestion.value}
@@ -1666,7 +1669,7 @@ export function SuggestionRow({
             disabled={disabled}
             onClick={() => onAdd(suggestion.value)}
             title={suggestion.hint}
-            className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg bg-surface-0 px-3 text-[13px] font-medium text-surface-700 ring-1 ring-inset ring-surface-200 transition-[background-color,color,transform] duration-150 hover:bg-brand-50 hover:text-brand-800 hover:ring-brand-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:active:scale-100"
+            className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-lg bg-surface-0 px-2.5 text-[12.5px] font-medium text-surface-700 ring-1 ring-inset ring-surface-200 transition-[background-color,color,transform] duration-150 hover:bg-brand-50 hover:text-brand-800 hover:ring-brand-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:active:scale-100"
           >
             <Plus size={13} strokeWidth={2.6} aria-hidden="true" />
             {suggestion.value}
